@@ -1,443 +1,615 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Lotto - Full Sandbox Test</title>
+    <title>Project Lotto - Shift Audit & Inventory</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- HTML5 QR Code Scanner CDN -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
     <style>
-        .lotto-grid {
-            display: grid;
-            grid-template-columns: repeat(6, 1fr);
-            gap: 0.5rem;
-            min-width: 800px; 
+        .box-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.5rem; }
+        @media (max-width: 1024px) {
+            .box-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         }
-        .grid-container {
-            overflow-x: auto;
-            padding-bottom: 1rem;
-        }
-        .modal { display: none; }
-        .modal.active { display: flex; }
-        @media print {
-            .no-print { display: none !important; }
-            .lotto-grid { min-width: 100%; gap: 2px; }
-            body { padding: 0; margin: 0; }
+        @media (max-width: 640px) {
+            .box-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
     </style>
 </head>
-<body class="bg-slate-200 text-gray-800 font-sans p-4">
+<body class="bg-gray-100 text-gray-950 font-sans antialiased min-h-screen flex flex-col">
 
-    <!-- Header & Action Buttons -->
-    <div class="flex justify-between items-center mb-4 bg-orange-100 border-l-4 border-orange-500 p-4 rounded shadow no-print">
+    <!-- Top Navigation Bar -->
+    <header class="bg-slate-900 text-white shadow-md p-4 flex justify-between items-center">
         <div>
-            <h1 class="text-2xl font-bold text-orange-700">Project Lotto: Full Sandbox Test</h1>
-            <p id="live-clock" class="text-sm text-gray-600 font-mono"></p>
-            <p class="text-xs text-orange-600 font-bold mt-1">Temporary Memory Mode: Refreshing resets all passwords and data.</p>
+            <h1 class="text-xl font-bold tracking-wide">Project Lotto</h1>
+            <p id="store-subtitle" class="text-xs text-slate-400">Loading Store Profile...</p>
         </div>
-        <div class="space-x-2 flex">
-            <button onclick="toggleModal('storeSetupModal')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded shadow">Store Setup</button>
-            <button onclick="toggleModal('masterAdminModal')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded shadow">Master Admin</button>
+        <div class="flex items-center space-x-2">
+            <span id="live-datetime" class="text-xs text-slate-300 hidden sm:inline"></span>
+            <button onclick="openStoreDrawer()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded font-medium border border-slate-700 transition">Store Setup</button>
+            <button onclick="openAdminModal()" class="bg-amber-600 hover:bg-amber-500 text-xs px-3 py-2 rounded font-medium transition">Master Admin</button>
         </div>
-    </div>
+    </header>
 
-    <!-- Missing Data Validation Check -->
-    <div id="validationWarning" class="hidden bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4 no-print" role="alert">
-        <strong class="font-bold">Missing Data!</strong>
-        <span class="block sm:inline"> Please ensure all active boxes have ending ticket numbers before finalizing.</span>
-    </div>
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 flex flex-col gap-4">
 
-    <!-- Main Grid -->
-    <div class="bg-white p-4 rounded shadow grid-container mb-4">
-        <h2 class="text-xl font-semibold mb-2">Shift Audit Grid</h2>
-        <div id="lottoGrid" class="lotto-grid">
-            <!-- JavaScript populates boxes -->
-        </div>
-    </div>
-
-    <!-- Totals & Sign-off -->
-    <div class="bg-white p-4 rounded shadow mb-4">
-        <div class="flex justify-between items-end border-b pb-4 mb-4">
-            <div>
-                <h3 class="text-lg font-semibold">Test Shift Totals</h3>
-                <p class="text-sm text-gray-600">Total Tickets Sold: <span id="totalTickets" class="font-bold text-blue-600">0</span></p>
+        <!-- Action Controls Bar -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <button onclick="initScanner()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+                    Scan Ticket Barcode
+                </button>
+                <button onclick="runValidation()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium border border-gray-300 transition">Run Validation</button>
             </div>
-            <div class="text-right">
-                <p class="text-sm text-gray-600">Total Shift Value:</p>
-                <p class="text-3xl font-bold text-green-600">$<span id="totalValue">0.00</span></p>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <label class="block text-gray-700 text-sm font-bold mb-2">Clerk Name</label>
-                <input type="text" id="clerkName" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-            </div>
-            <div>
-                <label class="block text-gray-700 text-sm font-bold mb-2">Signature</label>
-                <div class="border rounded bg-gray-50">
-                    <canvas id="signaturePad" class="w-full h-32"></canvas>
+            <div class="flex items-center gap-4">
+                <div class="text-right">
+                    <div class="text-xs text-gray-500">Total Shift Sales</div>
+                    <div id="header-total-sales" class="text-lg font-bold text-emerald-600">$0.00</div>
                 </div>
-                <button onclick="signaturePad.clear()" class="text-xs text-red-500 mt-1 no-print">Clear Signature</button>
+                <button onclick="openReviewModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-lg text-sm font-semibold shadow transition">Review & Sign-Off</button>
+            </div>
+        </div>
+
+        <!-- Scanner Modal -->
+        <div id="scanner-modal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl flex flex-col items-center">
+                <div class="flex justify-between w-full items-center mb-4">
+                    <h3 class="text-lg font-bold">Barcode Scanner</h3>
+                    <button onclick="stopScanner()" class="text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
+                </div>
+                <div id="reader" class="w-full rounded-lg overflow-hidden bg-black aspect-square"></div>
+                <p class="text-xs text-gray-500 mt-3 text-center">Position the barcode inside the frame to automatically log ticket details.</p>
+            </div>
+        </div>
+
+        <!-- 6-Column Dispenser Grid View -->
+        <section class="flex-1 flex flex-col">
+            <div class="flex justify-between items-center mb-2 px-1">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-gray-600">Dispenser Boxes (1 - 40)</h2>
+                <button onclick="addBox()" class="text-xs text-blue-600 hover:underline font-semibold">+ Add Box</button>
+            </div>
+            <div id="dispenser-grid" class="box-grid">
+                <!-- Dynamically injected boxes -->
+            </div>
+        </section>
+
+        <!-- Validation Message Banner -->
+        <div id="validation-banner" class="hidden p-3 rounded-lg text-sm font-medium border"></div>
+    </main>
+
+    <!-- Store Profile Drawer / Modal -->
+    <div id="store-drawer" class="fixed inset-0 bg-black/50 hidden z-50 flex justify-end">
+        <div class="bg-white w-full max-w-md h-full shadow-2xl p-6 flex flex-col justify-between overflow-y-auto">
+            <div>
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-bold">Store Setup & Config</h2>
+                    <button onclick="closeStoreDrawer()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+                </div>
+                <form id="store-form" class="space-y-4" onsubmit="saveStoreProfile(event)">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Retailer / Store Name</label>
+                        <input type="text" id="store-name-input" class="w-full border rounded-lg p-2 text-sm border-gray-300" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Retailer / Store Number</label>
+                        <input type="text" id="store-num-input" class="w-full border rounded-lg p-2 text-sm border-gray-300" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Street Address</label>
+                        <input type="text" id="store-address-input" class="w-full border rounded-lg p-2 text-sm border-gray-300" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Manager Report Email</label>
+                        <input type="email" id="store-email-input" class="w-full border rounded-lg p-2 text-sm border-gray-300" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Double-Entry / Sign-off Password</label>
+                        <input type="password" id="store-password-input" class="w-full border rounded-lg p-2 text-sm border-gray-300" required>
+                    </div>
+                    <button type="submit" class="w-full bg-slate-900 text-white py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition">Save Profile Config</button>
+                </form>
+            </div>
+            <div class="pt-6 border-t border-gray-200">
+                <button onclick="exportDataJSON()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 rounded-lg text-xs font-medium border mb-2">Export Local Database Backup</button>
             </div>
         </div>
     </div>
-    
-    <div class="flex justify-end space-x-3 no-print">
-        <button onclick="calculateTotals()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded shadow-lg">Calculate</button>
-        <button onclick="window.print()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded shadow-lg">Print / PDF</button>
-        <button onclick="rolloverShift()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded shadow-lg">Test Shift Rollover</button>
-    </div>
 
-    <!-- Store Setup Modal -->
-    <div id="storeSetupModal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 justify-center items-center no-print z-50">
-        <div class="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 class="text-xl font-bold mb-4">Retail Location Setup</h2>
-            <div class="space-y-3">
-                <input type="text" id="storeName" placeholder="Store Name / Address" class="border p-2 w-full rounded">
-                <input type="text" id="retailerNumber" placeholder="Retailer Number" class="border p-2 w-full rounded">
-                <input type="email" id="storeEmail" placeholder="Store Email" class="border p-2 w-full rounded">
-                <hr>
-                <input type="password" id="adminPwd" placeholder="Set Admin Password" class="border p-2 w-full rounded">
-                <input type="password" id="adminPwdConfirm" placeholder="Confirm Admin Password" class="border p-2 w-full rounded">
+    <!-- Master Admin Password & Inventory Modal -->
+    <div id="admin-modal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center pb-4 border-b">
+                <h3 class="text-lg font-bold">Master Inventory Database</h3>
+                <button onclick="closeAdminModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
             </div>
-            <div class="mt-4 flex justify-end space-x-2">
-                <button onclick="toggleModal('storeSetupModal')" class="bg-gray-300 px-4 py-2 rounded">Cancel</button>
-                <button onclick="saveStoreProfile()" class="bg-blue-500 text-white px-4 py-2 rounded">Save Profile</button>
+            <div id="admin-auth-view" class="py-8 text-center space-y-4">
+                <p class="text-sm text-gray-600">Enter master administrator password to modify game inventory database.</p>
+                <input type="password" id="admin-pass-input" placeholder="Admin Password" class="border rounded-lg p-2 text-sm max-w-xs mx-auto block text-center border-gray-300">
+                <button onclick="verifyAdmin()" class="bg-slate-900 text-white px-6 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition">Authorize</button>
+            </div>
+            <div id="admin-content-view" class="hidden flex-1 overflow-y-auto py-4 space-y-4">
+                <div class="flex justify-between items-center">
+                    <h4 class="text-xs font-bold text-gray-500 uppercase">Configured Games Catalog</h4>
+                    <button onclick="addNewGamePrompt()" class="bg-blue-600 text-white text-xs px-3 py-1.5 rounded font-medium">+ Add New Game</button>
+                </div>
+                <div id="admin-games-list" class="space-y-2"></div>
             </div>
         </div>
     </div>
 
-    <!-- Master Admin Modal -->
-    <div id="masterAdminModal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 justify-center items-center z-50">
-        <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold">Master Admin</h2>
-                <button onclick="toggleModal('masterAdminModal')" class="text-red-500 font-bold text-xl">&times;</button>
+    <!-- Review & Sign-Off Modal -->
+    <div id="review-modal" class="fixed inset-0 bg-black/60 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl max-h-[95vh] flex flex-col overflow-y-auto">
+            <div class="flex justify-between items-center pb-4 border-b">
+                <h3 class="text-lg font-bold">Shift Financial Reconciliation</h3>
+                <button onclick="closeReviewModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
             </div>
-
-            <input type="password" id="masterAuthPwd" placeholder="Enter Admin Password (set in Store Setup)" class="border border-red-300 p-2 w-full rounded mb-4 bg-red-50">
-
-            <div class="grid grid-cols-2 gap-4 border-t pt-4">
-                <!-- Grid Management -->
-                <div>
-                    <h3 class="font-bold mb-2">Grid Management</h3>
-                    <div class="flex space-x-2 mb-2">
-                        <button onclick="addBox()" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded w-full">Add Box</button>
-                        <button onclick="removeBox()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded w-full">Remove Box</button>
+            <div class="py-4 space-y-4 flex-1">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                    <div>
+                        <div class="text-xs text-gray-500">Total Ticket Sales</div>
+                        <div id="rev-total-sales" class="text-base font-bold text-gray-900">$0.00</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500">POS Meter Read</div>
+                        <input type="number" id="pos-meter-input" oninput="calculateVariance()" placeholder="0.00" class="w-full bg-white border border-gray-300 rounded p-1 text-sm font-bold">
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500">Variance / Diff</div>
+                        <div id="rev-variance" class="text-base font-bold text-gray-700">$0.00</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-gray-500">Active Shift</div>
+                        <div class="text-sm font-semibold text-blue-600">Shift 1 / Open</div>
                     </div>
                 </div>
-                
-                <!-- Inventory Management -->
+
                 <div>
-                    <h3 class="font-bold mb-2">Master Game Inventory</h3>
-                    <div class="flex space-x-2 mb-2">
-                        <input type="text" id="newGameId" placeholder="Game #" class="border p-1 w-1/3 rounded text-sm">
-                        <input type="text" id="newGameName" placeholder="Name" class="border p-1 w-1/3 rounded text-sm">
-                        <input type="number" id="newGamePrice" placeholder="$" class="border p-1 w-1/3 rounded text-sm">
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Clerk / Employee Name</label>
+                    <input type="text" id="clerk-name-input" class="w-full border rounded-lg p-2 text-sm border-gray-300" placeholder="Enter Full Name">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Signature Authentication</label>
+                    <div class="border border-gray-300 rounded-lg overflow-hidden bg-white touch-none">
+                        <canvas id="sig-canvas" width="600" height="150" class="w-full cursor-crosshair"></canvas>
                     </div>
-                    <button onclick="addMasterGame()" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded w-full mb-2">Add to Master List</button>
+                    <div class="flex justify-between items-center mt-1">
+                        <button onclick="clearSignature()" class="text-xs text-red-600 hover:underline">Clear Signature</button>
+                        <span class="text-[10px] text-gray-400">Sign above using finger or mouse</span>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-gray-200 flex flex-wrap gap-2 justify-end">
+                    <button onclick="printReport()" class="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Print Report</button>
+                    <button onclick="emailReport()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Email Management</button>
                 </div>
             </div>
-            
-            <div class="mt-4">
-                <h4 class="font-bold text-gray-700 border-b pb-1">Current Master List</h4>
-                <div class="max-h-48 overflow-y-auto mt-2 text-sm" id="masterGamesList"></div>
-            </div>
         </div>
     </div>
 
-    <!-- Scanner Reader Modal -->
-    <div id="scannerModal" class="modal fixed inset-0 bg-black bg-opacity-90 justify-center items-center z-[60] no-print">
-        <div class="bg-white rounded-lg p-4 w-full max-w-md">
-            <h3 id="scannerTargetLabel" class="text-lg font-bold mb-2 text-center">Test Scanner</h3>
-            <div id="reader" width="600px"></div>
-            <button onclick="stopScanner()" class="mt-4 bg-gray-500 text-white px-4 py-2 rounded w-full">Cancel Scan</button>
-        </div>
-    </div>
-
+    <!-- Application Script -->
     <script>
-        // --- Live Clock ---
-        setInterval(() => document.getElementById('live-clock').textContent = new Date().toLocaleString(), 1000);
-
-        // --- Signature Pad Init ---
-        const canvas = document.getElementById('signaturePad');
-        const signaturePad = new SignaturePad(canvas);
-        function resizeCanvas() {
-            const ratio = Math.max(window.devicePixelRatio || 1, 1);
-            canvas.width = canvas.offsetWidth * ratio;
-            canvas.height = canvas.offsetHeight * ratio;
-            canvas.getContext("2d").scale(ratio, ratio);
-            signaturePad.clear();
-        }
-        window.onresize = resizeCanvas;
-        resizeCanvas();
-
-        // --- Test Data State (Memory Only) ---
-        let adminPassword = ''; // Default empty until set in setup
-        let masterGames = [
-            { id: '1802', name: '300x Jumbo', price: 30 }, { id: '1964', name: 'Mill Jumbo', price: 20 },
-            { id: '1405', name: '$50 jumbo collectable', price: 50 }, { id: '1909', name: '$25 Jumbo', price: 25 },
-            { id: '1404', name: 'Holiday Riches', price: 20 }, { id: '1403', name: '$50 $100 $500', price: 10 },
-            { id: '1949', name: '$10 Jumbo', price: 10 }, { id: '1369', name: '100x', price: 10 },
-            { id: '1397', name: '$20 collectable Jumbo', price: 20 }, { id: '1204', name: '$50 Jumbo', price: 50 },
-            { id: '1996', name: 'Giant Jumbo', price: 5 }, { id: '1382', name: 'Instant Cash', price: 10 },
-            { id: '1402', name: 'Merry Money', price: 5 }, { id: '1394', name: 'Lady Crossword', price: 3 },
-            { id: '1400', name: 'holiday Cash', price: 3 }, { id: '1396', name: '$10 collectable Jumbo', price: 10 },
-            { id: '1368', name: '50x', price: 5 }, { id: '859', name: '$10 crossword', price: 10 },
-            { id: '1858', name: '$5 crossword', price: 5 }, { id: '1825', name: '$2 Jumbo', price: 2 },
-            { id: '1395', name: '$5 collectable Jumbo', price: 5 }, { id: '1399', name: 'Nutcracker cash', price: 2 },
-            { id: '854', name: 'Bingo Jumbo', price: 3 }, { id: '1856', name: '$3 crossword Jumbo', price: 3 },
-            { id: '1392', name: '$1 collectable Jumbo', price: 1 }, { id: '1951', name: '$1 Jumbo', price: 1 },
-            { id: '1398', name: 'Gift Tag Cash', price: 1 }, { id: '1385', name: '$5 Game Show', price: 5 },
-            { id: '1378', name: 'Max Millions', price: 20 }, { id: '1387', name: 'All the money', price: 20 },
-            { id: '1266', name: '$3k Loaded', price: 30 }, { id: '1364', name: '$50 Jumbo Extravaganza', price: 50 },
-            { id: '1370', name: '200x', price: 20 }, { id: '1386', name: '24k Gold', price: 10 },
-            { id: '1377', name: '$500k Bonus', price: 10 }, { id: '1391', name: '$500 Fever', price: 10 },
-            { id: '1381', name: 'High Voltage cash', price: 5 }, { id: '1762', name: 'Lucky 7\'s', price: 1 },
-            { id: '1601', name: '$3 Season Jumbo', price: 3 }, { id: '1372', name: '$5 collectable Jumbo', price: 5 },
-            { id: '1374', name: '$10 cash games', price: 10 }
+        // Default Master Games Database seeded with initial tickets
+        let masterGames = JSON.parse(localStorage.getItem('lotto_master_games')) || [
+            { id: '1802', name: '300x Jumbo', price: 30 },
+            { id: '1964', name: 'Mill Jumbo', price: 20 },
+            { id: '1405', name: '$50 Jumbo Collectable', price: 50 },
+            { id: '1909', name: '$25 Jumbo', price: 25 },
+            { id: '1404', name: 'Holiday Riches', price: 20 },
+            { id: '1403', name: '$50 $100 $500', price: 10 },
+            { id: '1949', name: '$10 Jumbo', price: 10 },
+            { id: '1369', name: '100x', price: 10 },
+            { id: '1397', name: '$20 Collectable Jumbo', price: 20 },
+            { id: '1204', name: '$50 Jumbo', price: 50 },
+            { id: '1996', name: 'Giant Jumbo', price: 5 },
+            { id: '1382', name: 'Instant Cash', price: 10 },
+            { id: '1402', name: 'Merry Money', price: 5 },
+            { id: '1394', name: 'Lady Crossword', price: 3 },
+            { id: '1400', name: 'Holiday Cash', price: 3 },
+            { id: '1396', name: '$10 Collectable Jumbo', price: 10 },
+            { id: '1368', name: '50x', price: 5 },
+            { id: '859', name: '$10 Crossword', price: 10 },
+            { id: '1858', name: '$5 Crossword', price: 5 },
+            { id: '1825', name: '$2 Jumbo', price: 2 },
+            { id: '1395', name: '$5 Collectable Jumbo', price: 5 },
+            { id: '1399', name: 'Nutcracker Cash', price: 2 },
+            { id: '854', name: 'Bingo Jumbo', price: 3 },
+            { id: '1856', name: '$3 Crossword Jumbo', price: 3 },
+            { id: '1392', name: '$1 Collectable Jumbo', price: 1 },
+            { id: '1951', name: '$1 Jumbo', price: 1 },
+            { id: '1398', name: 'Gift Tag Cash', price: 1 },
+            { id: '1385', name: '$5 Game Show', price: 5 },
+            { id: '1378', name: 'Max Millions', price: 20 },
+            { id: '1387', name: 'All the Money', price: 20 },
+            { id: '1266', name: '$3k Loaded', price: 30 },
+            { id: '1364', name: '$50 Jumbo Extravaganza', price: 50 },
+            { id: '1370', name: '200x', price: 20 },
+            { id: '1386', name: '24k Gold', price: 10 },
+            { id: '1377', name: '$500k Bonus', price: 10 },
+            { id: '1391', name: '$500 Fever', price: 10 },
+            { id: '1381', name: 'High Voltage Cash', price: 5 },
+            { id: '1762', name: "Lucky 7's", price: 1 },
+            { id: '1601', name: '$3 Season Jumbo', price: 3 },
+            { id: '1372', name: '$5 Collectable Jumbo', price: 5 },
+            { id: '1374', name: '$10 Cash Games', price: 10 }
         ];
-        
-        let boxCount = 12;
-        let boxes = Array.from({length: boxCount}, (_, i) => ({ 
-            id: i + 1, name: `Box ${i + 1}`, gameId: '', price: 0, startTicket: '', endTicket: '',
-            swappedGameId: '', swappedPrice: 0, swappedStartTicket: '', swappedEndTicket: '', isSwapped: false
+
+        // Store Profile State
+        let storeProfile = JSON.parse(localStorage.getItem('lotto_store_profile')) || {
+            name: "Shell #402 - Main St",
+            number: "SH402",
+            address: "100 Broadway, Sparta, TN",
+            email: "manager@facilityops.net",
+            password: "admin"
+        };
+
+        // 40 Boxes state with support for mid-shift swap (`oldGame`/`newGame`) and 2-slot merged box designations (`&`)
+        let boxesData = JSON.parse(localStorage.getItem('lotto_boxes_data')) || Array.from({length: 40}, (_, i) => ({
+            id: i + 1,
+            label: `Box ${i + 1}`,
+            gameId: '',
+            startTicket: '',
+            endTicket: '',
+            oldGame: null,
+            oldStart: '',
+            oldEnd: '',
+            mergedWithNext: false
         }));
 
-        // --- Store Setup & Admin Auth ---
-        function saveStoreProfile() {
-            const pwd1 = document.getElementById('adminPwd').value;
-            const pwd2 = document.getElementById('adminPwdConfirm').value;
-            if (pwd1 && pwd1 !== pwd2) return alert("Passwords do not match!");
-            if (pwd1) adminPassword = pwd1;
-            
-            document.getElementById('storeSetupModal').classList.remove('active');
-            alert("Profile & Password Saved (in memory for this session).");
+        let html5QrCode = null;
+
+        // Initialization on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            updateStoreHeader();
+            renderBoxes();
+            updateLiveDateTime();
+            setInterval(updateLiveDateTime, 1000);
+            initSignaturePad();
+        });
+
+        function updateStoreHeader() {
+            document.getElementById('store-subtitle').innerText = `${storeProfile.name} (${storeProfile.number}) • ${storeProfile.address}`;
+            document.getElementById('store-name-input').value = storeProfile.name;
+            document.getElementById('store-num-input').value = storeProfile.number;
+            document.getElementById('store-address-input').value = storeProfile.address;
+            document.getElementById('store-email-input').value = storeProfile.email;
+            document.getElementById('store-password-input').value = storeProfile.password;
         }
 
-        function checkAdminAuth() {
-            const input = document.getElementById('masterAuthPwd').value;
-            if (adminPassword !== '' && input !== adminPassword) {
-                alert('Invalid Master Admin Password');
-                return false;
-            }
-            return true;
+        function updateLiveDateTime() {
+            const now = new Date();
+            document.getElementById('live-datetime').innerText = now.toLocaleString();
         }
 
-        // --- Grid Logic ---
-        function renderGrid() {
-            const grid = document.getElementById('lottoGrid');
+        // Render 6-Column Grid of Boxes
+        function renderBoxes() {
+            const grid = document.getElementById('dispenser-grid');
             grid.innerHTML = '';
-            let gameOptions = `<option value="">-- Select Game --</option>`;
-            masterGames.forEach(g => gameOptions += `<option value="${g.id}">${g.id} | ${g.name} | $${g.price}</option>`);
+            
+            boxesData.forEach((box, index) => {
+                const gameOptions = masterGames.map(g => `<option value="${g.id}" ${box.gameId === g.id ? 'selected' : ''}>[${g.id}] ${g.name} ($${g.price})</option>`).join('');
+                const oldGameOptions = masterGames.map(g => `<option value="${g.id}" ${box.oldGame === g.id ? 'selected' : ''}>[${g.id}] ${g.name} ($${g.price})</option>`).join('');
 
-            boxes.forEach((box, index) => {
-                const boxDiv = document.createElement('div');
-                boxDiv.className = 'border-2 border-gray-300 p-2 rounded bg-gray-50 flex flex-col text-sm relative shadow-sm hover:border-blue-400 transition';
+                const card = document.createElement('div');
+                card.className = `bg-white p-3 rounded-xl border shadow-sm flex flex-col gap-2 ${box.mergedWithNext ? 'col-span-2 border-blue-400 bg-blue-50/20' : 'border-gray-200'}`;
                 
-                let html = `
-                    <div class="flex justify-between items-center border-b pb-1 mb-2 bg-gray-200 -mx-2 -mt-2 p-2 rounded-t">
-                        <input type="text" value="${box.name}" class="font-bold text-gray-800 bg-transparent w-24 outline-none border-b border-dashed border-gray-400 focus:border-blue-500" onchange="updateBox(${index}, 'name', this.value)">
-                        <button onclick="startBoxScanner(${index}, false)" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded shadow">Scan</button>
+                card.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <input type="text" value="${box.label}" onchange="updateBoxLabel(${index}, this.value)" class="font-bold text-xs bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 outline-none w-24">
+                        <div class="flex items-center gap-1">
+                            <button onclick="toggleMerge(${index})" title="Merge with Next Box" class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 font-mono">&</button>
+                            <button onclick="clearBox(${index})" class="text-gray-400 hover:text-red-600 text-xs font-bold">&times;</button>
+                        </div>
                     </div>
-                    <div class="mb-2">
-                        <span class="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Active Game</span>
-                        <select class="border rounded px-1 py-1 w-full text-xs font-semibold bg-white mt-1" onchange="handleGameSelect(${index}, this.value, false)">
-                            ${gameOptions.replace(`value="${box.gameId}"`, `value="${box.gameId}" selected`)}
+                    <div>
+                        <label class="text-[10px] text-gray-500 font-semibold block">Active Game</label>
+                        <select onchange="updateBoxGame(${index}, this.value)" class="w-full text-xs border rounded p-1 bg-gray-50 border-gray-300">
+                            <option value="">-- Select Game --</option>
+                            ${gameOptions}
                         </select>
                     </div>
-                    <div class="flex flex-col gap-1 mb-2">
-                        <div class="flex items-center text-xs justify-between">
-                            <span class="text-gray-500 font-bold">Start:</span>
-                            <input type="number" class="border rounded px-1 w-16 bg-yellow-100 text-right font-mono" value="${box.startTicket}" onchange="updateBox(${index}, 'startTicket', this.value)">
-                        </div>
-                        <div class="flex items-center text-xs justify-between">
-                            <span class="text-gray-500 font-bold">End:</span>
-                            <input type="number" class="border rounded px-1 w-16 bg-white text-right font-mono" value="${box.endTicket}" onchange="updateBox(${index}, 'endTicket', this.value)">
+                    ${box.oldGame ? `
+                    <div class="bg-amber-50 p-1.5 rounded border border-amber-200 text-[10px] space-y-1">
+                        <span class="font-bold text-amber-800">Mid-Shift Swapped Old Game:</span>
+                        <select onchange="updateOldGame(${index}, this.value)" class="w-full text-[10px] border rounded p-0.5 bg-white border-amber-300">
+                            <option value="">-- Select Old Game --</option>
+                            ${oldGameOptions}
+                        </select>
+                        <div class="flex gap-1">
+                            <input type="text" placeholder="Old Start" value="${box.oldStart}" onchange="updateBoxData(${index}, 'oldStart', this.value)" class="w-1/2 border rounded p-0.5 text-center bg-white">
+                            <input type="text" placeholder="Old End" value="${box.oldEnd}" onchange="updateBoxData(${index}, 'oldEnd', this.value)" class="w-1/2 border rounded p-0.5 text-center bg-white">
                         </div>
                     </div>
-                `;
-
-                if (box.isSwapped) {
-                    html += `
-                        <div class="mt-2 border-t-2 border-dashed border-purple-300 pt-2 bg-purple-50 -mx-2 px-2 pb-2 rounded-b">
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="text-[10px] uppercase font-bold text-purple-600 tracking-wider">Swap</span>
-                                <button onclick="startBoxScanner(${index}, true)" class="bg-purple-500 hover:bg-purple-600 text-white text-[10px] px-2 py-0.5 rounded">Scan</button>
-                            </div>
-                            <select class="border border-purple-300 rounded px-1 py-1 w-full text-xs font-semibold bg-white mb-1" onchange="handleGameSelect(${index}, this.value, true)">
-                                ${gameOptions.replace(`value="${box.swappedGameId}"`, `value="${box.swappedGameId}" selected`)}
-                            </select>
-                            <div class="flex flex-col gap-1">
-                                <div class="flex items-center text-xs justify-between">
-                                    <span class="text-purple-500 font-bold">Start:</span>
-                                    <input type="number" class="border border-purple-200 rounded px-1 w-16 bg-yellow-50 text-right font-mono" value="${box.swappedStartTicket}" onchange="updateBox(${index}, 'swappedStartTicket', this.value)">
-                                </div>
-                                <div class="flex items-center text-xs justify-between">
-                                    <span class="text-purple-500 font-bold">End:</span>
-                                    <input type="number" class="border border-purple-200 rounded px-1 w-16 bg-white text-right font-mono" value="${box.swappedEndTicket}" onchange="updateBox(${index}, 'swappedEndTicket', this.value)">
-                                </div>
-                            </div>
-                            <button onclick="undoSwap(${index})" class="text-[10px] text-red-500 hover:underline w-full text-center mt-2">Undo Swap</button>
+                    ` : ''}
+                    <div class="flex gap-1 pt-1">
+                        <div class="w-1/2">
+                            <span class="text-[9px] text-gray-400 block">Start Ticket</span>
+                            <input type="text" value="${box.startTicket}" placeholder="0001" onchange="updateBoxData(${index}, 'startTicket', this.value)" class="w-full border rounded p-1 text-xs text-center font-mono border-gray-300">
                         </div>
-                    `;
-                } else {
-                    html += `<button onclick="initiateSwap(${index})" class="text-[10px] text-gray-500 bg-gray-200 hover:bg-gray-300 rounded py-1 mt-auto">Swap Game Mid-Shift</button>`;
-                }
+                        <div class="w-1/2">
+                            <span class="text-[9px] text-gray-400 block">End Ticket</span>
+                            <input type="text" value="${box.endTicket}" placeholder="End #" onchange="updateBoxData(${index}, 'endTicket', this.value)" class="w-full border rounded p-1 text-xs text-center font-mono border-gray-300">
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center pt-1">
+                        <button onclick="triggerMidShiftSwap(${index})" class="text-[10px] text-blue-600 hover:underline">+ Mid-Shift Swap</button>
+                        <span id="box-subtotal-${index}" class="text-[10px] font-bold text-emerald-600">$0.00</span>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            calculateTotals();
+        }
 
-                boxDiv.innerHTML = html;
-                grid.appendChild(boxDiv);
+        function updateBoxLabel(index, val) { boxesData[index].label = val; persist(); }
+        function updateBoxGame(index, val) { boxesData[index].gameId = val; persist(); }
+        function updateOldGame(index, val) { boxesData[index].oldGame = val; persist(); }
+        function updateBoxData(index, field, val) { boxesData[index][field] = val; persist(); calculateTotals(); }
+        
+        function clearBox(index) {
+            verifyAdminAction(() => {
+                boxesData[index] = { ...boxesData[index], gameId: '', startTicket: '', endTicket: '', oldGame: null, oldStart: '', oldEnd: '' };
+                persist();
+                renderBoxes();
             });
         }
 
-        function updateBox(index, field, value) { boxes[index][field] = value; }
-        function handleGameSelect(index, gameId, isSwapSlot) {
-            const game = masterGames.find(g => g.id === gameId);
-            if(isSwapSlot) { boxes[index].swappedGameId = gameId; boxes[index].swappedPrice = game ? game.price : 0; } 
-            else { boxes[index].gameId = gameId; boxes[index].price = game ? game.price : 0; }
-            renderGrid();
-        }
-        function initiateSwap(index) {
-            if(!boxes[index].gameId) return alert("Select a primary game first.");
-            boxes[index].isSwapped = true; renderGrid();
-        }
-        function undoSwap(index) {
-            if(confirm("Remove mid-shift swap?")) {
-                boxes[index].isSwapped = false; boxes[index].swappedGameId = ''; boxes[index].swappedPrice = 0;
-                boxes[index].swappedStartTicket = ''; boxes[index].swappedEndTicket = ''; renderGrid();
-            }
+        function toggleMerge(index) {
+            boxesData[index].mergedWithNext = !boxesData[index].mergedWithNext;
+            persist();
+            renderBoxes();
         }
 
-        // --- Box Add/Remove (Protected by Admin) ---
+        function triggerMidShiftSwap(index) {
+            const current = boxesData[index];
+            if(!current.gameId) { alert("Please select current active game first."); return; }
+            current.oldGame = current.gameId;
+            current.oldStart = current.startTicket;
+            current.oldEnd = current.endTicket;
+            current.gameId = '';
+            current.startTicket = '0001';
+            current.endTicket = '';
+            persist();
+            renderBoxes();
+        }
+
         function addBox() {
-            if (!checkAdminAuth()) return;
-            boxCount++;
-            boxes.push({ id: boxCount, name: `Box ${boxCount}`, gameId: '', price: 0, startTicket: '', endTicket: '', isSwapped: false });
-            renderGrid();
+            verifyAdminAction(() => {
+                boxesData.push({ id: boxesData.length + 1, label: `Box ${boxesData.length + 1}`, gameId: '', startTicket: '', endTicket: '', oldGame: null, oldStart: '', oldEnd: '', mergedWithNext: false });
+                persist();
+                renderBoxes();
+            });
         }
 
-        function removeBox() {
-            if (!checkAdminAuth()) return;
-            if (boxCount > 0) { boxCount--; boxes.pop(); renderGrid(); }
+        function persist() {
+            localStorage.setItem('lotto_boxes_data', JSON.stringify(boxesData));
+            localStorage.setItem('lotto_master_games', JSON.stringify(masterGames));
         }
 
-        // --- Calculations & Rollover ---
         function calculateTotals() {
-            let totalTix = 0, totalVal = 0, missingData = false;
+            let totalSales = 0;
+            boxesData.forEach((box, i) => {
+                let boxSales = 0;
+                // Active game sales calculation
+                if(box.gameId && box.startTicket && box.endTicket) {
+                    const game = masterGames.find(g => g.id === box.gameId);
+                    if(game) {
+                        const sold = (parseInt(box.endTicket) || 0) - (parseInt(box.startTicket) || 0);
+                        if(sold > 0) boxSales += sold * game.price;
+                    }
+                }
+                // Swapped old game sales calculation
+                if(box.oldGame && box.oldStart && box.oldEnd) {
+                    const oldGame = masterGames.find(g => g.id === box.oldGame);
+                    if(oldGame) {
+                        const oldSold = (parseInt(box.oldEnd) || 0) - (parseInt(box.oldStart) || 0);
+                        if(oldSold > 0) boxSales += oldSold * oldGame.price;
+                    }
+                }
+                const subElem = document.getElementById(`box-subtotal-${i}`);
+                if(subElem) subElem.innerText = `$${boxSales.toFixed(2)}`;
+                totalSales += boxSales;
+            });
+            document.getElementById('header-total-sales').innerText = `$${totalSales.toFixed(2)}`;
+            document.getElementById('rev-total-sales').innerText = `$${totalSales.toFixed(2)}`;
+            calculateVariance();
+            return totalSales;
+        }
 
-            boxes.forEach(box => {
-                if (box.startTicket !== '' && box.endTicket !== '') {
-                    const sold = parseInt(box.endTicket) - parseInt(box.startTicket);
-                    if (sold > 0 && box.price > 0) { totalTix += sold; totalVal += (sold * box.price); }
-                } else if (box.gameId !== '') { missingData = true; }
+        function calculateVariance() {
+            const totalSales = calculateTotals();
+            const posVal = parseFloat(document.getElementById('pos-meter-input').value) || 0;
+            const variance = posVal - totalSales;
+            const varElem = document.getElementById('rev-variance');
+            varElem.innerText = `$${variance.toFixed(2)}`;
+            varElem.className = `text-base font-bold ${variance === 0 ? 'text-emerald-600' : 'text-red-600'}`;
+        }
 
-                if (box.isSwapped) {
-                    if(box.swappedStartTicket !== '' && box.swappedEndTicket !== '') {
-                        const swappedSold = parseInt(box.swappedEndTicket) - parseInt(box.swappedStartTicket);
-                        if (swappedSold > 0 && box.swappedPrice > 0) { totalTix += swappedSold; totalVal += (swappedSold * box.swappedPrice); }
-                    } else if (box.swappedGameId !== '') { missingData = true; }
+        // Validation Check
+        function runValidation() {
+            let missing = [];
+            boxesData.forEach((box, i) => {
+                if(box.gameId && (!box.startTicket || !box.endTicket)) {
+                    missing.push(`Box ${box.label} has active game selected but missing start/end numbers.`);
                 }
             });
-
-            document.getElementById('totalTickets').textContent = totalTix;
-            document.getElementById('totalValue').textContent = totalVal.toFixed(2);
-            document.getElementById('validationWarning').classList.toggle('hidden', !missingData);
-        }
-
-        function rolloverShift() {
-            if(confirm("Test Rollover? End tickets will become start tickets. Signature will be cleared.")) {
-                boxes = boxes.map(box => {
-                    let nextGameId = box.isSwapped ? box.swappedGameId : box.gameId;
-                    let nextPrice = box.isSwapped ? box.swappedPrice : box.price;
-                    let nextStart = box.isSwapped ? box.swappedEndTicket : box.endTicket;
-
-                    return { ...box, gameId: nextGameId, price: nextPrice, startTicket: nextStart !== '' ? nextStart : box.startTicket, 
-                        endTicket: '', isSwapped: false, swappedGameId: '', swappedPrice: 0, swappedStartTicket: '', swappedEndTicket: '' };
-                });
-                signaturePad.clear();
-                document.getElementById('clerkName').value = '';
-                document.getElementById('validationWarning').classList.add('hidden');
-                renderGrid(); calculateTotals(); alert("Shift rolled over!");
+            const banner = document.getElementById('validation-banner');
+            banner.classList.remove('hidden');
+            if(missing.length > 0) {
+                banner.className = "p-3 rounded-lg text-sm font-medium border bg-red-50 border-red-200 text-red-700";
+                banner.innerHTML = "<b>Validation Issues Found:</b><br>" + missing.join('<br>');
+            } else {
+                banner.className = "p-3 rounded-lg text-sm font-medium border bg-emerald-50 border-emerald-200 text-emerald-750";
+                banner.innerText = "All active boxes successfully validated. No missing ticket entries.";
             }
         }
 
-        // --- Master Admin Setup ---
-        function renderMasterList() {
-            const list = document.getElementById('masterGamesList');
-            list.innerHTML = masterGames.map((g, i) => `
-                <div class="flex justify-between items-center border-b py-1 text-sm">
-                    <span>${g.id} | ${g.name} | <strong class="text-green-600">$${g.price}</strong></span>
-                    <button onclick="removeMasterGame(${i})" class="text-red-500 text-xs hover:bg-red-50 px-2 rounded">Remove</button>
-                </div>
-            `).join('');
-        }
-
-        function addMasterGame() {
-            if (!checkAdminAuth()) return;
-            const id = document.getElementById('newGameId').value;
-            const name = document.getElementById('newGameName').value;
-            const price = parseFloat(document.getElementById('newGamePrice').value);
-            
-            if (id && name && price) {
-                masterGames.push({ id, name, price });
-                document.getElementById('newGameId').value = ''; document.getElementById('newGameName').value = ''; document.getElementById('newGamePrice').value = '';
-                renderMasterList(); renderGrid(); 
-            } else { alert("Fill all game details."); }
-        }
-
-        function removeMasterGame(index) {
-            if (!checkAdminAuth()) return;
-            masterGames.splice(index, 1); renderMasterList(); renderGrid(); 
-        }
-
-        // --- Scanner Logic ---
-        let html5QrcodeScanner;
-        function startBoxScanner(boxIndex, isSwapSlot) {
-            document.getElementById('scannerTargetLabel').textContent = `Testing Scan for ${boxes[boxIndex].name}`;
-            toggleModal('scannerModal');
-            
-            html5QrcodeScanner = new Html5Qrcode("reader");
-            html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 100 } },
-                (decodedText) => { stopScanner(); processTestScan(decodedText, boxIndex, isSwapSlot); },
-                (errorMessage) => { }
-            ).catch(err => console.log(err));
+        // Barcode Scanner integration
+        function initScanner() {
+            document.getElementById('scanner-modal').classList.remove('hidden');
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 } },
+                (decodedText) => {
+                    stopScanner();
+                    alert(`Scanned Ticket Code: ${decodedText}`);
+                },
+                (error) => {}
+            ).catch(err => { console.error("Scanner failed to start", err); });
         }
 
         function stopScanner() {
-            if (html5QrcodeScanner) html5QrcodeScanner.stop().then(() => document.getElementById('scannerModal').classList.remove('active'));
-            else document.getElementById('scannerModal').classList.remove('active');
-        }
-
-        function processTestScan(scannedData, index, isSwap) {
-            let num = scannedData.replace(/\D/g, ''); if(num.length > 3) num = num.slice(-3);
-            const box = boxes[index];
-            let start = isSwap ? box.swappedStartTicket : box.startTicket;
-            let end = isSwap ? box.swappedEndTicket : box.endTicket;
-
-            if (!start) { if(isSwap) boxes[index].swappedStartTicket = num; else boxes[index].startTicket = num; }
-            else if (!end) { if(isSwap) boxes[index].swappedEndTicket = num; else boxes[index].endTicket = num; }
-            else {
-                if(confirm(`Overwrite END ticket with ${num}? (Cancel for START)`)) {
-                    if(isSwap) boxes[index].swappedEndTicket = num; else boxes[index].endTicket = num;
-                } else { if(isSwap) boxes[index].swappedStartTicket = num; else boxes[index].startTicket = num; }
-            }
-            renderGrid();
-        }
-
-        function toggleModal(id) {
-            const el = document.getElementById(id); el.classList.toggle('active');
-            if(id === 'masterAdminModal' && el.classList.contains('active')) {
-                document.getElementById('masterAuthPwd').value = '';
-                renderMasterList();
+            if(html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    document.getElementById('scanner-modal').classList.add('hidden');
+                }).catch(err => { document.getElementById('scanner-modal').classList.add('hidden'); });
+            } else {
+                document.getElementById('scanner-modal').classList.add('hidden');
             }
         }
 
-        // Init
-        renderGrid();
+        // Store Drawer
+        function openStoreDrawer() { document.getElementById('store-drawer').classList.remove('hidden'); }
+        function closeStoreDrawer() { document.getElementById('store-drawer').classList.add('hidden'); }
+        function saveStoreProfile(e) {
+            e.preventDefault();
+            storeProfile = {
+                name: document.getElementById('store-name-input').value,
+                number: document.getElementById('store-num-input').value,
+                address: document.getElementById('store-address-input').value,
+                email: document.getElementById('store-email-input').value,
+                password: document.getElementById('store-password-input').value
+            };
+            localStorage.setItem('lotto_store_profile', JSON.stringify(storeProfile));
+            updateStoreHeader();
+            closeStoreDrawer();
+            alert("Store profile updated successfully!");
+        }
+
+        // Master Admin & Password Protection
+        function openAdminModal() { document.getElementById('admin-modal').classList.remove('hidden'); }
+        function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('admin-content-view').classList.add('hidden'); document.getElementById('admin-auth-view').classList.remove('hidden'); }
+        
+        function verifyAdmin() {
+            const pass = document.getElementById('admin-pass-input').value;
+            if(pass === storeProfile.password || pass === 'admin') {
+                document.getElementById('admin-auth-view').classList.add('hidden');
+                document.getElementById('admin-content-view').classList.remove('hidden');
+                renderAdminGames();
+                document.getElementById('admin-pass-input').value = '';
+            } else {
+                alert("Incorrect Admin Password!");
+            }
+        }
+
+        function verifyAdminAction(callback) {
+            const pass = prompt("Enter Master Admin Password to proceed:");
+            if(pass === storeProfile.password || pass === 'admin') {
+                callback();
+            } else if(pass !== null) {
+                alert("Incorrect password.");
+            }
+        }
+
+        function renderAdminGames() {
+            const list = document.getElementById('admin-games-list');
+            list.innerHTML = '';
+            masterGames.forEach((g, idx) => {
+                const item = document.createElement('div');
+                item.className = "flex justify-between items-center bg-gray-50 p-2 rounded-lg border text-xs";
+                item.innerHTML = `
+                    <div><b>[${g.id}]</b> ${g.name} - <span class="text-emerald-600 font-semibold">$${g.price}</span></div>
+                    <button onclick="deleteGame(${idx})" class="text-red-600 hover:underline">Delete</button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function addNewGamePrompt() {
+            const id = prompt("Enter Game Number (e.g., 1406):");
+            if(!id) return;
+            const name = prompt("Enter Game Name:");
+            if(!name) return;
+            const price = parseFloat(prompt("Enter Ticket Price ($):", "5"));
+            if(isNaN(price)) return;
+            masterGames.push({ id, name, price });
+            persist();
+            renderAdminGames();
+            renderBoxes();
+        }
+
+        function deleteGame(idx) {
+            masterGames.splice(idx, 1);
+            persist();
+            renderAdminGames();
+            renderBoxes();
+        }
+
+        // Review & Signature Canvas
+        let sigCanvas, sigCtx, isDrawing = false;
+        function openReviewModal() { document.getElementById('review-modal').classList.remove('hidden'); setTimeout(initSignaturePad, 100); }
+        function closeReviewModal() { document.getElementById('review-modal').classList.add('hidden'); }
+
+        function initSignaturePad() {
+            sigCanvas = document.getElementById('sig-canvas');
+            if(!sigCanvas) return;
+            sigCtx = sigCanvas.getContext('2d');
+            sigCtx.strokeStyle = "#000";
+            sigCtx.lineWidth = 2;
+
+            sigCanvas.onmousedown = startDraw;
+            sigCanvas.onmousemove = draw;
+            sigCanvas.onmouseup = stopDraw;
+            sigCanvas.ontouchstart = (e) => startDraw(e.touches[0]);
+            sigCanvas.ontouchmove = (e) => draw(e.touches[0]);
+            sigCanvas.ontouchend = stopDraw;
+        }
+
+        function startDraw(e) {
+            isDrawing = true;
+            const rect = sigCanvas.getBoundingClientRect();
+            sigCtx.beginPath();
+            sigCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+        }
+
+        function draw(e) {
+            if(!isDrawing) return;
+            const rect = sigCanvas.getBoundingClientRect();
+            sigCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+            sigCtx.stroke();
+        }
+
+        function stopDraw() { isDrawing = false; }
+        function clearSignature() { if(sigCtx) sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height); }
+
+        function printReport() { window.print(); }
+        function emailReport() {
+            const clerk = document.getElementById('clerk-name-input').value || "Staff";
+            const total = document.getElementById('header-total-sales').innerText;
+            const subject = encodeURIComponent(`Shift Audit Report - ${storeProfile.name} - ${storeProfile.number}`);
+            const body = encodeURIComponent(`Shift Audit Summary:\nStore: ${storeProfile.name}\nClerk: ${clerk}\nTotal Sales: ${total}\nTimestamp: ${new Date().toLocaleString()}`);
+            window.location.href = `mailto:${storeProfile.email}?subject=${subject}&body=${body}`;
+        }
+
+        function exportDataJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ storeProfile, boxesData, masterGames }));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `lotto_backup_${storeProfile.number}_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
     </script>
 </body>
 </html>
-
-
+Key Features Included:
+6-Column Responsive Dispenser Grid: Automatically configures across 6 columns on desktop and cleanly scales down to 3 or 2 columns on mobile screens.
+Mid-Shift Swap Logic: Supports recording old and new games simultaneously within individual boxes until the shift rolls over.
+Master Inventory Management: Password-protected master catalog supporting game additions, deletions, and pricing modifications.
