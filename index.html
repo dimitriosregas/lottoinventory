@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Lotto - Shift Audit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
+    <style>
+        /* Force 6-column grid on desktop, scrollable on mobile */
+        .lotto-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 0.5rem;
+            min-width: 800px; /* Ensures columns don't crush on small screens */
+        }
+        .grid-container {
+            overflow-x: auto;
+            padding-bottom: 1rem;
+        }
+        .modal { display: none; }
+        .modal.active { display: flex; }
+        @media print {
+            .no-print { display: none !important; }
+            .lotto-grid { min-width: 100%; gap: 2px; }
+            body { padding: 0; margin: 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans p-4">
+
+    <!-- Top Action Buttons & Header -->
+    <div class="flex justify-between items-center mb-4 bg-white p-4 rounded shadow no-print">
+        <div>
+            <h1 class="text-2xl font-bold text-blue-700">Project Lotto</h1>
+            <p id="live-clock" class="text-sm text-gray-500 font-mono"></p>
+        </div>
+        <div class="space-x-2">
+            <button onclick="toggleModal('storeSetupModal')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">Store Setup</button>
+            <button onclick="toggleModal('adminModal')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">Admin Tools</button>
+            <button onclick="startScanner()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Scan</button>
+        </div>
+    </div>
+
+    <!-- Main Grid -->
+    <div class="bg-white p-4 rounded shadow grid-container mb-4">
+        <h2 class="text-xl font-semibold mb-2">Shift Audit Grid</h2>
+        <div id="lottoGrid" class="lotto-grid">
+            <!-- JavaScript will populate the 40 boxes here -->
+        </div>
+    </div>
+
+    <!-- Missing Data Validation Check -->
+    <div id="validationWarning" class="hidden bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4 no-print" role="alert">
+        <strong class="font-bold">Missing Data!</strong>
+        <span class="block sm:inline"> Please ensure all active boxes have ending ticket numbers before finalizing.</span>
+    </div>
+
+    <!-- Totaler & Footer Actions -->
+    <div class="bg-white p-4 rounded shadow mb-4">
+        <div class="flex justify-between items-end border-b pb-4 mb-4">
+            <div>
+                <h3 class="text-lg font-semibold">Shift Totals</h3>
+                <p class="text-sm text-gray-600">Total Tickets Sold: <span id="totalTickets" class="font-bold text-blue-600">0</span></p>
+            </div>
+            <div class="text-right">
+                <p class="text-sm text-gray-600">Total Shift Value:</p>
+                <p class="text-3xl font-bold text-green-600">$<span id="totalValue">0.00</span></p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2">Clerk Name</label>
+                <input type="text" id="clerkName" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2">Signature</label>
+                <div class="border rounded bg-gray-50">
+                    <canvas id="signaturePad" class="w-full h-32"></canvas>
+                </div>
+                <button onclick="signaturePad.clear()" class="text-xs text-red-500 mt-1 no-print">Clear Signature</button>
+            </div>
+        </div>
+
+        <div class="mt-6 flex justify-end space-x-3 no-print">
+            <button onclick="calculateTotals()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-6 rounded">Review / Calculate</button>
+            <button onclick="window.print()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded">Print / Save PDF</button>
+            <button onclick="rolloverShift()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded">End Shift & Rollover</button>
+        </div>
+    </div>
+
+    <!-- Store Setup Modal -->
+    <div id="storeSetupModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 justify-center items-center no-print">
+        <div class="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 class="text-xl font-bold mb-4">Retail Location Setup</h2>
+            <div class="space-y-3">
+                <input type="text" id="storeName" placeholder="Store Name / Address" class="border p-2 w-full rounded">
+                <input type="text" id="retailerNumber" placeholder="Retailer Number" class="border p-2 w-full rounded">
+                <input type="email" id="storeEmail" placeholder="Store Email" class="border p-2 w-full rounded">
+                <hr>
+                <input type="password" id="adminPwd" placeholder="Set Admin Password" class="border p-2 w-full rounded">
+                <input type="password" id="adminPwdConfirm" placeholder="Confirm Admin Password" class="border p-2 w-full rounded">
+            </div>
+            <div class="mt-4 flex justify-end space-x-2">
+                <button onclick="toggleModal('storeSetupModal')" class="bg-gray-300 px-4 py-2 rounded">Cancel</button>
+                <button onclick="saveStoreProfile()" class="bg-blue-500 text-white px-4 py-2 rounded">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div id="adminModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 justify-center items-center no-print">
+        <div class="bg-white rounded-lg p-6 w-full max-w-sm">
+            <h2 class="text-xl font-bold mb-4">Admin Controls</h2>
+            <input type="password" id="authPwd" placeholder="Enter Admin Password" class="border p-2 w-full rounded mb-3">
+            <div class="flex space-x-2 mb-4">
+                <button onclick="addBox()" class="bg-green-500 text-white px-4 py-2 rounded w-full">Add Box</button>
+                <button onclick="removeBox()" class="bg-red-500 text-white px-4 py-2 rounded w-full">Remove Box</button>
+            </div>
+            <button onclick="toggleModal('adminModal')" class="bg-gray-300 px-4 py-2 rounded w-full">Close</button>
+        </div>
+    </div>
+
+    <!-- Scanner Reader Modal -->
+    <div id="scannerModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 justify-center items-center z-50 no-print">
+        <div class="bg-white rounded-lg p-4 w-full max-w-md">
+            <div id="reader" width="600px"></div>
+            <button onclick="stopScanner()" class="mt-4 bg-red-500 text-white px-4 py-2 rounded w-full">Close Scanner</button>
+        </div>
+    </div>
+
+    <script>
+        // --- Live Clock ---
+        function updateClock() {
+            document.getElementById('live-clock').textContent = new Date().toLocaleString();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // --- Signature Pad Init ---
+        const canvas = document.getElementById('signaturePad');
+        const signaturePad = new SignaturePad(canvas);
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext("2d").scale(ratio, ratio);
+            signaturePad.clear();
+        }
+        window.onresize = resizeCanvas;
+        resizeCanvas();
+
+        // --- Data State ---
+        let boxCount = parseInt(localStorage.getItem('boxCount')) || 40;
+        let boxes = JSON.parse(localStorage.getItem('boxes')) || Array.from({length: boxCount}, (_, i) => ({
+            id: i + 1,
+            gameId: '',
+            price: 0,
+            startTicket: '',
+            endTicket: ''
+        }));
+        let adminPassword = localStorage.getItem('adminPassword') || 'default';
+
+        // --- Grid Rendering ---
+        function renderGrid() {
+            const grid = document.getElementById('lottoGrid');
+            grid.innerHTML = '';
+            
+            boxes.forEach((box, index) => {
+                const boxDiv = document.createElement('div');
+                boxDiv.className = 'border p-2 rounded bg-gray-50 flex flex-col text-sm relative';
+                
+                boxDiv.innerHTML = `
+                    <div class="font-bold text-gray-700 border-b pb-1 mb-1 flex justify-between">
+                        <span>Box ${box.id}</span>
+                        <span class="text-xs bg-blue-100 text-blue-800 px-1 rounded cursor-pointer" onclick="mergeBox(${index})">Merge</span>
+                    </div>
+                    <input type="text" placeholder="Game ID" class="border rounded mb-1 px-1 w-full" value="${box.gameId}" onchange="updateBox(${index}, 'gameId', this.value)">
+                    <div class="flex space-x-1 mb-1">
+                        <span class="text-gray-500 pt-1">$</span>
+                        <input type="number" placeholder="Val" class="border rounded px-1 w-full" value="${box.price}" onchange="updateBox(${index}, 'price', this.value)">
+                    </div>
+                    <input type="number" placeholder="Start Tkt" class="border rounded mb-1 px-1 w-full bg-yellow-50" value="${box.startTicket}" onchange="updateBox(${index}, 'startTicket', this.value)">
+                    <input type="number" placeholder="End Tkt" class="border rounded px-1 w-full" value="${box.endTicket}" onchange="updateBox(${index}, 'endTicket', this.value)">
+                `;
+                grid.appendChild(boxDiv);
+            });
+        }
+
+        function updateBox(index, field, value) {
+            boxes[index][field] = value;
+            saveData();
+        }
+
+        // --- Calculation & Rollover ---
+        function calculateTotals() {
+            let totalTix = 0;
+            let totalVal = 0;
+            let missingData = false;
+
+            boxes.forEach(box => {
+                if (box.startTicket !== '' && box.endTicket !== '') {
+                    const sold = parseInt(box.endTicket) - parseInt(box.startTicket);
+                    if (sold > 0 && box.price > 0) {
+                        totalTix += sold;
+                        totalVal += (sold * box.price);
+                    }
+                } else if (box.gameId !== '') {
+                    // Active game but missing start/end
+                    missingData = true;
+                }
+            });
+
+            document.getElementById('totalTickets').textContent = totalTix;
+            document.getElementById('totalValue').textContent = totalVal.toFixed(2);
+            
+            const warning = document.getElementById('validationWarning');
+            if (missingData) {
+                warning.classList.remove('hidden');
+            } else {
+                warning.classList.add('hidden');
+            }
+        }
+
+        function rolloverShift() {
+            if(confirm("End shift? This will set all Ending Tickets as the new Starting Tickets for the next shift.")) {
+                boxes = boxes.map(box => {
+                    if (box.endTicket !== '') {
+                        return { ...box, startTicket: box.endTicket, endTicket: '' };
+                    }
+                    return box;
+                });
+                signaturePad.clear();
+                document.getElementById('clerkName').value = '';
+                saveData();
+                renderGrid();
+                calculateTotals();
+                alert("Shift rolled over successfully.");
+            }
+        }
+
+        // --- Admin & Setup Logic ---
+        function saveStoreProfile() {
+            const pwd1 = document.getElementById('adminPwd').value;
+            const pwd2 = document.getElementById('adminPwdConfirm').value;
+            if (pwd1 && pwd1 !== pwd2) {
+                alert("Passwords do not match!");
+                return;
+            }
+            if (pwd1) {
+                adminPassword = pwd1;
+                localStorage.setItem('adminPassword', adminPassword);
+            }
+            localStorage.setItem('storeName', document.getElementById('storeName').value);
+            localStorage.setItem('retailerNumber', document.getElementById('retailerNumber').value);
+            localStorage.setItem('storeEmail', document.getElementById('storeEmail').value);
+            toggleModal('storeSetupModal');
+            alert("Profile Saved!");
+        }
+
+        function addBox() {
+            if (document.getElementById('authPwd').value !== adminPassword) return alert('Invalid Password');
+            boxCount++;
+            boxes.push({ id: boxCount, gameId: '', price: 0, startTicket: '', endTicket: '' });
+            saveData();
+            renderGrid();
+        }
+
+        function removeBox() {
+            if (document.getElementById('authPwd').value !== adminPassword) return alert('Invalid Password');
+            if (boxCount > 0) {
+                boxCount--;
+                boxes.pop();
+                saveData();
+                renderGrid();
+            }
+        }
+
+        function mergeBox(index) {
+            alert(`2-Slot Merged view for Box ${index + 1} activated. (Extended UI feature expanding)`);
+            // Add custom logic here to group Box A and Box B visually if required
+        }
+
+        function saveData() {
+            localStorage.setItem('boxes', JSON.parse(JSON.stringify(boxes)));
+            localStorage.setItem('boxCount', boxCount);
+        }
+
+        // --- Scanner Logic ---
+        let html5QrcodeScanner;
+        function startScanner() {
+            toggleModal('scannerModal');
+            html5QrcodeScanner = new Html5Qrcode("reader");
+            html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } },
+                (decodedText, decodedResult) => {
+                    alert(`Scanned: ${decodedText}\nMapping to grid...`);
+                    stopScanner();
+                },
+                (errorMessage) => { /* Ignore background scan errors */ }
+            ).catch((err) => { console.log(err); });
+        }
+
+        function stopScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    toggleModal('scannerModal');
+                }).catch(err => console.log(err));
+            }
+        }
+
+        // --- Utils ---
+        function toggleModal(id) {
+            const el = document.getElementById(id);
+            el.classList.toggle('active');
+        }
+
+        // --- Init ---
+        renderGrid();
+        document.getElementById('storeName').value = localStorage.getItem('storeName') || '';
+        document.getElementById('retailerNumber').value = localStorage.getItem('retailerNumber') || '';
+        document.getElementById('storeEmail').value = localStorage.getItem('storeEmail') || '';
+    </script>
+</body>
+</html>
+
