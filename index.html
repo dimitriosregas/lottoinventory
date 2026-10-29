@@ -1,9 +1,15 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project Lotto - Shift Audit & Inventory</title>
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="./lottoinv.webmanifest">
+    <link rel="icon" href="./lotto-icon-192.png" type="image/png">
+    <link rel="apple-touch-icon" href="./lotto-icon-192.png">
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- HTML5 QR Code Scanner CDN -->
@@ -15,6 +21,13 @@
         }
         @media (max-width: 640px) {
             .box-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media print {
+            body * { visibility: hidden !important; }
+            #review-modal, #review-modal * { visibility: visible !important; }
+            #review-modal { display: block !important; position: absolute !important; inset: 0 !important; background: white !important; padding: 0 !important; overflow: visible !important; }
+            #review-modal > div { max-width: none !important; max-height: none !important; overflow: visible !important; box-shadow: none !important; }
+            .no-print { display: none !important; }
         }
     </style>
 </head>
@@ -28,6 +41,7 @@
         </div>
         <div class="flex items-center space-x-2">
             <span id="live-datetime" class="text-xs text-slate-300 hidden sm:inline"></span>
+            <button id="install-app" class="hidden bg-emerald-600 hover:bg-emerald-500 text-xs px-3 py-2 rounded font-medium transition">Install App</button>
             <button onclick="openStoreDrawer()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-2 rounded font-medium border border-slate-700 transition">Store Setup</button>
             <button onclick="openAdminModal()" class="bg-amber-600 hover:bg-amber-500 text-xs px-3 py-2 rounded font-medium transition">Master Admin</button>
         </div>
@@ -62,7 +76,7 @@
                     <button onclick="stopScanner()" class="text-gray-400 hover:text-gray-600 font-bold text-xl">&times;</button>
                 </div>
                 <div id="reader" class="w-full rounded-lg overflow-hidden bg-black aspect-square"></div>
-                <p class="text-xs text-gray-500 mt-3 text-center">Position the barcode inside the frame to automatically log ticket details.</p>
+                <p id="scanner-status" class="text-xs text-gray-600 mt-3 text-center" role="status" aria-live="polite">Allow camera access and place the ticket barcode inside the horizontal frame.</p>
             </div>
         </div>
 
@@ -90,30 +104,38 @@
                     <button onclick="closeStoreDrawer()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
                 </div>
                 <form id="store-form" class="space-y-4" onsubmit="saveStoreProfile(event)">
+                    <button id="store-edit-button" type="button" onclick="enableStoreEditing()" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 py-2 rounded-lg text-sm font-semibold border border-blue-200">Edit Store Details</button>
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Retailer / Store Name</label>
-                        <input type="text" id="store-name-input" class="w-full border rounded-lg p-2 text-sm border-gray-300" required>
+                        <input type="text" id="store-name-input" class="w-full border rounded-lg p-2 text-sm border-gray-300 disabled:bg-gray-100 disabled:text-gray-600" required disabled>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Retailer / Store Number</label>
-                        <input type="text" id="store-num-input" class="w-full border rounded-lg p-2 text-sm border-gray-300" required>
+                        <input type="text" id="store-num-input" class="w-full border rounded-lg p-2 text-sm border-gray-300 disabled:bg-gray-100 disabled:text-gray-600" required disabled>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Street Address</label>
-                        <input type="text" id="store-address-input" class="w-full border rounded-lg p-2 text-sm border-gray-300" required>
+                        <input type="text" id="store-address-input" class="w-full border rounded-lg p-2 text-sm border-gray-300 disabled:bg-gray-100 disabled:text-gray-600" required disabled>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Manager Report Email</label>
-                        <input type="email" id="store-email-input" class="w-full border rounded-lg p-2 text-sm border-gray-300" required>
+                        <input type="email" id="store-email-input" class="w-full border rounded-lg p-2 text-sm border-gray-300 disabled:bg-gray-100 disabled:text-gray-600" required disabled>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Double-Entry / Sign-off Password</label>
-                        <input type="password" id="store-password-input" class="w-full border rounded-lg p-2 text-sm border-gray-300" required>
+                        <input type="password" id="store-password-input" class="w-full border rounded-lg p-2 text-sm border-gray-300 disabled:bg-gray-100 disabled:text-gray-600" required disabled>
                     </div>
-                    <button type="submit" class="w-full bg-slate-900 text-white py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition">Save Profile Config</button>
+                    <div id="store-edit-actions" class="hidden flex gap-2">
+                        <button type="button" onclick="cancelStoreEditing()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-semibold border">Cancel</button>
+                        <button type="submit" class="flex-1 bg-slate-900 text-white py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition">Save Changes</button>
+                    </div>
                 </form>
             </div>
             <div class="pt-6 border-t border-gray-200">
+                <div class="mb-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
+                    <p id="box-setup-status" class="mb-2 text-xs text-blue-900"></p>
+                    <button id="complete-box-setup" type="button" onclick="completeBoxSetup()" class="w-full bg-blue-700 hover:bg-blue-800 text-white py-2 rounded-lg text-xs font-semibold">Complete Store Setup</button>
+                </div>
                 <button onclick="exportDataJSON()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 py-2 rounded-lg text-xs font-medium border mb-2">Export Local Database Backup</button>
             </div>
         </div>
@@ -134,9 +156,37 @@
             <div id="admin-content-view" class="hidden flex-1 overflow-y-auto py-4 space-y-4">
                 <div class="flex justify-between items-center">
                     <h4 class="text-xs font-bold text-gray-500 uppercase">Configured Games Catalog</h4>
-                    <button onclick="addNewGamePrompt()" class="bg-blue-600 text-white text-xs px-3 py-1.5 rounded font-medium">+ Add New Game</button>
+                </div>
+                <div class="space-y-2 border-b pb-4">
+                    <label for="game-number-lookup" class="block text-xs font-semibold text-gray-600">Find or Add by Game Number</label>
+                    <div class="flex gap-2">
+                        <input id="game-number-lookup" type="text" inputmode="numeric" class="min-w-0 flex-1 border rounded-lg p-2 text-sm border-gray-300" placeholder="Enter game number">
+                        <button type="button" onclick="lookupGameNumber()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold">Find</button>
+                    </div>
+                    <p id="game-number-status" class="text-xs text-gray-600" role="status" aria-live="polite"></p>
+                    <form id="game-number-editor" class="hidden grid grid-cols-2 gap-2" onsubmit="saveGameFromLookup(event)">
+                        <div>
+                            <label for="game-editor-id" class="block text-[10px] font-semibold text-gray-500">Game Number</label>
+                            <input id="game-editor-id" type="text" readonly required class="w-full border rounded p-2 text-sm bg-gray-100 border-gray-300">
+                        </div>
+                        <div>
+                            <label for="game-editor-price" class="block text-[10px] font-semibold text-gray-500">Ticket Price</label>
+                            <input id="game-editor-price" type="number" min="0" step="0.01" required class="w-full border rounded p-2 text-sm border-gray-300">
+                        </div>
+                        <div class="col-span-2">
+                            <label for="game-editor-name" class="block text-[10px] font-semibold text-gray-500">Game Name</label>
+                            <input id="game-editor-name" type="text" required class="w-full border rounded p-2 text-sm border-gray-300">
+                        </div>
+                        <button id="game-editor-submit" type="submit" class="col-span-2 bg-slate-900 hover:bg-slate-800 text-white py-2 rounded-lg text-sm font-semibold">Add Game</button>
+                    </form>
                 </div>
                 <div id="admin-games-list" class="space-y-2"></div>
+                <section class="border-t pt-4 space-y-3">
+                    <h4 class="text-xs font-bold text-gray-500 uppercase">Previous Day and Shift Records</h4>
+                    <label for="archived-shift-select" class="block text-xs font-semibold text-gray-600">Select a signed-off shift</label>
+                    <select id="archived-shift-select" onchange="renderArchivedShift(this.value)" class="w-full border rounded-lg p-2 text-sm border-gray-300 bg-white"></select>
+                    <div id="archived-shift-details" class="space-y-3"></div>
+                </section>
             </div>
         </div>
     </div>
@@ -146,7 +196,7 @@
         <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl max-h-[95vh] flex flex-col overflow-y-auto">
             <div class="flex justify-between items-center pb-4 border-b">
                 <h3 class="text-lg font-bold">Shift Financial Reconciliation</h3>
-                <button onclick="closeReviewModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+                <button onclick="closeReviewModal()" class="no-print text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
             </div>
             <div class="py-4 space-y-4 flex-1">
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
@@ -164,9 +214,11 @@
                     </div>
                     <div>
                         <div class="text-xs text-gray-500">Active Shift</div>
-                        <div class="text-sm font-semibold text-blue-600">Shift 1 / Open</div>
+                        <div id="active-shift-label" class="text-sm font-semibold text-blue-600">Shift A / Open</div>
                     </div>
                 </div>
+
+                <div id="report-box-breakdown" class="overflow-x-auto"></div>
 
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 mb-1">Clerk / Employee Name</label>
@@ -179,14 +231,15 @@
                         <canvas id="sig-canvas" width="600" height="150" class="w-full cursor-crosshair"></canvas>
                     </div>
                     <div class="flex justify-between items-center mt-1">
-                        <button onclick="clearSignature()" class="text-xs text-red-600 hover:underline">Clear Signature</button>
-                        <span class="text-[10px] text-gray-400">Sign above using finger or mouse</span>
+                        <button onclick="clearSignature()" class="no-print text-xs text-red-600 hover:underline">Clear Signature</button>
+                        <span class="no-print text-[10px] text-gray-400">Sign above using finger or mouse</span>
                     </div>
                 </div>
 
                 <div class="pt-4 border-t border-gray-200 flex flex-wrap gap-2 justify-end">
-                    <button onclick="printReport()" class="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Print Report</button>
-                    <button onclick="emailReport()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Email Management</button>
+                    <button onclick="printReport()" class="no-print bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Print Report</button>
+                    <button onclick="emailReport()" class="no-print bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Email Management</button>
+                    <button id="shift-signoff-button" onclick="confirmShiftEnd()" class="no-print bg-emerald-700 hover:bg-emerald-800 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">Confirm Shift End &amp; Start Shift B</button>
                 </div>
             </div>
         </div>
@@ -238,6 +291,15 @@
             { id: '1372', name: '$5 Collectable Jumbo', price: 5 },
             { id: '1374', name: '$10 Cash Games', price: 10 }
         ];
+        const catalogByGameNumber = new Map();
+        masterGames.forEach(game => {
+            const id = String(game.id).trim();
+            if (id && !catalogByGameNumber.has(id)) catalogByGameNumber.set(id, { ...game, id });
+        });
+        if (catalogByGameNumber.size !== masterGames.length) {
+            masterGames = Array.from(catalogByGameNumber.values());
+            localStorage.setItem('lotto_master_games', JSON.stringify(masterGames));
+        }
 
         // Store Profile State
         let storeProfile = JSON.parse(localStorage.getItem('lotto_store_profile')) || {
@@ -260,12 +322,32 @@
             oldEnd: '',
             mergedWithNext: false
         }));
+        const uniqueGamesById = new Map();
+        masterGames.forEach(game => {
+            const id = String(game.id).trim();
+            if (id && !uniqueGamesById.has(id)) uniqueGamesById.set(id, { ...game, id });
+        });
+        if (uniqueGamesById.size !== masterGames.length) {
+            masterGames = Array.from(uniqueGamesById.values());
+            localStorage.setItem('lotto_master_games', JSON.stringify(masterGames));
+        }
+        let boxSetupComplete = localStorage.getItem('lotto_box_setup_complete') === 'true';
+        let shiftState = JSON.parse(localStorage.getItem('lotto_shift_state')) || {
+            date: getLocalDateKey(),
+            name: 'A',
+            status: 'open',
+            startedAt: new Date().toISOString()
+        };
+        let shiftHistory = JSON.parse(localStorage.getItem('lotto_shift_history')) || [];
 
         let html5QrCode = null;
+        let hasSignature = false;
 
         // Initialization on Load
         window.addEventListener('DOMContentLoaded', () => {
             updateStoreHeader();
+            updateBoxSetupStatus();
+            updateShiftStatus();
             renderBoxes();
             updateLiveDateTime();
             setInterval(updateLiveDateTime, 1000);
@@ -283,43 +365,96 @@
 
         function updateLiveDateTime() {
             const now = new Date();
+            if (rolloverClosedShiftIfNeeded(now)) renderBoxes();
             document.getElementById('live-datetime').innerText = now.toLocaleString();
+        }
+
+        function getLocalDateKey(date = new Date()) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function updateShiftStatus() {
+            const label = document.getElementById('active-shift-label');
+            const button = document.getElementById('shift-signoff-button');
+            if (!label || !button) return;
+            label.innerText = `Shift ${shiftState.name} / ${shiftState.status === 'open' ? 'Open' : 'Closed'}`;
+            button.disabled = shiftState.status !== 'open';
+            button.classList.toggle('opacity-50', button.disabled);
+            button.classList.toggle('cursor-not-allowed', button.disabled);
+            button.innerText = shiftState.status !== 'open'
+                ? 'Shift B Signed Off'
+                : shiftState.name === 'A'
+                    ? 'Confirm Shift End & Start Shift B'
+                    : 'Confirm Shift B End';
+        }
+
+        function rolloverClosedShiftIfNeeded(now) {
+            const today = getLocalDateKey(now);
+            if (shiftState.status !== 'closed' || shiftState.date === today) return false;
+
+            boxesData = boxesData.map(box => ({
+                ...box,
+                startTicket: box.gameId ? (box.endTicket || box.startTicket) : box.startTicket,
+                endTicket: box.gameId ? '' : box.endTicket,
+                oldGame: null,
+                oldStart: '',
+                oldEnd: ''
+            }));
+            shiftState = { date: today, name: 'A', status: 'open', startedAt: now.toISOString() };
+            localStorage.setItem('lotto_shift_state', JSON.stringify(shiftState));
+            persist();
+            updateShiftStatus();
+            return true;
         }
 
         // Render 6-Column Grid of Boxes
         function renderBoxes() {
             const grid = document.getElementById('dispenser-grid');
             grid.innerHTML = '';
-            
-            boxesData.forEach((box, index) => {
-                const gameOptions = masterGames.map(g => `<option value="${g.id}" ${box.gameId === g.id ? 'selected' : ''}>[${g.id}] ${g.name} ($${g.price})</option>`).join('');
-                const oldGameOptions = masterGames.map(g => `<option value="${g.id}" ${box.oldGame === g.id ? 'selected' : ''}>[${g.id}] ${g.name} ($${g.price})</option>`).join('');
 
-                const card = document.createElement('div');
-                card.className = `bg-white p-3 rounded-xl border shadow-sm flex flex-col gap-2 ${box.mergedWithNext ? 'col-span-2 border-blue-400 bg-blue-50/20' : 'border-gray-200'}`;
-                
-                card.innerHTML = `
+            for (let index = 0; index < boxesData.length; index++) {
+                if (boxesData[index].mergedWithNext && boxesData[index + 1]) {
+                    const group = document.createElement('div');
+                    group.className = 'col-span-2 grid grid-cols-2 gap-2 rounded-lg border border-blue-300 bg-blue-50/40 p-2';
+                    group.setAttribute('aria-label', `Grouped boxes ${boxesData[index].label} and ${boxesData[index + 1].label}`);
+                    group.appendChild(createBoxCard(index));
+                    group.appendChild(createBoxCard(index + 1));
+                    grid.appendChild(group);
+                    index++;
+                } else {
+                    grid.appendChild(createBoxCard(index));
+                }
+            }
+            calculateTotals();
+        }
+
+        function createBoxCard(index) {
+            const box = boxesData[index];
+            const groupedWithPrevious = index > 0 && boxesData[index - 1].mergedWithNext;
+            const card = document.createElement('div');
+            card.className = 'min-w-0 bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex flex-col gap-2';
+
+            card.innerHTML = `
                     <div class="flex justify-between items-center">
-                        <input type="text" value="${box.label}" onchange="updateBoxLabel(${index}, this.value)" class="font-bold text-xs bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 outline-none w-24">
+                        <input type="text" value="${box.label}" aria-label="Box ${index + 1} label" onchange="updateBoxLabel(${index}, this.value)" class="font-bold text-xs bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 outline-none min-w-0 w-24">
                         <div class="flex items-center gap-1">
-                            <button onclick="toggleMerge(${index})" title="Merge with Next Box" class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 font-mono">&</button>
-                            <button onclick="clearBox(${index})" class="text-gray-400 hover:text-red-600 text-xs font-bold">&times;</button>
+                            <button onclick="toggleMerge(${index})" title="${box.mergedWithNext ? 'Ungroup from next box' : 'Group with next box'}" aria-label="${box.mergedWithNext ? 'Ungroup from next box' : 'Group with next box'}" ${groupedWithPrevious || index === boxesData.length - 1 ? 'disabled' : ''} class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 font-mono disabled:opacity-40 disabled:cursor-not-allowed">&</button>
+                            <button onclick="deleteBox(${index})" title="Delete ${box.label}" aria-label="Delete ${box.label}" class="text-gray-400 hover:text-red-600 text-xs font-bold">&times;</button>
                         </div>
                     </div>
                     <div>
-                        <label class="text-[10px] text-gray-500 font-semibold block">Active Game</label>
-                        <select onchange="updateBoxGame(${index}, this.value)" class="w-full text-xs border rounded p-1 bg-gray-50 border-gray-300">
-                            <option value="">-- Select Game --</option>
-                            ${gameOptions}
-                        </select>
+                        <label for="game-id-${index}" class="text-[10px] text-gray-500 font-semibold block">Active Game Number</label>
+                        <input id="game-id-${index}" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" value="${box.gameId || ''}" placeholder="e.g. 1858" onchange="updateBoxGame(${index}, this.value)" class="w-full text-xs border rounded p-1 bg-gray-50 border-gray-300">
+                        <span class="text-[10px] text-gray-500">${getGameDescription(box.gameId)}</span>
                     </div>
                     ${box.oldGame ? `
                     <div class="bg-amber-50 p-1.5 rounded border border-amber-200 text-[10px] space-y-1">
                         <span class="font-bold text-amber-800">Mid-Shift Swapped Old Game:</span>
-                        <select onchange="updateOldGame(${index}, this.value)" class="w-full text-[10px] border rounded p-0.5 bg-white border-amber-300">
-                            <option value="">-- Select Old Game --</option>
-                            ${oldGameOptions}
-                        </select>
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" value="${box.oldGame || ''}" aria-label="Old game number for ${box.label}" placeholder="Old game number" onchange="updateOldGame(${index}, this.value)" class="w-full text-[10px] border rounded p-0.5 bg-white border-amber-300">
+                        <span class="text-[10px] text-amber-800">${getGameDescription(box.oldGame)}</span>
                         <div class="flex gap-1">
                             <input type="text" placeholder="Old Start" value="${box.oldStart}" onchange="updateBoxData(${index}, 'oldStart', this.value)" class="w-1/2 border rounded p-0.5 text-center bg-white">
                             <input type="text" placeholder="Old End" value="${box.oldEnd}" onchange="updateBoxData(${index}, 'oldEnd', this.value)" class="w-1/2 border rounded p-0.5 text-center bg-white">
@@ -337,37 +472,84 @@
                         </div>
                     </div>
                     <div class="flex justify-between items-center pt-1">
-                        <button onclick="triggerMidShiftSwap(${index})" class="text-[10px] text-blue-600 hover:underline">+ Mid-Shift Swap</button>
+                        <button onclick="triggerMidShiftSwap(${index})" class="text-[10px] text-blue-600 hover:underline">+ New Game</button>
                         <span id="box-subtotal-${index}" class="text-[10px] font-bold text-emerald-600">$0.00</span>
                     </div>
                 `;
-                grid.appendChild(card);
-            });
-            calculateTotals();
+            return card;
         }
 
-        function updateBoxLabel(index, val) { boxesData[index].label = val; persist(); }
-        function updateBoxGame(index, val) { boxesData[index].gameId = val; persist(); }
-        function updateOldGame(index, val) { boxesData[index].oldGame = val; persist(); }
+        function getGameDescription(gameId) {
+            if (!gameId) return 'Enter a game number from the master catalog.';
+            const game = masterGames.find(item => String(item.id) === String(gameId));
+            return game ? `${game.name} · $${game.price} per ticket` : 'Game number not in the master catalog.';
+        }
+
+        function updateBoxLabel(index, val) {
+            const saveLabel = () => {
+                boxesData[index].label = val.trim() || `Box ${index + 1}`;
+                persist();
+            };
+            if (boxSetupComplete) {
+                verifyAdminAction(saveLabel);
+                renderBoxes();
+            } else {
+                saveLabel();
+            }
+        }
+        function updateBoxGame(index, val) { updateGameNumber(index, 'gameId', val); }
+        function updateOldGame(index, val) { updateGameNumber(index, 'oldGame', val); }
+
+        function updateGameNumber(index, field, value) {
+            const gameId = value.trim();
+            if (gameId && !masterGames.some(game => String(game.id) === gameId)) {
+                alert(`Game number ${gameId} is not in the master catalog. Add it under Master Admin first.`);
+                renderBoxes();
+                return;
+            }
+            boxesData[index][field] = gameId;
+            persist();
+            renderBoxes();
+        }
         function updateBoxData(index, field, val) { boxesData[index][field] = val; persist(); calculateTotals(); }
-        
-        function clearBox(index) {
+       
+        function deleteBox(index) {
+            if (boxesData.length <= 1) {
+                alert('At least one box must remain.');
+                return;
+            }
+            if (!confirm(`Delete ${boxesData[index].label}? This removes its saved game and ticket data.`)) return;
+
             verifyAdminAction(() => {
-                boxesData[index] = { ...boxesData[index], gameId: '', startTicket: '', endTicket: '', oldGame: null, oldStart: '', oldEnd: '' };
+                boxesData.splice(index, 1);
+                if (index > 0 && boxesData[index - 1].mergedWithNext) {
+                    boxesData[index - 1].mergedWithNext = false;
+                }
                 persist();
                 renderBoxes();
             });
         }
 
         function toggleMerge(index) {
-            boxesData[index].mergedWithNext = !boxesData[index].mergedWithNext;
-            persist();
-            renderBoxes();
+            const box = boxesData[index];
+            if (!box.mergedWithNext && (index === boxesData.length - 1 || (index > 0 && boxesData[index - 1].mergedWithNext) || (boxesData[index + 1] && boxesData[index + 1].mergedWithNext))) {
+                alert('A box can only belong to one adjacent pair. Ungroup the neighboring pair first.');
+                return;
+            }
+
+            const saveGrouping = () => {
+                box.mergedWithNext = !box.mergedWithNext;
+                persist();
+                renderBoxes();
+            };
+            if (boxSetupComplete) verifyAdminAction(saveGrouping);
+            else saveGrouping();
         }
 
         function triggerMidShiftSwap(index) {
             const current = boxesData[index];
             if(!current.gameId) { alert("Please select current active game first."); return; }
+            if(current.oldGame) { alert("Only two games per box can be included in one shift."); return; }
             current.oldGame = current.gameId;
             current.oldStart = current.startTicket;
             current.oldEnd = current.endTicket;
@@ -380,7 +562,8 @@
 
         function addBox() {
             verifyAdminAction(() => {
-                boxesData.push({ id: boxesData.length + 1, label: `Box ${boxesData.length + 1}`, gameId: '', startTicket: '', endTicket: '', oldGame: null, oldStart: '', oldEnd: '', mergedWithNext: false });
+                const nextId = Math.max(0, ...boxesData.map(box => Number(box.id) || 0)) + 1;
+                boxesData.push({ id: nextId, label: `Box ${nextId}`, gameId: '', startTicket: '', endTicket: '', oldGame: null, oldStart: '', oldEnd: '', mergedWithNext: false });
                 persist();
                 renderBoxes();
             });
@@ -417,12 +600,16 @@
             });
             document.getElementById('header-total-sales').innerText = `$${totalSales.toFixed(2)}`;
             document.getElementById('rev-total-sales').innerText = `$${totalSales.toFixed(2)}`;
-            calculateVariance();
+            updateVariance(totalSales);
             return totalSales;
         }
 
         function calculateVariance() {
             const totalSales = calculateTotals();
+            updateVariance(totalSales);
+        }
+
+        function updateVariance(totalSales) {
             const posVal = parseFloat(document.getElementById('pos-meter-input').value) || 0;
             const variance = posVal - totalSales;
             const varElem = document.getElementById('rev-variance');
@@ -451,32 +638,119 @@
 
         // Barcode Scanner integration
         function initScanner() {
-            document.getElementById('scanner-modal').classList.remove('hidden');
-            html5QrCode = new Html5Qrcode("reader");
+            const modal = document.getElementById('scanner-modal');
+            const status = document.getElementById('scanner-status');
+            modal.classList.remove('hidden');
+
+            if (!window.isSecureContext) {
+                status.innerText = 'Camera access requires HTTPS. Open the hosted HTTPS app on your phone.';
+                return;
+            }
+            if (typeof Html5Qrcode === 'undefined' || typeof Html5QrcodeSupportedFormats === 'undefined') {
+                status.innerText = 'The scanner library did not load. Check your internet connection and reload.';
+                return;
+            }
+            if (html5QrCode) return;
+
+            status.innerText = 'Starting camera...';
+            const barcodeFormats = [
+                Html5QrcodeSupportedFormats.QR_CODE,
+                Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39,
+                Html5QrcodeSupportedFormats.CODE_93,
+                Html5QrcodeSupportedFormats.EAN_13,
+                Html5QrcodeSupportedFormats.EAN_8,
+                Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.UPC_E,
+                Html5QrcodeSupportedFormats.ITF,
+                Html5QrcodeSupportedFormats.CODABAR
+            ];
+            html5QrCode = new Html5Qrcode('reader', { formatsToSupport: barcodeFormats });
             html5QrCode.start(
                 { facingMode: "environment" },
-                { fps: 10, qrbox: { width: 250, height: 250 } },
+                {
+                    fps: 10,
+                    qrbox: (width, height) => ({
+                        width: Math.min(width, 360),
+                        height: Math.min(height, 140)
+                    })
+                },
                 (decodedText) => {
-                    stopScanner();
-                    alert(`Scanned Ticket Code: ${decodedText}`);
+                    status.innerText = 'Barcode scanned.';
+                    stopScanner().then(() => alert(`Scanned Ticket Code: ${decodedText}`));
                 },
                 (error) => {}
-            ).catch(err => { console.error("Scanner failed to start", err); });
+            ).catch((error) => {
+                const message = String(error);
+                if (/NotAllowedError|Permission denied|Permission dismissed/i.test(message)) {
+                    status.innerText = 'Camera permission is blocked. Allow camera access for this site in your browser settings, then try again.';
+                } else if (/NotFoundError|Could not find camera/i.test(message)) {
+                    status.innerText = 'No camera was found on this device.';
+                } else {
+                    status.innerText = `Could not start the camera: ${message}`;
+                }
+                html5QrCode = null;
+            });
         }
 
-        function stopScanner() {
-            if(html5QrCode) {
-                html5QrCode.stop().then(() => {
-                    document.getElementById('scanner-modal').classList.add('hidden');
-                }).catch(err => { document.getElementById('scanner-modal').classList.add('hidden'); });
-            } else {
-                document.getElementById('scanner-modal').classList.add('hidden');
+        async function stopScanner() {
+            const scanner = html5QrCode;
+            html5QrCode = null;
+            if (scanner) {
+                try {
+                    await scanner.stop();
+                } catch (error) {}
+                try {
+                    scanner.clear();
+                } catch (error) {}
             }
+            document.getElementById('scanner-modal').classList.add('hidden');
         }
 
         // Store Drawer
-        function openStoreDrawer() { document.getElementById('store-drawer').classList.remove('hidden'); }
-        function closeStoreDrawer() { document.getElementById('store-drawer').classList.add('hidden'); }
+        function setStoreEditing(isEditing) {
+            document.querySelectorAll('#store-form input').forEach((input) => { input.disabled = !isEditing; });
+            document.getElementById('store-edit-button').classList.toggle('hidden', isEditing);
+            document.getElementById('store-edit-actions').classList.toggle('hidden', !isEditing);
+        }
+
+        function enableStoreEditing() { setStoreEditing(true); }
+
+        function cancelStoreEditing() {
+            updateStoreHeader();
+            setStoreEditing(false);
+        }
+
+        function openStoreDrawer() {
+            updateStoreHeader();
+            updateBoxSetupStatus();
+            setStoreEditing(false);
+            document.getElementById('store-drawer').classList.remove('hidden');
+        }
+
+        function updateBoxSetupStatus() {
+            const status = document.getElementById('box-setup-status');
+            const button = document.getElementById('complete-box-setup');
+            if (!status || !button) return;
+            status.innerText = boxSetupComplete
+                ? 'Box setup is complete. Label and grouping changes require the manager password.'
+                : 'Set box labels and adjacent pairs on the grid, then complete store setup to lock the layout.';
+            button.classList.toggle('hidden', boxSetupComplete);
+        }
+
+        function completeBoxSetup() {
+            if (!confirm('Complete store setup? Future box label and grouping changes will require the manager password.')) return;
+            boxSetupComplete = true;
+            localStorage.setItem('lotto_box_setup_complete', 'true');
+            updateBoxSetupStatus();
+            renderBoxes();
+        }
+
+        function closeStoreDrawer() {
+            cancelStoreEditing();
+            document.getElementById('store-drawer').classList.add('hidden');
+        }
+
         function saveStoreProfile(e) {
             e.preventDefault();
             storeProfile = {
@@ -488,14 +762,15 @@
             };
             localStorage.setItem('lotto_store_profile', JSON.stringify(storeProfile));
             updateStoreHeader();
-            closeStoreDrawer();
+            setStoreEditing(false);
+            document.getElementById('store-drawer').classList.add('hidden');
             alert("Store profile updated successfully!");
         }
 
         // Master Admin & Password Protection
         function openAdminModal() { document.getElementById('admin-modal').classList.remove('hidden'); }
         function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('admin-content-view').classList.add('hidden'); document.getElementById('admin-auth-view').classList.remove('hidden'); }
-        
+       
         function verifyAdmin() {
             const pass = document.getElementById('admin-pass-input').value;
             if(pass === storeProfile.password || pass === 'admin') {
@@ -510,11 +785,13 @@
 
         function verifyAdminAction(callback) {
             const pass = prompt("Enter Master Admin Password to proceed:");
-            if(pass === storeProfile.password || pass === 'admin') {
+            if(pass === storeProfile.password) {
                 callback();
+                return true;
             } else if(pass !== null) {
                 alert("Incorrect password.");
             }
+            return false;
         }
 
         function renderAdminGames() {
@@ -522,23 +799,122 @@
             list.innerHTML = '';
             masterGames.forEach((g, idx) => {
                 const item = document.createElement('div');
-                item.className = "flex justify-between items-center bg-gray-50 p-2 rounded-lg border text-xs";
+                item.className = "flex items-center gap-2 bg-gray-50 p-2 rounded-lg border text-xs";
                 item.innerHTML = `
-                    <div><b>[${g.id}]</b> ${g.name} - <span class="text-emerald-600 font-semibold">$${g.price}</span></div>
-                    <button onclick="deleteGame(${idx})" class="text-red-600 hover:underline">Delete</button>
+                    <div class="min-w-0 flex-1"><b>[${g.id}]</b> ${g.name} - <span class="text-emerald-600 font-semibold">$${g.price}</span></div>
+                    <div class="flex shrink-0 gap-2">
+                        <button onclick="editGamePrompt(${idx})" class="text-blue-700 hover:underline">Edit</button>
+                        <button onclick="deleteGame(${idx})" class="text-red-600 hover:underline">Delete</button>
+                    </div>
                 `;
                 list.appendChild(item);
             });
         }
 
-        function addNewGamePrompt() {
-            const id = prompt("Enter Game Number (e.g., 1406):");
-            if(!id) return;
-            const name = prompt("Enter Game Name:");
-            if(!name) return;
-            const price = parseFloat(prompt("Enter Ticket Price ($):", "5"));
-            if(isNaN(price)) return;
-            masterGames.push({ id, name, price });
+        function lookupGameNumber() {
+            const id = document.getElementById('game-number-lookup').value.trim();
+            const status = document.getElementById('game-number-status');
+            const editor = document.getElementById('game-number-editor');
+            if (!id) {
+                editor.classList.add('hidden');
+                status.innerText = 'Enter a game number to search the catalog.';
+                return;
+            }
+
+            const game = masterGames.find(item => String(item.id) === id);
+            document.getElementById('game-editor-id').value = id;
+            document.getElementById('game-editor-name').value = game ? game.name : '';
+            document.getElementById('game-editor-price').value = game ? game.price : '';
+            document.getElementById('game-editor-submit').innerText = game ? 'Save Game Changes' : 'Add Game';
+            status.innerText = game
+                ? `Game ${id} found. Update its name or price, then save.`
+                : `Game ${id} is not in the catalog. Enter its name and price to add it.`;
+            editor.classList.remove('hidden');
+        }
+
+        function saveGameFromLookup(event) {
+            event.preventDefault();
+            const id = document.getElementById('game-editor-id').value.trim();
+            const name = document.getElementById('game-editor-name').value.trim();
+            const price = Number(document.getElementById('game-editor-price').value);
+            const status = document.getElementById('game-number-status');
+            if (!id || !name || !Number.isFinite(price) || price < 0) {
+                status.innerText = 'Enter a game name and a valid non-negative ticket price.';
+                return;
+            }
+
+            const existingIndex = masterGames.findIndex(game => String(game.id) === id);
+            if (existingIndex >= 0) {
+                masterGames[existingIndex] = { ...masterGames[existingIndex], name, price };
+                status.innerText = `Game ${id} updated.`;
+            } else {
+                masterGames.push({ id, name, price });
+                status.innerText = `Game ${id} added to the catalog.`;
+            }
+            persist();
+            renderAdminGames();
+            renderBoxes();
+        }
+
+        function lookupGameNumber() {
+            const id = document.getElementById('game-number-lookup').value.trim();
+            const status = document.getElementById('game-number-status');
+            const editor = document.getElementById('game-number-editor');
+            if (!id) {
+                editor.classList.add('hidden');
+                status.innerText = 'Enter a game number to search the catalog.';
+                return;
+            }
+
+            const game = masterGames.find(item => String(item.id) === id);
+            document.getElementById('game-editor-id').value = id;
+            document.getElementById('game-editor-name').value = game ? game.name : '';
+            document.getElementById('game-editor-price').value = game ? game.price : '';
+            document.getElementById('game-editor-submit').innerText = game ? 'Save Game Changes' : 'Add Game';
+            status.innerText = game
+                ? `Game ${id} found. Update its name or price, then save.`
+                : `Game ${id} is not in the catalog. Enter its name and price to add it.`;
+            editor.classList.remove('hidden');
+        }
+
+        function saveGameFromLookup(event) {
+            event.preventDefault();
+            const id = document.getElementById('game-editor-id').value.trim();
+            const name = document.getElementById('game-editor-name').value.trim();
+            const price = Number(document.getElementById('game-editor-price').value);
+            const status = document.getElementById('game-number-status');
+            if (!id || !name || !Number.isFinite(price) || price < 0) {
+                status.innerText = 'Enter a game name and a valid non-negative ticket price.';
+                return;
+            }
+
+            const existingIndex = masterGames.findIndex(game => String(game.id) === id);
+            if (existingIndex >= 0) {
+                masterGames[existingIndex] = { ...masterGames[existingIndex], name, price };
+                status.innerText = `Game ${id} updated.`;
+            } else {
+                masterGames.push({ id, name, price });
+                status.innerText = `Game ${id} added to the catalog.`;
+            }
+            persist();
+            renderAdminGames();
+            renderBoxes();
+        }
+
+        function editGamePrompt(index) {
+            const game = masterGames[index];
+            if (!game) return;
+            const enteredName = prompt(`Edit name for game ${game.id}:`, game.name);
+            if (enteredName === null || !enteredName.trim()) return;
+            const enteredPrice = prompt(`Edit ticket price for game ${game.id}:`, String(game.price));
+            if (enteredPrice === null || !enteredPrice.trim()) return;
+            const price = Number(enteredPrice);
+            if (!Number.isFinite(price) || price < 0) {
+                alert("Enter a valid, non-negative ticket price.");
+                return;
+            }
+
+            masterGames[index] = { ...game, name: enteredName.trim(), price };
             persist();
             renderAdminGames();
             renderBoxes();
@@ -553,7 +929,11 @@
 
         // Review & Signature Canvas
         let sigCanvas, sigCtx, isDrawing = false;
-        function openReviewModal() { document.getElementById('review-modal').classList.remove('hidden'); setTimeout(initSignaturePad, 100); }
+        function openReviewModal() {
+            updateShiftStatus();
+            document.getElementById('review-modal').classList.remove('hidden');
+            setTimeout(initSignaturePad, 100);
+        }
         function closeReviewModal() { document.getElementById('review-modal').classList.add('hidden'); }
 
         function initSignaturePad() {
@@ -573,6 +953,7 @@
 
         function startDraw(e) {
             isDrawing = true;
+            hasSignature = true;
             const rect = sigCanvas.getBoundingClientRect();
             sigCtx.beginPath();
             sigCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
@@ -586,19 +967,86 @@
         }
 
         function stopDraw() { isDrawing = false; }
-        function clearSignature() { if(sigCtx) sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height); }
+        function clearSignature() {
+            if (sigCtx) sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+            hasSignature = false;
+        }
+
+        function confirmShiftEnd() {
+            if (shiftState.status !== 'open') return;
+            const clerk = document.getElementById('clerk-name-input').value.trim();
+            if (!clerk) {
+                alert('Enter the clerk or employee name before signing off.');
+                return;
+            }
+            if (!hasSignature) {
+                alert('Add a signature before signing off.');
+                return;
+            }
+            const incomplete = boxesData.filter(box =>
+                (box.gameId && (!box.startTicket || !box.endTicket)) ||
+                (box.oldGame && (!box.oldStart || !box.oldEnd))
+            );
+            if (incomplete.length) {
+                runValidation();
+                alert('Complete the game and ticket numbers for every active box before signing off.');
+                return;
+            }
+
+            const totalSales = calculateTotals();
+            const posMeter = parseFloat(document.getElementById('pos-meter-input').value) || 0;
+            const signedAt = new Date().toISOString();
+            shiftHistory.push({
+                date: shiftState.date,
+                shift: shiftState.name,
+                clerk,
+                signedAt,
+                totalSales,
+                posMeter,
+                variance: posMeter - totalSales,
+                signature: sigCanvas.toDataURL('image/png'),
+                boxes: JSON.parse(JSON.stringify(boxesData))
+            });
+            localStorage.setItem('lotto_shift_history', JSON.stringify(shiftHistory));
+
+            if (shiftState.name === 'A') {
+                boxesData = boxesData.map(box => ({
+                    ...box,
+                    startTicket: box.gameId ? box.endTicket : box.startTicket,
+                    endTicket: box.gameId ? '' : box.endTicket,
+                    oldGame: null,
+                    oldStart: '',
+                    oldEnd: ''
+                }));
+                shiftState = { date: shiftState.date, name: 'B', status: 'open', startedAt: signedAt };
+            } else {
+                shiftState = { ...shiftState, status: 'closed', closedAt: signedAt };
+            }
+
+            localStorage.setItem('lotto_shift_state', JSON.stringify(shiftState));
+            persist();
+            clearSignature();
+            document.getElementById('clerk-name-input').value = '';
+            document.getElementById('pos-meter-input').value = '';
+            updateShiftStatus();
+            renderBoxes();
+            closeReviewModal();
+            alert(shiftState.status === 'open'
+                ? 'Shift A signed off. Shift B is now open, and each active game end ticket was carried forward as its new start ticket.'
+                : 'Shift B signed off. The day is closed; Shift A will start on the next calendar day.');
+        }
 
         function printReport() { window.print(); }
         function emailReport() {
             const clerk = document.getElementById('clerk-name-input').value || "Staff";
             const total = document.getElementById('header-total-sales').innerText;
             const subject = encodeURIComponent(`Shift Audit Report - ${storeProfile.name} - ${storeProfile.number}`);
-            const body = encodeURIComponent(`Shift Audit Summary:\nStore: ${storeProfile.name}\nClerk: ${clerk}\nTotal Sales: ${total}\nTimestamp: ${new Date().toLocaleString()}`);
+            const body = encodeURIComponent(`Shift Audit Summary:\nStore: ${storeProfile.name}\nShift: ${shiftState.name}\nClerk: ${clerk}\nTotal Sales: ${total}\nTimestamp: ${new Date().toLocaleString()}`);
             window.location.href = `mailto:${storeProfile.email}?subject=${subject}&body=${body}`;
         }
 
         function exportDataJSON() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ storeProfile, boxesData, masterGames }));
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({ storeProfile, boxesData, masterGames, shiftState, shiftHistory }));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
             downloadAnchor.setAttribute("download", `lotto_backup_${storeProfile.number}_${new Date().toISOString().slice(0,10)}.json`);
@@ -607,9 +1055,38 @@
             downloadAnchor.remove();
         }
     </script>
+    <script>
+        const installButton = document.getElementById('install-app');
+        let installPrompt;
+
+        window.addEventListener('beforeinstallprompt', (event) => {
+            event.preventDefault();
+            installPrompt = event;
+            installButton.classList.remove('hidden');
+        });
+
+        installButton.addEventListener('click', async () => {
+            if (!installPrompt) return;
+            installPrompt.prompt();
+            await installPrompt.userChoice;
+            installPrompt = null;
+            installButton.classList.add('hidden');
+        });
+
+        window.addEventListener('appinstalled', () => installButton.classList.add('hidden'));
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js');
+            });
+        }
+    </script>
 </body>
 </html>
 Key Features Included:
 6-Column Responsive Dispenser Grid: Automatically configures across 6 columns on desktop and cleanly scales down to 3 or 2 columns on mobile screens.
 Mid-Shift Swap Logic: Supports recording old and new games simultaneously within individual boxes until the shift rolls over.
 Master Inventory Management: Password-protected master catalog supporting game additions, deletions, and pricing modifications.
+
+
+
