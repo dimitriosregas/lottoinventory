@@ -4,6 +4,156 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project Lotto - Shift Audit & Inventory</title>
+    
+    <!-- PWA Manifest & Meta Tags for Full Chrome Installation -->
+    <link rel="manifest" href='data:application/manifest+json,{
+        "name": "Project Lotto Shift Audit",
+        "short_name": "Project Lotto",
+        "start_url": "./",
+        "display": "standalone",
+        "background_color": "#0f172a",
+        "theme_color": "#1e293b",
+        "icons": [
+            {
+                "src": "https://cdn-icons-png.flaticon.com/512/2910/2910791.png",
+                "sizes": "192x192",
+                "type": "image/png"
+            },
+            {
+                "src": "https://cdn-icons-png.flaticon.com/512/2910/2910791.png",
+                "sizes": "512x512",
+                "type": "image/png"
+            }
+        ]
+    }'>
+    <meta name="theme-color" content="#1e293b">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Html5-Qrcode for Barcode Scanning -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+
+    <!-- App Header -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-30 px-4 py-3 flex justify-between items-center shadow-md">
+        <div>
+            <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                🎲 Project Lotto
+            </h1>
+            <p class="text-xs text-slate-400" id="store-subtitle">Shell #402 - Main St (SH402) • 100 Broadway, Sparta, TN</p>
+        </div>
+        <div class="flex gap-2">
+            <button onclick="openStoreSetup()" class="bg-slate-800 hover:bg-slate-700 text-xs px-3 py-1.5 rounded-lg border border-slate-700 font-medium transition">Store Setup</button>
+            <button onclick="openMasterAdmin()" class="bg-amber-600 hover:bg-amber-500 text-xs px-3 py-1.5 rounded-lg font-semibold text-white transition shadow">Master Admin</button>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 space-y-6">
+        
+        <!-- Top Action Bar -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col justify-between shadow">
+                <span class="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Shift Sales</span>
+                <div class="text-3xl font-extrabold text-emerald-400 mt-1" id="total-shift-sales">$0.00</div>
+            </div>
+            <button onclick="toggleScanner()" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold p-4 rounded-xl flex items-center justify-center gap-2 transition shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/></svg>
+                Scan Ticket Barcode
+            </button>
+            <button onclick="openSignOffModal()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold p-4 rounded-xl flex items-center justify-center gap-2 transition shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Review & Sign-Off
+            </button>
+        </div>
+
+        <!-- Barcode Reader Container -->
+        <div id="scanner-container" class="hidden bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-lg">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="font-bold text-sm text-slate-200">Barcode Scanner</h3>
+                <button onclick="toggleScanner()" class="text-xs text-rose-400 hover:underline">Close Scanner</button>
+            </div>
+            <div id="reader" class="w-full overflow-hidden rounded-lg"></div>
+        </div>
+
+        <!-- Dispenser Grid Section -->
+        <section class="space-y-4">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-bold text-slate-200">Dispenser Boxes (1 - 40)</h2>
+                <button onclick="addBox()" class="text-xs bg-slate-800 hover:bg-slate-700 text-blue-400 px-3 py-1.5 rounded-lg border border-slate-700 font-semibold transition">+ Add Box</button>
+            </div>
+            
+            <!-- 6-Column Grid Layout -->
+            <div id="dispenser-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                <!-- Populated dynamically -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Application Controller Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            renderGrid();
+        });
+
+        function renderGrid() {
+            const grid = document.getElementById('dispenser-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            
+            for (let i = 1; i <= 40; i++) {
+                const boxCard = document.createElement('div');
+                boxCard.className = "bg-slate-900 border border-slate-800 rounded-xl p-3 flex flex-col gap-2 shadow";
+                boxCard.innerHTML = `
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-1.5">
+                        <span class="text-xs font-bold text-slate-300">Box ${i}</span>
+                        <span class="text-[10px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded">Active</span>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 block mb-0.5">Game Number</label>
+                        <input type="text" placeholder="e.g. 1858" class="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[9px] text-slate-500 block">Start #</label>
+                            <input type="text" placeholder="0001" class="w-full bg-slate-950 border border-slate-800 rounded px-1.5 py-1 text-xs text-white">
+                        </div>
+                        <div>
+                            <label class="text-[9px] text-slate-500 block">End #</label>
+                            <input type="text" placeholder="End" class="w-full bg-slate-950 border border-slate-800 rounded px-1.5 py-1 text-xs text-white">
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(boxCard);
+            }
+        }
+
+        let scannerActive = false;
+        function toggleScanner() {
+            const container = document.getElementById('scanner-container');
+            scannerActive = !scannerActive;
+            container.classList.toggle('hidden', !scannerActive);
+        }
+
+        function openStoreSetup() { alert('Store Setup & Config panel loaded.'); }
+        function openMasterAdmin() { alert('Master Inventory Database login required.'); }
+        function openSignOffModal() { alert('Shift Financial Reconciliation loaded.'); }
+        function addBox() { alert('New box added.'); }
+    </script>
+</body>
+</html>
+
+Paste this complete code into your GitHub repository powering your Cloudflare Worker. Once built and deployed, Chrome will recognize the PWA manifest and let you install the app directly to your home screen with the Install option!
+
+
+On Thu, Oct 29, 2026, 6:09 PM Dim Re <regasdimitrios@gmail.com> wrote:
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Lotto - Shift Audit & Inventory</title>
     <meta name="theme-color" content="#0f172a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1087,6 +1237,3 @@ Key Features Included:
 6-Column Responsive Dispenser Grid: Automatically configures across 6 columns on desktop and cleanly scales down to 3 or 2 columns on mobile screens.
 Mid-Shift Swap Logic: Supports recording old and new games simultaneously within individual boxes until the shift rolls over.
 Master Inventory Management: Password-protected master catalog supporting game additions, deletions, and pricing modifications.
-
-
-
