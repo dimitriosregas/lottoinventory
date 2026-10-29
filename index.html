@@ -3,17 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Lotto - Shift Audit</title>
+    <title>Project Lotto - Full Sandbox Test</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
     <style>
-        /* Force 6-column grid on desktop, scrollable on mobile */
         .lotto-grid {
             display: grid;
             grid-template-columns: repeat(6, 1fr);
             gap: 0.5rem;
-            min-width: 800px; /* Ensures columns don't crush on small screens */
+            min-width: 800px; 
         }
         .grid-container {
             overflow-x: auto;
@@ -28,26 +27,18 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans p-4">
+<body class="bg-slate-200 text-gray-800 font-sans p-4">
 
-    <!-- Top Action Buttons & Header -->
-    <div class="flex justify-between items-center mb-4 bg-white p-4 rounded shadow no-print">
+    <!-- Header & Action Buttons -->
+    <div class="flex justify-between items-center mb-4 bg-orange-100 border-l-4 border-orange-500 p-4 rounded shadow no-print">
         <div>
-            <h1 class="text-2xl font-bold text-blue-700">Project Lotto</h1>
-            <p id="live-clock" class="text-sm text-gray-500 font-mono"></p>
+            <h1 class="text-2xl font-bold text-orange-700">Project Lotto: Full Sandbox Test</h1>
+            <p id="live-clock" class="text-sm text-gray-600 font-mono"></p>
+            <p class="text-xs text-orange-600 font-bold mt-1">Temporary Memory Mode: Refreshing resets all passwords and data.</p>
         </div>
-        <div class="space-x-2">
-            <button onclick="toggleModal('storeSetupModal')" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded">Store Setup</button>
-            <button onclick="toggleModal('adminModal')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded">Admin Tools</button>
-            <button onclick="startScanner()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">Scan</button>
-        </div>
-    </div>
-
-    <!-- Main Grid -->
-    <div class="bg-white p-4 rounded shadow grid-container mb-4">
-        <h2 class="text-xl font-semibold mb-2">Shift Audit Grid</h2>
-        <div id="lottoGrid" class="lotto-grid">
-            <!-- JavaScript will populate the 40 boxes here -->
+        <div class="space-x-2 flex">
+            <button onclick="toggleModal('storeSetupModal')" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded shadow">Store Setup</button>
+            <button onclick="toggleModal('masterAdminModal')" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded shadow">Master Admin</button>
         </div>
     </div>
 
@@ -57,11 +48,19 @@
         <span class="block sm:inline"> Please ensure all active boxes have ending ticket numbers before finalizing.</span>
     </div>
 
-    <!-- Totaler & Footer Actions -->
+    <!-- Main Grid -->
+    <div class="bg-white p-4 rounded shadow grid-container mb-4">
+        <h2 class="text-xl font-semibold mb-2">Shift Audit Grid</h2>
+        <div id="lottoGrid" class="lotto-grid">
+            <!-- JavaScript populates boxes -->
+        </div>
+    </div>
+
+    <!-- Totals & Sign-off -->
     <div class="bg-white p-4 rounded shadow mb-4">
         <div class="flex justify-between items-end border-b pb-4 mb-4">
             <div>
-                <h3 class="text-lg font-semibold">Shift Totals</h3>
+                <h3 class="text-lg font-semibold">Test Shift Totals</h3>
                 <p class="text-sm text-gray-600">Total Tickets Sold: <span id="totalTickets" class="font-bold text-blue-600">0</span></p>
             </div>
             <div class="text-right">
@@ -83,16 +82,16 @@
                 <button onclick="signaturePad.clear()" class="text-xs text-red-500 mt-1 no-print">Clear Signature</button>
             </div>
         </div>
-
-        <div class="mt-6 flex justify-end space-x-3 no-print">
-            <button onclick="calculateTotals()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-6 rounded">Review / Calculate</button>
-            <button onclick="window.print()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded">Print / Save PDF</button>
-            <button onclick="rolloverShift()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded">End Shift & Rollover</button>
-        </div>
+    </div>
+    
+    <div class="flex justify-end space-x-3 no-print">
+        <button onclick="calculateTotals()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-6 rounded shadow-lg">Calculate</button>
+        <button onclick="window.print()" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded shadow-lg">Print / PDF</button>
+        <button onclick="rolloverShift()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded shadow-lg">Test Shift Rollover</button>
     </div>
 
     <!-- Store Setup Modal -->
-    <div id="storeSetupModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 justify-center items-center no-print">
+    <div id="storeSetupModal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 justify-center items-center no-print z-50">
         <div class="bg-white rounded-lg p-6 w-full max-w-md">
             <h2 class="text-xl font-bold mb-4">Retail Location Setup</h2>
             <div class="space-y-3">
@@ -105,39 +104,62 @@
             </div>
             <div class="mt-4 flex justify-end space-x-2">
                 <button onclick="toggleModal('storeSetupModal')" class="bg-gray-300 px-4 py-2 rounded">Cancel</button>
-                <button onclick="saveStoreProfile()" class="bg-blue-500 text-white px-4 py-2 rounded">Save</button>
+                <button onclick="saveStoreProfile()" class="bg-blue-500 text-white px-4 py-2 rounded">Save Profile</button>
             </div>
         </div>
     </div>
 
-    <!-- Admin Modal -->
-    <div id="adminModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 justify-center items-center no-print">
-        <div class="bg-white rounded-lg p-6 w-full max-w-sm">
-            <h2 class="text-xl font-bold mb-4">Admin Controls</h2>
-            <input type="password" id="authPwd" placeholder="Enter Admin Password" class="border p-2 w-full rounded mb-3">
-            <div class="flex space-x-2 mb-4">
-                <button onclick="addBox()" class="bg-green-500 text-white px-4 py-2 rounded w-full">Add Box</button>
-                <button onclick="removeBox()" class="bg-red-500 text-white px-4 py-2 rounded w-full">Remove Box</button>
+    <!-- Master Admin Modal -->
+    <div id="masterAdminModal" class="modal fixed inset-0 bg-gray-900 bg-opacity-75 justify-center items-center z-50">
+        <div class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-bold">Master Admin</h2>
+                <button onclick="toggleModal('masterAdminModal')" class="text-red-500 font-bold text-xl">&times;</button>
             </div>
-            <button onclick="toggleModal('adminModal')" class="bg-gray-300 px-4 py-2 rounded w-full">Close</button>
+
+            <input type="password" id="masterAuthPwd" placeholder="Enter Admin Password (set in Store Setup)" class="border border-red-300 p-2 w-full rounded mb-4 bg-red-50">
+
+            <div class="grid grid-cols-2 gap-4 border-t pt-4">
+                <!-- Grid Management -->
+                <div>
+                    <h3 class="font-bold mb-2">Grid Management</h3>
+                    <div class="flex space-x-2 mb-2">
+                        <button onclick="addBox()" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded w-full">Add Box</button>
+                        <button onclick="removeBox()" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded w-full">Remove Box</button>
+                    </div>
+                </div>
+                
+                <!-- Inventory Management -->
+                <div>
+                    <h3 class="font-bold mb-2">Master Game Inventory</h3>
+                    <div class="flex space-x-2 mb-2">
+                        <input type="text" id="newGameId" placeholder="Game #" class="border p-1 w-1/3 rounded text-sm">
+                        <input type="text" id="newGameName" placeholder="Name" class="border p-1 w-1/3 rounded text-sm">
+                        <input type="number" id="newGamePrice" placeholder="$" class="border p-1 w-1/3 rounded text-sm">
+                    </div>
+                    <button onclick="addMasterGame()" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded w-full mb-2">Add to Master List</button>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <h4 class="font-bold text-gray-700 border-b pb-1">Current Master List</h4>
+                <div class="max-h-48 overflow-y-auto mt-2 text-sm" id="masterGamesList"></div>
+            </div>
         </div>
     </div>
 
     <!-- Scanner Reader Modal -->
-    <div id="scannerModal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 justify-center items-center z-50 no-print">
+    <div id="scannerModal" class="modal fixed inset-0 bg-black bg-opacity-90 justify-center items-center z-[60] no-print">
         <div class="bg-white rounded-lg p-4 w-full max-w-md">
+            <h3 id="scannerTargetLabel" class="text-lg font-bold mb-2 text-center">Test Scanner</h3>
             <div id="reader" width="600px"></div>
-            <button onclick="stopScanner()" class="mt-4 bg-red-500 text-white px-4 py-2 rounded w-full">Close Scanner</button>
+            <button onclick="stopScanner()" class="mt-4 bg-gray-500 text-white px-4 py-2 rounded w-full">Cancel Scan</button>
         </div>
     </div>
 
     <script>
         // --- Live Clock ---
-        function updateClock() {
-            document.getElementById('live-clock').textContent = new Date().toLocaleString();
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
+        setInterval(() => document.getElementById('live-clock').textContent = new Date().toLocaleString(), 1000);
 
         // --- Signature Pad Init ---
         const canvas = document.getElementById('signaturePad');
@@ -152,176 +174,270 @@
         window.onresize = resizeCanvas;
         resizeCanvas();
 
-        // --- Data State ---
-        let boxCount = parseInt(localStorage.getItem('boxCount')) || 40;
-        let boxes = JSON.parse(localStorage.getItem('boxes')) || Array.from({length: boxCount}, (_, i) => ({
-            id: i + 1,
-            gameId: '',
-            price: 0,
-            startTicket: '',
-            endTicket: ''
+        // --- Test Data State (Memory Only) ---
+        let adminPassword = ''; // Default empty until set in setup
+        let masterGames = [
+            { id: '1802', name: '300x Jumbo', price: 30 }, { id: '1964', name: 'Mill Jumbo', price: 20 },
+            { id: '1405', name: '$50 jumbo collectable', price: 50 }, { id: '1909', name: '$25 Jumbo', price: 25 },
+            { id: '1404', name: 'Holiday Riches', price: 20 }, { id: '1403', name: '$50 $100 $500', price: 10 },
+            { id: '1949', name: '$10 Jumbo', price: 10 }, { id: '1369', name: '100x', price: 10 },
+            { id: '1397', name: '$20 collectable Jumbo', price: 20 }, { id: '1204', name: '$50 Jumbo', price: 50 },
+            { id: '1996', name: 'Giant Jumbo', price: 5 }, { id: '1382', name: 'Instant Cash', price: 10 },
+            { id: '1402', name: 'Merry Money', price: 5 }, { id: '1394', name: 'Lady Crossword', price: 3 },
+            { id: '1400', name: 'holiday Cash', price: 3 }, { id: '1396', name: '$10 collectable Jumbo', price: 10 },
+            { id: '1368', name: '50x', price: 5 }, { id: '859', name: '$10 crossword', price: 10 },
+            { id: '1858', name: '$5 crossword', price: 5 }, { id: '1825', name: '$2 Jumbo', price: 2 },
+            { id: '1395', name: '$5 collectable Jumbo', price: 5 }, { id: '1399', name: 'Nutcracker cash', price: 2 },
+            { id: '854', name: 'Bingo Jumbo', price: 3 }, { id: '1856', name: '$3 crossword Jumbo', price: 3 },
+            { id: '1392', name: '$1 collectable Jumbo', price: 1 }, { id: '1951', name: '$1 Jumbo', price: 1 },
+            { id: '1398', name: 'Gift Tag Cash', price: 1 }, { id: '1385', name: '$5 Game Show', price: 5 },
+            { id: '1378', name: 'Max Millions', price: 20 }, { id: '1387', name: 'All the money', price: 20 },
+            { id: '1266', name: '$3k Loaded', price: 30 }, { id: '1364', name: '$50 Jumbo Extravaganza', price: 50 },
+            { id: '1370', name: '200x', price: 20 }, { id: '1386', name: '24k Gold', price: 10 },
+            { id: '1377', name: '$500k Bonus', price: 10 }, { id: '1391', name: '$500 Fever', price: 10 },
+            { id: '1381', name: 'High Voltage cash', price: 5 }, { id: '1762', name: 'Lucky 7\'s', price: 1 },
+            { id: '1601', name: '$3 Season Jumbo', price: 3 }, { id: '1372', name: '$5 collectable Jumbo', price: 5 },
+            { id: '1374', name: '$10 cash games', price: 10 }
+        ];
+        
+        let boxCount = 12;
+        let boxes = Array.from({length: boxCount}, (_, i) => ({ 
+            id: i + 1, name: `Box ${i + 1}`, gameId: '', price: 0, startTicket: '', endTicket: '',
+            swappedGameId: '', swappedPrice: 0, swappedStartTicket: '', swappedEndTicket: '', isSwapped: false
         }));
-        let adminPassword = localStorage.getItem('adminPassword') || 'default';
 
-        // --- Grid Rendering ---
+        // --- Store Setup & Admin Auth ---
+        function saveStoreProfile() {
+            const pwd1 = document.getElementById('adminPwd').value;
+            const pwd2 = document.getElementById('adminPwdConfirm').value;
+            if (pwd1 && pwd1 !== pwd2) return alert("Passwords do not match!");
+            if (pwd1) adminPassword = pwd1;
+            
+            document.getElementById('storeSetupModal').classList.remove('active');
+            alert("Profile & Password Saved (in memory for this session).");
+        }
+
+        function checkAdminAuth() {
+            const input = document.getElementById('masterAuthPwd').value;
+            if (adminPassword !== '' && input !== adminPassword) {
+                alert('Invalid Master Admin Password');
+                return false;
+            }
+            return true;
+        }
+
+        // --- Grid Logic ---
         function renderGrid() {
             const grid = document.getElementById('lottoGrid');
             grid.innerHTML = '';
-            
+            let gameOptions = `<option value="">-- Select Game --</option>`;
+            masterGames.forEach(g => gameOptions += `<option value="${g.id}">${g.id} | ${g.name} | $${g.price}</option>`);
+
             boxes.forEach((box, index) => {
                 const boxDiv = document.createElement('div');
-                boxDiv.className = 'border p-2 rounded bg-gray-50 flex flex-col text-sm relative';
+                boxDiv.className = 'border-2 border-gray-300 p-2 rounded bg-gray-50 flex flex-col text-sm relative shadow-sm hover:border-blue-400 transition';
                 
-                boxDiv.innerHTML = `
-                    <div class="font-bold text-gray-700 border-b pb-1 mb-1 flex justify-between">
-                        <span>Box ${box.id}</span>
-                        <span class="text-xs bg-blue-100 text-blue-800 px-1 rounded cursor-pointer" onclick="mergeBox(${index})">Merge</span>
+                let html = `
+                    <div class="flex justify-between items-center border-b pb-1 mb-2 bg-gray-200 -mx-2 -mt-2 p-2 rounded-t">
+                        <input type="text" value="${box.name}" class="font-bold text-gray-800 bg-transparent w-24 outline-none border-b border-dashed border-gray-400 focus:border-blue-500" onchange="updateBox(${index}, 'name', this.value)">
+                        <button onclick="startBoxScanner(${index}, false)" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded shadow">Scan</button>
                     </div>
-                    <input type="text" placeholder="Game ID" class="border rounded mb-1 px-1 w-full" value="${box.gameId}" onchange="updateBox(${index}, 'gameId', this.value)">
-                    <div class="flex space-x-1 mb-1">
-                        <span class="text-gray-500 pt-1">$</span>
-                        <input type="number" placeholder="Val" class="border rounded px-1 w-full" value="${box.price}" onchange="updateBox(${index}, 'price', this.value)">
+                    <div class="mb-2">
+                        <span class="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Active Game</span>
+                        <select class="border rounded px-1 py-1 w-full text-xs font-semibold bg-white mt-1" onchange="handleGameSelect(${index}, this.value, false)">
+                            ${gameOptions.replace(`value="${box.gameId}"`, `value="${box.gameId}" selected`)}
+                        </select>
                     </div>
-                    <input type="number" placeholder="Start Tkt" class="border rounded mb-1 px-1 w-full bg-yellow-50" value="${box.startTicket}" onchange="updateBox(${index}, 'startTicket', this.value)">
-                    <input type="number" placeholder="End Tkt" class="border rounded px-1 w-full" value="${box.endTicket}" onchange="updateBox(${index}, 'endTicket', this.value)">
+                    <div class="flex flex-col gap-1 mb-2">
+                        <div class="flex items-center text-xs justify-between">
+                            <span class="text-gray-500 font-bold">Start:</span>
+                            <input type="number" class="border rounded px-1 w-16 bg-yellow-100 text-right font-mono" value="${box.startTicket}" onchange="updateBox(${index}, 'startTicket', this.value)">
+                        </div>
+                        <div class="flex items-center text-xs justify-between">
+                            <span class="text-gray-500 font-bold">End:</span>
+                            <input type="number" class="border rounded px-1 w-16 bg-white text-right font-mono" value="${box.endTicket}" onchange="updateBox(${index}, 'endTicket', this.value)">
+                        </div>
+                    </div>
                 `;
+
+                if (box.isSwapped) {
+                    html += `
+                        <div class="mt-2 border-t-2 border-dashed border-purple-300 pt-2 bg-purple-50 -mx-2 px-2 pb-2 rounded-b">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[10px] uppercase font-bold text-purple-600 tracking-wider">Swap</span>
+                                <button onclick="startBoxScanner(${index}, true)" class="bg-purple-500 hover:bg-purple-600 text-white text-[10px] px-2 py-0.5 rounded">Scan</button>
+                            </div>
+                            <select class="border border-purple-300 rounded px-1 py-1 w-full text-xs font-semibold bg-white mb-1" onchange="handleGameSelect(${index}, this.value, true)">
+                                ${gameOptions.replace(`value="${box.swappedGameId}"`, `value="${box.swappedGameId}" selected`)}
+                            </select>
+                            <div class="flex flex-col gap-1">
+                                <div class="flex items-center text-xs justify-between">
+                                    <span class="text-purple-500 font-bold">Start:</span>
+                                    <input type="number" class="border border-purple-200 rounded px-1 w-16 bg-yellow-50 text-right font-mono" value="${box.swappedStartTicket}" onchange="updateBox(${index}, 'swappedStartTicket', this.value)">
+                                </div>
+                                <div class="flex items-center text-xs justify-between">
+                                    <span class="text-purple-500 font-bold">End:</span>
+                                    <input type="number" class="border border-purple-200 rounded px-1 w-16 bg-white text-right font-mono" value="${box.swappedEndTicket}" onchange="updateBox(${index}, 'swappedEndTicket', this.value)">
+                                </div>
+                            </div>
+                            <button onclick="undoSwap(${index})" class="text-[10px] text-red-500 hover:underline w-full text-center mt-2">Undo Swap</button>
+                        </div>
+                    `;
+                } else {
+                    html += `<button onclick="initiateSwap(${index})" class="text-[10px] text-gray-500 bg-gray-200 hover:bg-gray-300 rounded py-1 mt-auto">Swap Game Mid-Shift</button>`;
+                }
+
+                boxDiv.innerHTML = html;
                 grid.appendChild(boxDiv);
             });
         }
 
-        function updateBox(index, field, value) {
-            boxes[index][field] = value;
-            saveData();
+        function updateBox(index, field, value) { boxes[index][field] = value; }
+        function handleGameSelect(index, gameId, isSwapSlot) {
+            const game = masterGames.find(g => g.id === gameId);
+            if(isSwapSlot) { boxes[index].swappedGameId = gameId; boxes[index].swappedPrice = game ? game.price : 0; } 
+            else { boxes[index].gameId = gameId; boxes[index].price = game ? game.price : 0; }
+            renderGrid();
+        }
+        function initiateSwap(index) {
+            if(!boxes[index].gameId) return alert("Select a primary game first.");
+            boxes[index].isSwapped = true; renderGrid();
+        }
+        function undoSwap(index) {
+            if(confirm("Remove mid-shift swap?")) {
+                boxes[index].isSwapped = false; boxes[index].swappedGameId = ''; boxes[index].swappedPrice = 0;
+                boxes[index].swappedStartTicket = ''; boxes[index].swappedEndTicket = ''; renderGrid();
+            }
         }
 
-        // --- Calculation & Rollover ---
+        // --- Box Add/Remove (Protected by Admin) ---
+        function addBox() {
+            if (!checkAdminAuth()) return;
+            boxCount++;
+            boxes.push({ id: boxCount, name: `Box ${boxCount}`, gameId: '', price: 0, startTicket: '', endTicket: '', isSwapped: false });
+            renderGrid();
+        }
+
+        function removeBox() {
+            if (!checkAdminAuth()) return;
+            if (boxCount > 0) { boxCount--; boxes.pop(); renderGrid(); }
+        }
+
+        // --- Calculations & Rollover ---
         function calculateTotals() {
-            let totalTix = 0;
-            let totalVal = 0;
-            let missingData = false;
+            let totalTix = 0, totalVal = 0, missingData = false;
 
             boxes.forEach(box => {
                 if (box.startTicket !== '' && box.endTicket !== '') {
                     const sold = parseInt(box.endTicket) - parseInt(box.startTicket);
-                    if (sold > 0 && box.price > 0) {
-                        totalTix += sold;
-                        totalVal += (sold * box.price);
-                    }
-                } else if (box.gameId !== '') {
-                    // Active game but missing start/end
-                    missingData = true;
+                    if (sold > 0 && box.price > 0) { totalTix += sold; totalVal += (sold * box.price); }
+                } else if (box.gameId !== '') { missingData = true; }
+
+                if (box.isSwapped) {
+                    if(box.swappedStartTicket !== '' && box.swappedEndTicket !== '') {
+                        const swappedSold = parseInt(box.swappedEndTicket) - parseInt(box.swappedStartTicket);
+                        if (swappedSold > 0 && box.swappedPrice > 0) { totalTix += swappedSold; totalVal += (swappedSold * box.swappedPrice); }
+                    } else if (box.swappedGameId !== '') { missingData = true; }
                 }
             });
 
             document.getElementById('totalTickets').textContent = totalTix;
             document.getElementById('totalValue').textContent = totalVal.toFixed(2);
-            
-            const warning = document.getElementById('validationWarning');
-            if (missingData) {
-                warning.classList.remove('hidden');
-            } else {
-                warning.classList.add('hidden');
-            }
+            document.getElementById('validationWarning').classList.toggle('hidden', !missingData);
         }
 
         function rolloverShift() {
-            if(confirm("End shift? This will set all Ending Tickets as the new Starting Tickets for the next shift.")) {
+            if(confirm("Test Rollover? End tickets will become start tickets. Signature will be cleared.")) {
                 boxes = boxes.map(box => {
-                    if (box.endTicket !== '') {
-                        return { ...box, startTicket: box.endTicket, endTicket: '' };
-                    }
-                    return box;
+                    let nextGameId = box.isSwapped ? box.swappedGameId : box.gameId;
+                    let nextPrice = box.isSwapped ? box.swappedPrice : box.price;
+                    let nextStart = box.isSwapped ? box.swappedEndTicket : box.endTicket;
+
+                    return { ...box, gameId: nextGameId, price: nextPrice, startTicket: nextStart !== '' ? nextStart : box.startTicket, 
+                        endTicket: '', isSwapped: false, swappedGameId: '', swappedPrice: 0, swappedStartTicket: '', swappedEndTicket: '' };
                 });
                 signaturePad.clear();
                 document.getElementById('clerkName').value = '';
-                saveData();
-                renderGrid();
-                calculateTotals();
-                alert("Shift rolled over successfully.");
+                document.getElementById('validationWarning').classList.add('hidden');
+                renderGrid(); calculateTotals(); alert("Shift rolled over!");
             }
         }
 
-        // --- Admin & Setup Logic ---
-        function saveStoreProfile() {
-            const pwd1 = document.getElementById('adminPwd').value;
-            const pwd2 = document.getElementById('adminPwdConfirm').value;
-            if (pwd1 && pwd1 !== pwd2) {
-                alert("Passwords do not match!");
-                return;
-            }
-            if (pwd1) {
-                adminPassword = pwd1;
-                localStorage.setItem('adminPassword', adminPassword);
-            }
-            localStorage.setItem('storeName', document.getElementById('storeName').value);
-            localStorage.setItem('retailerNumber', document.getElementById('retailerNumber').value);
-            localStorage.setItem('storeEmail', document.getElementById('storeEmail').value);
-            toggleModal('storeSetupModal');
-            alert("Profile Saved!");
+        // --- Master Admin Setup ---
+        function renderMasterList() {
+            const list = document.getElementById('masterGamesList');
+            list.innerHTML = masterGames.map((g, i) => `
+                <div class="flex justify-between items-center border-b py-1 text-sm">
+                    <span>${g.id} | ${g.name} | <strong class="text-green-600">$${g.price}</strong></span>
+                    <button onclick="removeMasterGame(${i})" class="text-red-500 text-xs hover:bg-red-50 px-2 rounded">Remove</button>
+                </div>
+            `).join('');
         }
 
-        function addBox() {
-            if (document.getElementById('authPwd').value !== adminPassword) return alert('Invalid Password');
-            boxCount++;
-            boxes.push({ id: boxCount, gameId: '', price: 0, startTicket: '', endTicket: '' });
-            saveData();
-            renderGrid();
+        function addMasterGame() {
+            if (!checkAdminAuth()) return;
+            const id = document.getElementById('newGameId').value;
+            const name = document.getElementById('newGameName').value;
+            const price = parseFloat(document.getElementById('newGamePrice').value);
+            
+            if (id && name && price) {
+                masterGames.push({ id, name, price });
+                document.getElementById('newGameId').value = ''; document.getElementById('newGameName').value = ''; document.getElementById('newGamePrice').value = '';
+                renderMasterList(); renderGrid(); 
+            } else { alert("Fill all game details."); }
         }
 
-        function removeBox() {
-            if (document.getElementById('authPwd').value !== adminPassword) return alert('Invalid Password');
-            if (boxCount > 0) {
-                boxCount--;
-                boxes.pop();
-                saveData();
-                renderGrid();
-            }
-        }
-
-        function mergeBox(index) {
-            alert(`2-Slot Merged view for Box ${index + 1} activated. (Extended UI feature expanding)`);
-            // Add custom logic here to group Box A and Box B visually if required
-        }
-
-        function saveData() {
-            localStorage.setItem('boxes', JSON.parse(JSON.stringify(boxes)));
-            localStorage.setItem('boxCount', boxCount);
+        function removeMasterGame(index) {
+            if (!checkAdminAuth()) return;
+            masterGames.splice(index, 1); renderMasterList(); renderGrid(); 
         }
 
         // --- Scanner Logic ---
         let html5QrcodeScanner;
-        function startScanner() {
+        function startBoxScanner(boxIndex, isSwapSlot) {
+            document.getElementById('scannerTargetLabel').textContent = `Testing Scan for ${boxes[boxIndex].name}`;
             toggleModal('scannerModal');
+            
             html5QrcodeScanner = new Html5Qrcode("reader");
-            html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } },
-                (decodedText, decodedResult) => {
-                    alert(`Scanned: ${decodedText}\nMapping to grid...`);
-                    stopScanner();
-                },
-                (errorMessage) => { /* Ignore background scan errors */ }
-            ).catch((err) => { console.log(err); });
+            html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 100 } },
+                (decodedText) => { stopScanner(); processTestScan(decodedText, boxIndex, isSwapSlot); },
+                (errorMessage) => { }
+            ).catch(err => console.log(err));
         }
 
         function stopScanner() {
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.stop().then(() => {
-                    toggleModal('scannerModal');
-                }).catch(err => console.log(err));
+            if (html5QrcodeScanner) html5QrcodeScanner.stop().then(() => document.getElementById('scannerModal').classList.remove('active'));
+            else document.getElementById('scannerModal').classList.remove('active');
+        }
+
+        function processTestScan(scannedData, index, isSwap) {
+            let num = scannedData.replace(/\D/g, ''); if(num.length > 3) num = num.slice(-3);
+            const box = boxes[index];
+            let start = isSwap ? box.swappedStartTicket : box.startTicket;
+            let end = isSwap ? box.swappedEndTicket : box.endTicket;
+
+            if (!start) { if(isSwap) boxes[index].swappedStartTicket = num; else boxes[index].startTicket = num; }
+            else if (!end) { if(isSwap) boxes[index].swappedEndTicket = num; else boxes[index].endTicket = num; }
+            else {
+                if(confirm(`Overwrite END ticket with ${num}? (Cancel for START)`)) {
+                    if(isSwap) boxes[index].swappedEndTicket = num; else boxes[index].endTicket = num;
+                } else { if(isSwap) boxes[index].swappedStartTicket = num; else boxes[index].startTicket = num; }
+            }
+            renderGrid();
+        }
+
+        function toggleModal(id) {
+            const el = document.getElementById(id); el.classList.toggle('active');
+            if(id === 'masterAdminModal' && el.classList.contains('active')) {
+                document.getElementById('masterAuthPwd').value = '';
+                renderMasterList();
             }
         }
 
-        // --- Utils ---
-        function toggleModal(id) {
-            const el = document.getElementById(id);
-            el.classList.toggle('active');
-        }
-
-        // --- Init ---
+        // Init
         renderGrid();
-        document.getElementById('storeName').value = localStorage.getItem('storeName') || '';
-        document.getElementById('retailerNumber').value = localStorage.getItem('retailerNumber') || '';
-        document.getElementById('storeEmail').value = localStorage.getItem('storeEmail') || '';
     </script>
 </body>
 </html>
+
 
