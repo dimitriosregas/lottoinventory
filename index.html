@@ -227,10 +227,9 @@
                             <label for="game-editor-name" class="block text-[10px] font-semibold text-gray-500">Game Name</label>
                             <input id="game-editor-name" type="text" required class="w-full border rounded p-2 text-sm border-gray-300">
                         </div>
-                        <button id="game-editor-submit" type="submit" class="col-span-2 bg-slate-900 hover:bg-slate-800 text-white py-2 rounded-lg text-sm font-semibold">Save Game</button>
+                        <button id="game-editor-submit" type="submit" class="col-span-2 bg-slate-900 hover:bg-slate-800 text-white py-2 rounded-lg text-sm font-semibold">Add Game</button>
                     </form>
                 </div>
-                <!-- This list holds all games and edit/delete buttons -->
                 <div id="admin-games-list" class="space-y-2"></div>
             </div>
         </div>
@@ -294,4 +293,1091 @@
 
     <!-- Application Script -->
     <script>
-        // Restored Master Games Database (Filtered to 20
+        // Master Games Database
+        let masterGames = JSON.parse(localStorage.getItem('lotto_master_games')) || [
+            { id: '1802', name: "Jumbo Bucks 300X", price: 30.0 },
+            { id: '1964', name: "Millionaire Jumbo Bucks", price: 20.0 },
+            { id: '1405', name: "JUMBO BUCKS COLLECTIBLE", price: 50.0 },
+            { id: '1909', name: "MEGA MILLIONAIRE JUMBO BUCKS", price: 25.0 },
+            { id: '1404', name: "HOLIDAY RICHES", price: 20.0 },
+            { id: '1403', name: "$50, $100 & $500", price: 10.0 },
+            { id: '1949', name: "Jumbo Jumbo Bucks", price: 10.0 },
+            { id: '1369', name: "100X", price: 10.0 },
+            { id: '1397', name: "JUMBO BUCKS COLLECTIBLE", price: 20.0 },
+            { id: '1204', name: "$5,000,000 Jumbo Bucks", price: 50.0 },
+            { id: '1996', name: "Giant Jumbo Bucks", price: 5.0 },
+            { id: '1382', name: "Instant Cash", price: 10.0 },
+            { id: '1402', name: "MERRY MONEY TREE", price: 5.0 },
+            { id: '1394', name: "LADY JUMBO BUCKS CROSSWORD", price: 3.0 },
+            { id: '1400', name: "HOLIDAY CASH 30X", price: 3.0 },
+            { id: '1396', name: "JUMBO BUCKS COLLECTIBLE", price: 10.0 },
+            { id: '1368', name: "50X", price: 5.0 },
+            { id: '859', name: "$10 Crossword", price: 10.0 },
+            { id: '1858', name: "Giant JUMBO BUCKS Crossword", price: 5.0 },
+            { id: '1825', name: "Jumbo Bucks", price: 2.0 },
+            { id: '1395', name: "JUMBO BUCKS COLLECTIBLE", price: 5.0 },
+            { id: '1399', name: "NUTCRACKER CASH", price: 2.0 },
+            { id: '854', name: "Bingo Jumbo", price: 3.0 },
+            { id: '1856', name: "JUMBO BUCKS Crossword", price: 3.0 },
+            { id: '1392', name: "JUMBO BUCKS COLLECTIBLE", price: 1.0 },
+            { id: '1951', name: "Junior Jumbo Bucks", price: 1.0 },
+            { id: '1398', name: "GIFT TAG CASH", price: 1.0 },
+            { id: '1385', name: "GAME SHOW EXPERIENCE", price: 5.0 },
+            { id: '1378', name: "Maximum Millions", price: 20.0 },
+            { id: '1387', name: "ALL THE MONEY $$$", price: 20.0 },
+            { id: '1266', name: "LUCKY ROLL", price: 1.0 },
+            { id: '1364', name: "Jumbo Bucks Extravaganza", price: 50.0 },
+            { id: '1370', name: "200X", price: 20.0 },
+            { id: '1386', name: "24K GOLD", price: 10.0 },
+            { id: '1377', name: "$500,000 Bonus Multiplier", price: 10.0 },
+            { id: '1391', name: "$500 FEVER", price: 10.0 },
+            { id: '1381', name: "High Voltage Cash", price: 5.0 },
+            { id: '1762', name: "Lucky 7s", price: 1.0 },
+            { id: '1601', name: "Jumbo Bucks Seasons Winter", price: 3.0 },
+            { id: '1372', name: "JUMBO BUCKS TRIPLE PLAY", price: 5.0 },
+            { id: '1374', name: "CASH GAMES", price: 10.0 },
+            { id: '1162', name: "Cash Frenzy", price: 5.0 },
+            { id: '1171', name: "WIN WIN WIN", price: 5.0 },
+            { id: '1177', name: "Serious Money", price: 5.0 },
+            { id: '1186', name: "$500,000 Riches", price: 10.0 },
+            { id: '1211', name: "Cash In A Flash", price: 5.0 },
+            { id: '1216', name: "Cash Payout", price: 5.0 },
+            { id: '1221', name: "Blazing Riches", price: 10.0 },
+            { id: '1247', name: "DELUXE GOLD", price: 30.0 },
+            { id: '1275', name: "GREAT 8's", price: 10.0 },
+            { id: '1278', name: "FIND THE 9's", price: 5.0 },
+            { id: '1304', name: "$50,000 BONUS SCRATCH", price: 2.0 },
+            { id: '1305', name: "$250,000 BONUS SCRATCH", price: 5.0 },
+            { id: '1306', name: "$500,000 BONUS SCRATCH", price: 10.0 },
+            { id: '1307', name: "CYBER CASH", price: 5.0 },
+            { id: '1310', name: "THE FASTEST ROAD TO $1 MILLION", price: 50.0 },
+            { id: '1315', name: "200X THE WIN", price: 20.0 },
+            { id: '1318', name: "RED HOT SLOTS", price: 5.0 },
+            { id: '1322', name: "Multplier Mania", price: 10.0 },
+            { id: '1323', name: "$1,000,000 Multplier Jackpot", price: 20.0 },
+            { id: '1326', name: "POWER PLAY", price: 5.0 },
+            { id: '1328', name: "DOUBLE DEUCES", price: 2.0 },
+            { id: '1330', name: "Lady Luck", price: 10.0 },
+            { id: '1331', name: "SUPER CASH BONANZA", price: 20.0 },
+            { id: '1332', name: "DID I WIN?", price: 1.0 },
+            { id: '1334', name: "CASH IS KING", price: 5.0 },
+            { id: '1335', name: "$500,000 RICHER", price: 10.0 },
+            { id: '1349', name: "Silver 7s", price: 10.0 },
+            { id: '1353', name: "CASH TIMES 10", price: 10.0 },
+            { id: '1355', name: "Mega Play Jumbo Bucks Crossword", price: 20.0 },
+            { id: '1359', name: "$1,000 Frenzy", price: 10.0 },
+            { id: '1362', name: "Monopoly", price: 10.0 },
+            { id: '1363', name: "$50, $100, and $500!", price: 10.0 },
+            { id: '1366', name: "20X", price: 2.0 },
+            { id: '1373', name: "KING'S RANSOM", price: 10.0 },
+            { id: '1376', name: "Fiery 7s", price: 5.0 },
+            { id: '1379', name: "Cash Notes", price: 2.0 },
+            { id: '1389', name: "$100 TRIPLER", price: 2.0 },
+            { id: '1393', name: "JUMBO BUCKS COLLECTIBLE", price: 2.0 },
+            { id: '1853', name: "Lady Jumbo Bucks", price: 3.0 },
+            { id: '1997', name: "Giant Jumbo Bucks", price: 5.0 },
+            { id: '1854', name: "JUMBO BUCKS Bingo", price: 3.0 },
+            { id: '1950', name: "JUMBO Jumbo Bucks", price: 10.0 },
+            { id: '1406', name: "TIC TAC DOUBLER", price: 2.0 },
+            { id: '1390', name: "BANKROLL", price: 5.0 },
+            { id: '1407', name: "GRAND STACKS", price: 10.0 },
+            { id: '1408', name: "$100, $250 AND $500!", price: 20.0 },
+            { id: '1409', name: "SUPER 7s", price: 2.0 },
+            { id: '1410', name: "VIP TRIPLE BONUS", price: 5.0 },
+            { id: '1411', name: "BIG CA$H", price: 10.0 },
+            { id: '1412', name: "BLACK DIAMOND DAZZLER", price: 10.0 },
+            { id: '1143', name: "Jumbo Bucks Premium Edition", price: 1.0 },
+            { id: '1144', name: "Jumbo Bucks Premium Edition", price: 2.0 },
+            { id: '1145', name: "Jumbo Bucks Premium Edition", price: 5.0 },
+            { id: '1146', name: "Jumbo Bucks Premium Edition", price: 10.0 },
+            { id: '1147', name: "Wild Doubler $$", price: 1.0 },
+            { id: '1148', name: "TRIPLE $$$", price: 2.0 },
+            { id: '1149', name: "ULTIMATE 7's", price: 5.0 },
+            { id: '1150', name: "WIN BIG", price: 20.0 },
+            { id: '1151', name: "SHOW ME 10X", price: 1.0 },
+            { id: '1152', name: "SHOW ME 20X", price: 2.0 },
+            { id: '1153', name: "SHOW ME 50X", price: 5.0 },
+            { id: '1154', name: "SHOW ME 100X", price: 10.0 },
+            { id: '1155', name: "Casino Nights", price: 1.0 },
+            { id: '1156', name: "Triple Luck", price: 2.0 },
+            { id: '1157', name: "Black Pearls", price: 5.0 },
+            { id: '1158', name: "Blazing Suits", price: 10.0 },
+            { id: '1159', name: "$5,000 IN A FLASH", price: 30.0 },
+            { id: '1160', name: "NEON $", price: 1.0 },
+            { id: '1161', name: "Payday", price: 2.0 },
+            { id: '1163', name: "$500,000 Jackpot", price: 10.0 },
+            { id: '1164', name: "Hot $5,000", price: 1.0 },
+            { id: '1165', name: "Hot $20,000", price: 2.0 },
+            { id: '1166', name: "Hot $200,000", price: 5.0 },
+            { id: '1167', name: "Hot $500,000", price: 10.0 },
+            { id: '1168', name: "Tic Tac Tripler", price: 1.0 },
+            { id: '1169', name: "Double Cash", price: 2.0 },
+            { id: '1170', name: "Twisted", price: 3.0 },
+            { id: '1172', name: "Wild Cash", price: 10.0 },
+            { id: '1173', name: "Raceway Riches", price: 2.0 },
+            { id: '1174', name: "Jumbo Jumbo Bucks Limited", price: 10.0 },
+            { id: '1175', name: "7-11-21", price: 1.0 },
+            { id: '1176', name: "24 Karat Gold", price: 2.0 },
+            { id: '1178', name: "$1 MILLION BLOWOUT", price: 20.0 },
+            { id: '1179', name: "Quick $50", price: 1.0 },
+            { id: '1180', name: "Quick $100", price: 2.0 },
+            { id: '1181', name: "Quick $500", price: 5.0 },
+            { id: '1182', name: "Quick $5,000", price: 10.0 },
+            { id: '1183', name: "Lucky Ticket", price: 1.0 },
+            { id: '1184', name: "Cash Drop", price: 2.0 },
+            { id: '1185', name: "Boom", price: 5.0 },
+            { id: '1187', name: "Merry Money", price: 20.0 },
+            { id: '1188', name: "Season's Greetings", price: 1.0 },
+            { id: '1189', name: "Happy Holidays", price: 2.0 },
+            { id: '1190', name: "Ornaments", price: 5.0 },
+            { id: '1191', name: "Winter Riches", price: 10.0 },
+            { id: '1192', name: "FAST CA$H", price: 1.0 },
+            { id: '1193', name: "Wild Cherry Doubler", price: 2.0 },
+            { id: '1194', name: "Lady Luck Multiplier", price: 5.0 },
+            { id: '1195', name: "$3,000,000 Spectacular", price: 30.0 },
+            { id: '1196', name: "Jumbo Bucks Sapphire", price: 1.0 },
+            { id: '1197', name: "Jumbo Bucks Emerald", price: 2.0 },
+            { id: '1198', name: "Jumbo Bucks Ruby", price: 5.0 },
+            { id: '1199', name: "Jumbo Bucks Diamond", price: 10.0 },
+            { id: '1200', name: "Cash Crush", price: 1.0 },
+            { id: '1201', name: "Winter Jumbo Bucks Seasons", price: 3.0 },
+            { id: '1202', name: "Wild 10s", price: 2.0 },
+            { id: '1203', name: "Aces & 8s", price: 5.0 },
+            { id: '1205', name: "10X", price: 1.0 },
+            { id: '1206', name: "20X", price: 2.0 },
+            { id: '1207', name: "50X", price: 5.0 },
+            { id: '1208', name: "100X", price: 10.0 },
+            { id: '1209', name: "Money Bags", price: 1.0 },
+            { id: '1210', name: "Super Cash Bonus", price: 2.0 },
+            { id: '1212', name: "$500,000 Cash Bonus", price: 10.0 },
+            { id: '1213', name: "Fast $5,000", price: 30.0 },
+            { id: '1214', name: "Wild 5s", price: 1.0 },
+            { id: '1215', name: "$20 Grand", price: 2.0 },
+            { id: '1217', name: "$50 or $100", price: 10.0 },
+            { id: '1218', name: "White Hot 7s", price: 1.0 },
+            { id: '1219', name: "Fiery 5's", price: 2.0 },
+            { id: '1220', name: "Spicy Hot Cash", price: 5.0 },
+            { id: '1222', name: "Tic Tac Extra", price: 1.0 },
+            { id: '1224', name: "Path To Riches", price: 3.0 },
+            { id: '1223', name: "Double Match", price: 2.0 },
+            { id: '1225', name: "FAB 4", price: 5.0 },
+            { id: '1226', name: "Lucky Loot", price: 10.0 },
+            { id: '1227', name: "7-11-21", price: 1.0 },
+            { id: '1228', name: "Lotto Cash", price: 2.0 },
+            { id: '1229', name: "Big Money", price: 5.0 },
+            { id: '1230', name: "Mega Cash Blast", price: 20.0 },
+            { id: '1231', name: "Hit $50", price: 1.0 },
+            { id: '1232', name: "Hit $100", price: 2.0 },
+            { id: '1233', name: "Hit $500", price: 5.0 },
+            { id: '1234', name: "Hit $5,000", price: 10.0 },
+            { id: '1235', name: "$5,000 JACKPOT", price: 1.0 },
+            { id: '1236', name: "BIG BUCK$", price: 2.0 },
+            { id: '1237', name: "STRUCK BY LUCK", price: 5.0 },
+            { id: '1238', name: "BIG CASH", price: 10.0 },
+            { id: '1239', name: "MERRY CHRISTMAS", price: 20.0 },
+            { id: '1240', name: "HOLIDAY CASH DOUBLER", price: 1.0 },
+            { id: '1241', name: "RED/GOLD/GREEN SERIES", price: 2.0 },
+            { id: '1242', name: "HOLIDAY RICHES", price: 5.0 },
+            { id: '1243', name: "HOLIDAY GOLD", price: 10.0 },
+            { id: '1244', name: "LOADED WITH $20s", price: 1.0 },
+            { id: '1245', name: "ELECTRIC CASH", price: 2.0 },
+            { id: '1246', name: "FIRE & ICE", price: 5.0 },
+            { id: '1248', name: "Jumbo Bucks 20th Anniversary Edition", price: 1.0 },
+            { id: '1249', name: "Jumbo Bucks 20th Anniversary Edition", price: 2.0 },
+            { id: '1250', name: "Jumbo Bucks 20th Anniversary Edition", price: 5.0 },
+            { id: '1251', name: "Jumbo Bucks 20th Anniversary Edition", price: 10.0 },
+            { id: '1252', name: "Jumbo Bucks 20th Anniversary Edition", price: 20.0 },
+            { id: '1253', name: "GOLD RUSH", price: 1.0 },
+            { id: '1254', name: "JACKPOT SLOTS", price: 3.0 },
+            { id: '1255', name: "$200,000 GOLDEN TICKET", price: 5.0 },
+            { id: '1256', name: "JUMBO BUCKS 500X", price: 50.0 },
+            { id: '1257', name: "10X", price: 1.0 },
+            { id: '1258', name: "20X", price: 2.0 },
+            { id: '1259', name: "50X", price: 5.0 },
+            { id: '1260', name: "100X", price: 10.0 },
+            { id: '1261', name: "$5,000 BONUS", price: 1.0 },
+            { id: '1262', name: "CASH FLOW", price: 2.0 },
+            { id: '1263', name: "$200,000 WINNING 7", price: 5.0 },
+            { id: '1264', name: "BIG RICHES", price: 10.0 },
+            { id: '1265', name: "$3,000 LOADED", price: 30.0 },
+            { id: '1267', name: "KING OF CASH", price: 2.0 },
+            { id: '1268', name: "ACE OF SPADES", price: 5.0 },
+            { id: '1269', name: "CASINO CASH", price: 10.0 },
+            { id: '1270', name: "$50 or $100", price: 10.0 },
+            { id: '1271', name: "FAST $250", price: 2.0 },
+            { id: '1272', name: "FORTUNE 5s", price: 2.0 },
+            { id: '1273', name: "BLOCK-O", price: 3.0 },
+            { id: '1274', name: "IN THE GREEN", price: 5.0 },
+            { id: '1276', name: "TIC TAC MULTIPLIER", price: 1.0 },
+            { id: '1277', name: "LUCKY 777", price: 2.0 },
+            { id: '1279', name: "FAB 5", price: 5.0 },
+            { id: '1280', name: "HIT and WIN!", price: 10.0 },
+            { id: '1281', name: "Quick CA$H", price: 1.0 },
+            { id: '1282', name: "CASH MONEY", price: 2.0 },
+            { id: '1283', name: "ALL ABOUT THE BENJAMINS", price: 5.0 },
+            { id: '1284', name: "FEELIN' LIKE A MILLION BUCKS", price: 20.0 },
+            { id: '1285', name: "$50 CASH!", price: 1.0 },
+            { id: '1286', name: "$100 CASH!", price: 2.0 },
+            { id: '1287', name: "$500 CASH!", price: 5.0 },
+            { id: '1288', name: "$1,000 CASH!", price: 10.0 },
+            { id: '1289', name: "7-11-21 10X", price: 2.0 },
+            { id: '1290', name: "Holiday Lights", price: 3.0 },
+            { id: '1291', name: "$200,000 STACKS OF CASH", price: 5.0 },
+            { id: '1292', name: "BLACK ICE", price: 10.0 },
+            { id: '1293', name: "The Most Wonderful Time of The Year", price: 20.0 },
+            { id: '1294', name: "Holiday Wishes", price: 1.0 },
+            { id: '1295', name: "TIS THE SEASON", price: 2.0 },
+            { id: '1296', name: "IT'S GOLD OUTSIDE", price: 5.0 },
+            { id: '1297', name: "HOLIDAY DAZZLE", price: 10.0 },
+            { id: '1298', name: "CASH IN", price: 1.0 },
+            { id: '1299', name: "DOUBLE DOLLAR$", price: 2.0 },
+            { id: '1300', name: "SILVER & GOLD", price: 5.0 },
+            { id: '1301', name: "Jumbo Bucks Seasons Summer", price: 3.0 },
+            { id: '1302', name: "JUMBO BUCKS SPECIAL EDITION", price: 30.0 },
+            { id: '1303', name: "$10,000 BONUS SCRATCH", price: 1.0 },
+            { id: '1308', name: "$50, $100 and $500", price: 10.0 },
+            { id: '1309', name: "EXTREME GREEN", price: 10.0 },
+            { id: '1311', name: "10X THE WIN", price: 1.0 },
+            { id: '1312', name: "20X THE WIN", price: 2.0 },
+            { id: '1313', name: "50X THE WIN", price: 5.0 },
+            { id: '1314', name: "100X THE WIN", price: 10.0 },
+            { id: '1316', name: "Sunny Money", price: 1.0 },
+            { id: '1317', name: "WINFALL", price: 2.0 },
+            { id: '1319', name: "KA POW!", price: 10.0 },
+            { id: '1320', name: "7's Multplier", price: 1.0 },
+            { id: '1321', name: "Multipler Madness", price: 5.0 },
+            { id: '1324', name: "TRIPLE CHANCE", price: 2.0 },
+            { id: '1325', name: "LOTERIA", price: 3.0 },
+            { id: '1327', name: "ULTIMATE BONUS PAYOUT", price: 10.0 },
+            { id: '1329', name: "BIG 777", price: 5.0 },
+            { id: '1333', name: "$20,000 PAYOUT", price: 2.0 },
+            { id: '1336', name: "SUPREME JUMBO BUCKS", price: 1.0 },
+            { id: '1337', name: "SUPREME JUMBO BUCKS", price: 2.0 },
+            { id: '1338', name: "SUPREME JUMBO BUCKS", price: 5.0 },
+            { id: '1339', name: "SUPREME JUMBO BUCKS", price: 10.0 },
+            { id: '1340', name: "SUPREME JUMBO BUCKS", price: 20.0 },
+            { id: '1341', name: "Unwrap the Cash!", price: 1.0 },
+            { id: '1342', name: "Stocking Stuffer", price: 2.0 },
+            { id: '1343', name: "Holiday Cash 30X", price: 3.0 },
+            { id: '1344', name: "Mistletoe Money", price: 5.0 },
+            { id: '1345', name: "Holiday Magic", price: 10.0 },
+            { id: '1346', name: "Holiday Bonus", price: 20.0 },
+            { id: '1347', name: "Bonus Hand Blackjack", price: 1.0 },
+            { id: '1348', name: "Money Rush", price: 5.0 },
+            { id: '1350', name: "Jumbo Bucks Super Supreme", price: 30.0 },
+            { id: '1351', name: "MORE MONEY", price: 2.0 },
+            { id: '1352', name: "$25, $50, & $250 CASH OUT", price: 5.0 },
+            { id: '1354', name: "$100, $250, AND $500!", price: 20.0 },
+            { id: '1356', name: "$50 Frenzy", price: 1.0 },
+            { id: '1357', name: "$100 Frenzy", price: 2.0 },
+            { id: '1358', name: "$500 Frenzy", price: 5.0 },
+            { id: '1360', name: "$2,000 Frenzy", price: 20.0 },
+            { id: '1361', name: "Monopoly", price: 5.0 },
+            { id: '1365', name: "10X", price: 1.0 },
+            { id: '1367', name: "30X CASHWORD", price: 3.0 },
+            { id: '1371', name: "STACKS OF GREEN", price: 2.0 },
+            { id: '1375', name: "Hot Chicken", price: 2.0 },
+            { id: '1380', name: "Treasure Hunt", price: 3.0 },
+            { id: '1383', name: "LUCKY GEMS", price: 1.0 },
+            { id: '1384', name: "TIMES 10 BONUS", price: 2.0 },
+            { id: '1388', name: "PAY ME!", price: 1.0 },
+            { id: '1401', name: "Jumbo Bucks Seasons Stars and Stripes", price: 3.0 },
+            { id: '1501', name: "Summer Jumbo Bucks Seasons", price: 3.0 },
+            { id: '1851', name: "Junior JUMBO BUCKS", price: 1.0 },
+            { id: '1852', name: "Jumbo Bucks", price: 2.0 },
+            { id: '1901', name: "Jumbo Seasons- Summer", price: 3.0 },
+            { id: '1995', name: "Giant Jumbo Bucks", price: 5.0 },
+            { id: '1959', name: "Giant Jumbo Bucks", price: 5.0 },
+            { id: '1960', name: "Millionaire Jumbo Bucks", price: 20.0 },
+            { id: '1961', name: "Millionaire Jumbo Bucks", price: 20.0 },
+            { id: '1962', name: "Millionaire Jumbo Bucks", price: 20.0 },
+            { id: '1963', name: "Millionaire Jumbo Bucks", price: 20.0 },
+            { id: '1990', name: "Mega Millionaire Jumbo Bucks", price: 25.0 },
+            { id: '1991', name: "JUMBO Jumbo Bucks", price: 10.0 },
+            { id: '1992', name: "JUMBO Jumbo Bucks", price: 10.0 },
+            { id: '1993', name: "Jumbo Jumbo Bucks", price: 10.0 },
+            { id: '1994', name: "Jumbo Jumbo Bucks", price: 10.0 },
+        ];
+
+        // Store Profile State
+        let storeProfile = JSON.parse(localStorage.getItem('lotto_store_profile')) || {
+            name: "Shell #402 - Main St",
+            number: "SH402",
+            address: "100 Broadway, Sparta, TN",
+            email: "manager@facilityops.net",
+            password: "admin"
+        };
+
+        // 40 Boxes state
+        let boxesData = JSON.parse(localStorage.getItem('lotto_boxes_data')) || Array.from({length: 40}, (_, i) => ({
+            id: i + 1,
+            label: `Box ${i + 1}`,
+            gameId: '',
+            startTicket: '',
+            endTicket: '',
+            oldGame: null,
+            oldStart: '',
+            oldEnd: '',
+            mergedWithNext: false,
+            startLocked: false
+        }));
+
+        let boxSetupComplete = localStorage.getItem('lotto_box_setup_complete') === 'true';
+        let shiftState = JSON.parse(localStorage.getItem('lotto_shift_state')) || {
+            date: getLocalDateKey(),
+            name: 'A',
+            status: 'open',
+            startedAt: new Date().toISOString()
+        };
+        let shiftHistory = JSON.parse(localStorage.getItem('lotto_shift_history')) || [];
+
+        let html5QrCode = null;
+        let hasSignature = false;
+        let activeScannerBoxIndex = null; 
+
+        // Initialization on Load
+        window.addEventListener('DOMContentLoaded', () => {
+            updateStoreHeader();
+            updateBoxSetupStatus();
+            updateShiftStatus();
+            renderBoxes();
+            updateLiveDateTime();
+            setInterval(updateLiveDateTime, 1000);
+            initSignaturePad();
+        });
+
+        function updateStoreHeader() {
+            document.getElementById('store-subtitle').innerText = `${storeProfile.name} (${storeProfile.number}) • ${storeProfile.address}`;
+            document.getElementById('store-name-input').value = storeProfile.name;
+            document.getElementById('store-num-input').value = storeProfile.number;
+            document.getElementById('store-address-input').value = storeProfile.address;
+            document.getElementById('store-email-input').value = storeProfile.email;
+            document.getElementById('store-password-input').value = storeProfile.password;
+        }
+
+        function updateLiveDateTime() {
+            const now = new Date();
+            if (rolloverClosedShiftIfNeeded(now)) renderBoxes();
+            document.getElementById('live-datetime').innerText = now.toLocaleString();
+        }
+
+        function getLocalDateKey(date = new Date()) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function updateShiftStatus() {
+            const label = document.getElementById('active-shift-label');
+            const button = document.getElementById('shift-signoff-button');
+            if (!label || !button) return;
+            label.innerText = `Shift ${shiftState.name} / ${shiftState.status === 'open' ? 'Open' : 'Closed'}`;
+            button.disabled = shiftState.status !== 'open';
+            button.classList.toggle('opacity-50', button.disabled);
+            button.classList.toggle('cursor-not-allowed', button.disabled);
+            button.innerText = shiftState.status !== 'open'
+                ? 'Shift B Signed Off'
+                : shiftState.name === 'A'
+                    ? 'Confirm Shift End & Start Shift B'
+                    : 'Confirm Shift B End';
+        }
+
+        function rolloverClosedShiftIfNeeded(now) {
+            const today = getLocalDateKey(now);
+            if (shiftState.status !== 'closed' || shiftState.date === today) return false;
+
+            boxesData = boxesData.map(box => ({
+                ...box,
+                startTicket: box.gameId ? (box.endTicket || box.startTicket) : box.startTicket,
+                endTicket: box.gameId ? '' : box.endTicket,
+                oldGame: null, oldStart: '', oldEnd: '',
+                startLocked: !!box.gameId 
+            }));
+            shiftState = { date: today, name: 'A', status: 'open', startedAt: now.toISOString() };
+            localStorage.setItem('lotto_shift_state', JSON.stringify(shiftState));
+            persist();
+            updateShiftStatus();
+            return true;
+        }
+
+        // Render Grid of Boxes
+        function renderBoxes() {
+            const grid = document.getElementById('dispenser-grid');
+            grid.innerHTML = '';
+
+            for (let index = 0; index < boxesData.length; index++) {
+                if (boxesData[index].mergedWithNext && boxesData[index + 1]) {
+                    const group = document.createElement('div');
+                    group.className = 'col-span-2 grid grid-cols-2 gap-2 rounded-lg border border-blue-300 bg-blue-50/40 p-2';
+                    group.appendChild(createBoxCard(index));
+                    group.appendChild(createBoxCard(index + 1));
+                    grid.appendChild(group);
+                    index++;
+                } else {
+                    grid.appendChild(createBoxCard(index));
+                }
+            }
+            calculateTotals();
+        }
+
+        function createBoxCard(index) {
+            const box = boxesData[index];
+            const groupedWithPrevious = index > 0 && boxesData[index - 1].mergedWithNext;
+            const card = document.createElement('div');
+            card.className = 'min-w-0 bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex flex-col gap-2';
+
+            const startInputClass = box.startLocked 
+                ? "w-full border rounded p-1 text-xs text-center font-mono border-red-300 bg-red-50 cursor-pointer"
+                : "w-full border rounded p-1 text-xs text-center font-mono border-gray-300";
+
+            card.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <input type="text" value="${box.label}" onchange="updateBoxLabel(${index}, this.value)" class="font-bold text-xs bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 outline-none min-w-0 w-24">
+                        <div class="flex items-center gap-1">
+                            <button onclick="initScanner(${index})" title="Scan ticket for this box" class="text-xs px-1.5 py-0.5 rounded bg-blue-100 hover:bg-blue-200 text-blue-700">📷</button>
+                            <button onclick="toggleMerge(${index})" title="Group boxes" ${groupedWithPrevious || index === boxesData.length - 1 ? 'disabled' : ''} class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 font-mono disabled:opacity-40 disabled:cursor-not-allowed">&</button>
+                            <button onclick="deleteBox(${index})" title="Delete" class="text-gray-400 hover:text-red-600 text-xs font-bold">&times;</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-gray-500 font-semibold block">Active Game Number</label>
+                        <input type="text" inputmode="numeric" maxlength="6" value="${box.gameId || ''}" placeholder="e.g. 1858" onchange="updateBoxGame(${index}, this.value)" class="w-full text-xs border rounded p-1 bg-gray-50 border-gray-300">
+                        <span class="text-[10px] text-gray-500">${getGameDescription(box.gameId)}</span>
+                    </div>
+                    ${box.oldGame ? `
+                    <div class="bg-amber-50 p-1.5 rounded border border-amber-200 text-[10px] space-y-1">
+                        <span class="font-bold text-amber-800">Mid-Shift Swapped Old Game:</span>
+                        <input type="text" inputmode="numeric" maxlength="6" value="${box.oldGame || ''}" placeholder="Old game number" onchange="updateOldGame(${index}, this.value)" class="w-full text-[10px] border rounded p-0.5 bg-white border-amber-300">
+                        <span class="text-[10px] text-amber-800">${getGameDescription(box.oldGame)}</span>
+                        <div class="flex gap-1">
+                            <input type="text" placeholder="Old Start" value="${box.oldStart}" onchange="updateBoxData(${index}, 'oldStart', this.value)" class="w-1/2 border rounded p-0.5 text-center bg-white">
+                            <input type="text" placeholder="Old End" value="${box.oldEnd}" onchange="updateBoxData(${index}, 'oldEnd', this.value)" class="w-1/2 border rounded p-0.5 text-center bg-white">
+                        </div>
+                    </div>
+                    ` : ''}
+                    <div class="flex gap-1 pt-1">
+                        <div class="w-1/2">
+                            <span class="text-[9px] text-gray-400 block" title="${box.startLocked ? 'Locked by previous shift. Requires Admin Password to edit.' : ''}">Start Ticket ${box.startLocked ? '🔒' : ''}</span>
+                            <input type="text" value="${box.startTicket}" placeholder="0001" onchange="updateStartTicket(${index}, this.value)" class="${startInputClass}">
+                        </div>
+                        <div class="w-1/2">
+                            <span class="text-[9px] text-gray-400 block">End Ticket</span>
+                            <input type="text" value="${box.endTicket}" placeholder="End #" onchange="updateBoxData(${index}, 'endTicket', this.value)" class="w-full border rounded p-1 text-xs text-center font-mono border-gray-300">
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center pt-1">
+                        <button onclick="triggerMidShiftSwap(${index})" class="text-[10px] text-blue-600 hover:underline">+ New Game</button>
+                        <span id="box-subtotal-${index}" class="text-[10px] font-bold text-emerald-600">$0.00</span>
+                    </div>
+                `;
+            return card;
+        }
+
+        function getGameDescription(gameId) {
+            if (!gameId) return 'Enter a game number.';
+            const game = masterGames.find(item => String(item.id) === String(gameId));
+            return game ? `${game.name} · $${game.price} per ticket` : 'Game not found. Add it now.';
+        }
+
+        function updateBoxLabel(index, val) {
+            const saveLabel = () => { boxesData[index].label = val.trim() || `Box ${index + 1}`; persist(); };
+            if (boxSetupComplete) { verifyAdminAction(saveLabel); renderBoxes(); } else { saveLabel(); }
+        }
+
+        // Feature 1: Add missing game without admin password and alert via email
+        function updateBoxGame(index, val) { 
+            const gameId = val.trim();
+            if (gameId && !masterGames.some(game => String(game.id) === gameId)) {
+                if(confirm(`Game number ${gameId} is not in the system. Would you like to add it now?`)) {
+                    const name = prompt("Enter the Name of the new game:");
+                    if(!name) { renderBoxes(); return; }
+                    const priceStr = prompt("Enter the Ticket Price (e.g. 5, 10, 20):");
+                    const price = parseFloat(priceStr);
+                    if(isNaN(price) || price < 0) { alert("Invalid price."); renderBoxes(); return; }
+                    
+                    masterGames.push({ id: gameId, name: name.trim(), price });
+                    localStorage.setItem('lotto_master_games', JSON.stringify(masterGames));
+                    
+                    boxesData[index]['gameId'] = gameId;
+                    persist();
+                    renderBoxes();
+
+                    const subject = encodeURIComponent(`New Lotto Game Added: ${gameId} at ${storeProfile.number}`);
+                    const body = encodeURIComponent(`Hello Admin,\n\nA clerk has added a new game to the local project lotto database during their shift because it was missing.\n\nStore: ${storeProfile.name}\nGame Number: ${gameId}\nGame Name: ${name}\nPrice: $${price}\n\nPlease update the central database if necessary.`);
+                    window.location.href = `mailto:${storeProfile.email}?subject=${subject}&body=${body}`;
+                    
+                    alert("Game added successfully. Please send the generated email notification to the manager.");
+                    return;
+                } else {
+                    renderBoxes();
+                    return;
+                }
+            }
+            boxesData[index]['gameId'] = gameId;
+            persist();
+            renderBoxes();
+        }
+        
+        function updateOldGame(index, val) { updateGameNumber(index, 'oldGame', val); }
+
+        function updateGameNumber(index, field, value) {
+            const gameId = value.trim();
+            boxesData[index][field] = gameId;
+            persist();
+            renderBoxes();
+        }
+
+        // Feature 2: Prevent Start Number change on shift switch without password
+        function updateStartTicket(index, val) {
+            const box = boxesData[index];
+            if (box.startLocked) {
+                const pass = prompt("This start ticket was carried over from the previous shift and is locked.\n\nEnter Manager Password to override:");
+                if(pass !== storeProfile.password && pass !== 'admin') {
+                    alert("Incorrect Password. Change reverted.");
+                    renderBoxes();
+                    return;
+                }
+                box.startLocked = false;
+            }
+            box.startTicket = val;
+            persist();
+            calculateTotals();
+            renderBoxes();
+        }
+
+        function updateBoxData(index, field, val) { 
+            boxesData[index][field] = val; 
+            persist(); 
+            calculateTotals(); 
+        }
+       
+        function deleteBox(index) {
+            if (boxesData.length <= 1) { alert('At least one box must remain.'); return; }
+            verifyAdminAction(() => {
+                boxesData.splice(index, 1);
+                if (index > 0 && boxesData[index - 1].mergedWithNext) { boxesData[index - 1].mergedWithNext = false; }
+                persist();
+                renderBoxes();
+            });
+        }
+
+        function toggleMerge(index) {
+            const box = boxesData[index];
+            const saveGrouping = () => { box.mergedWithNext = !box.mergedWithNext; persist(); renderBoxes(); };
+            if (boxSetupComplete) verifyAdminAction(saveGrouping); else saveGrouping();
+        }
+
+        function triggerMidShiftSwap(index) {
+            const current = boxesData[index];
+            if(!current.gameId) { alert("Please select current active game first."); return; }
+            if(current.oldGame) { alert("Only two games per box can be included in one shift."); return; }
+            current.oldGame = current.gameId;
+            current.oldStart = current.startTicket;
+            current.oldEnd = current.endTicket;
+            current.gameId = '';
+            current.startTicket = '0001';
+            current.endTicket = '';
+            current.startLocked = false; 
+            persist();
+            renderBoxes();
+        }
+
+        function addBox() {
+            verifyAdminAction(() => {
+                const nextId = Math.max(0, ...boxesData.map(box => Number(box.id) || 0)) + 1;
+                boxesData.push({ id: nextId, label: `Box ${nextId}`, gameId: '', startTicket: '', endTicket: '', oldGame: null, oldStart: '', oldEnd: '', mergedWithNext: false, startLocked: false });
+                persist();
+                renderBoxes();
+            });
+        }
+
+        function persist() {
+            localStorage.setItem('lotto_boxes_data', JSON.stringify(boxesData));
+        }
+
+        function calculateTotals() {
+            let totalSales = 0;
+            boxesData.forEach((box, i) => {
+                let boxSales = 0;
+                if(box.gameId && box.startTicket && box.endTicket) {
+                    const game = masterGames.find(g => g.id === box.gameId);
+                    if(game) {
+                        const sold = (parseInt(box.endTicket) || 0) - (parseInt(box.startTicket) || 0);
+                        if(sold > 0) boxSales += sold * game.price;
+                    }
+                }
+                if(box.oldGame && box.oldStart && box.oldEnd) {
+                    const oldGame = masterGames.find(g => g.id === box.oldGame);
+                    if(oldGame) {
+                        const oldSold = (parseInt(box.oldEnd) || 0) - (parseInt(box.oldStart) || 0);
+                        if(oldSold > 0) boxSales += oldSold * oldGame.price;
+                    }
+                }
+                const subElem = document.getElementById(`box-subtotal-${i}`);
+                if(subElem) subElem.innerText = `$${boxSales.toFixed(2)}`;
+                totalSales += boxSales;
+            });
+            document.getElementById('header-total-sales').innerText = `$${totalSales.toFixed(2)}`;
+            document.getElementById('rev-total-sales').innerText = `$${totalSales.toFixed(2)}`;
+            updateVariance(totalSales);
+            return totalSales;
+        }
+
+        function calculateVariance() {
+            const totalSales = calculateTotals();
+            updateVariance(totalSales);
+        }
+
+        function updateVariance(totalSales) {
+            const posVal = parseFloat(document.getElementById('pos-meter-input').value) || 0;
+            const variance = posVal - totalSales;
+            const varElem = document.getElementById('rev-variance');
+            varElem.innerText = `$${variance.toFixed(2)}`;
+            varElem.className = `text-base font-bold ${variance === 0 ? 'text-emerald-600' : 'text-red-600'}`;
+        }
+
+        function runValidation() {
+            let missing = [];
+            boxesData.forEach((box, i) => {
+                if(box.gameId && (!box.startTicket || !box.endTicket)) {
+                    missing.push(`Box ${box.label} has active game selected but missing start/end numbers.`);
+                }
+            });
+            const banner = document.getElementById('validation-banner');
+            banner.classList.remove('hidden');
+            if(missing.length > 0) {
+                banner.className = "p-3 rounded-lg text-sm font-medium border bg-red-50 border-red-200 text-red-700";
+                banner.innerHTML = "<b>Validation Issues Found:</b><br>" + missing.join('<br>');
+            } else {
+                banner.className = "p-3 rounded-lg text-sm font-medium border bg-emerald-50 border-emerald-200 text-emerald-750";
+                banner.innerText = "All active boxes successfully validated. No missing ticket entries.";
+            }
+        }
+        
+        // RAPID ENTRY MODE LOGIC
+        function openRapidEntryModal() {
+            const listContainer = document.getElementById('rapid-entry-list');
+            listContainer.innerHTML = '';
+            
+            let hasActiveBoxes = false;
+            boxesData.forEach((box, index) => {
+                if(box.gameId) {
+                    hasActiveBoxes = true;
+                    const row = document.createElement('div');
+                    row.className = "flex items-center gap-3 bg-gray-50 p-2 rounded border border-gray-200";
+                    row.innerHTML = `
+                        <div class="w-16 font-bold text-xs text-gray-700">${box.label}</div>
+                        <div class="flex-1 text-[10px] text-gray-500">
+                            Game: <span class="font-bold text-gray-800">#${box.gameId}</span><br>
+                            Start: <span class="font-mono">${box.startTicket || '-'}</span>
+                        </div>
+                        <div>
+                            <input type="text" inputmode="numeric" id="rapid-end-${index}" value="${box.endTicket}" placeholder="End #" class="w-20 border border-gray-300 rounded p-2 text-sm text-center font-bold focus:border-blue-500 focus:outline-none bg-white">
+                        </div>
+                    `;
+                    listContainer.appendChild(row);
+                }
+            });
+            
+            if(!hasActiveBoxes) {
+                listContainer.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">No active games loaded into boxes yet.</p>';
+            }
+            
+            document.getElementById('rapid-entry-modal').classList.remove('hidden');
+        }
+        
+        function closeRapidEntryModal() {
+            document.getElementById('rapid-entry-modal').classList.add('hidden');
+        }
+        
+        function saveRapidEntry() {
+            boxesData.forEach((box, index) => {
+                if(box.gameId) {
+                    const inputField = document.getElementById(`rapid-end-${index}`);
+                    if(inputField) {
+                        box.endTicket = inputField.value.trim();
+                    }
+                }
+            });
+            persist();
+            renderBoxes();
+            closeRapidEntryModal();
+            alert("All entries saved successfully!");
+        }
+
+        // Feature 4: Barcode Scanner integration per box
+        function initScanner(boxIndex = null) {
+            activeScannerBoxIndex = boxIndex;
+            const modal = document.getElementById('scanner-modal');
+            const status = document.getElementById('scanner-status');
+            modal.classList.remove('hidden');
+
+            if (!window.isSecureContext) {
+                status.innerText = 'Camera access requires HTTPS. Open the hosted HTTPS app on your phone.';
+                return;
+            }
+            if (typeof Html5Qrcode === 'undefined' || typeof Html5QrcodeSupportedFormats === 'undefined') {
+                status.innerText = 'The scanner library did not load. Check your internet connection and reload.';
+                return;
+            }
+            if (html5QrCode) return;
+
+            status.innerText = activeScannerBoxIndex !== null 
+                ? `Starting camera for ${boxesData[activeScannerBoxIndex].label}...`
+                : 'Starting global camera...';
+                
+            const barcodeFormats = [
+                Html5QrcodeSupportedFormats.QR_CODE, Html5QrcodeSupportedFormats.CODE_128,
+                Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.CODE_93,
+                Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.UPC_A,
+                Html5QrcodeSupportedFormats.ITF
+            ];
+            html5QrCode = new Html5Qrcode('reader', { formatsToSupport: barcodeFormats });
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: (width, height) => ({ width: Math.min(width, 360), height: Math.min(height, 140) }) },
+                (decodedText) => {
+                    status.innerText = 'Barcode scanned.';
+                    stopScanner().then(() => {
+                        if(activeScannerBoxIndex !== null) {
+                            boxesData[activeScannerBoxIndex].endTicket = decodedText;
+                            persist();
+                            renderBoxes();
+                            alert(`Scanned Code [${decodedText}] applied to ${boxesData[activeScannerBoxIndex].label} End Ticket.\n\n(If this was a Game Number, please copy it to the Game Number field).`);
+                        } else {
+                            alert(`Global Scanned Ticket Code: ${decodedText}`);
+                        }
+                    });
+                },
+                (error) => {}
+            ).catch((error) => {
+                status.innerText = `Could not start camera: ${String(error)}`;
+                html5QrCode = null;
+            });
+        }
+
+        async function stopScanner() {
+            if (html5QrCode) {
+                try { await html5QrCode.stop(); html5QrCode.clear(); } catch (error) {}
+            }
+            document.getElementById('scanner-modal').classList.add('hidden');
+        }
+
+        function openStoreDrawer() {
+            updateStoreHeader();
+            updateBoxSetupStatus();
+            setStoreEditing(false);
+            document.getElementById('store-drawer').classList.remove('hidden');
+        }
+        function closeStoreDrawer() { setStoreEditing(false); document.getElementById('store-drawer').classList.add('hidden'); }
+        function setStoreEditing(isEditing) {
+            document.querySelectorAll('#store-form input').forEach((input) => { input.disabled = !isEditing; });
+            document.getElementById('store-edit-button').classList.toggle('hidden', isEditing);
+            document.getElementById('store-edit-actions').classList.toggle('hidden', !isEditing);
+        }
+        function enableStoreEditing() { setStoreEditing(true); }
+        function cancelStoreEditing() { updateStoreHeader(); setStoreEditing(false); }
+
+        function updateBoxSetupStatus() {
+            document.getElementById('box-setup-status').innerText = boxSetupComplete
+                ? 'Box setup is complete. Label and grouping changes require the manager password.'
+                : 'Set box labels and adjacent pairs on the grid, then complete store setup to lock the layout.';
+            document.getElementById('complete-box-setup').classList.toggle('hidden', boxSetupComplete);
+        }
+
+        function completeBoxSetup() {
+            if (!confirm('Complete store setup? Future box label and grouping changes will require the manager password.')) return;
+            boxSetupComplete = true; localStorage.setItem('lotto_box_setup_complete', 'true');
+            updateBoxSetupStatus(); renderBoxes();
+        }
+
+        function saveStoreProfile(e) {
+            e.preventDefault();
+            storeProfile = {
+                name: document.getElementById('store-name-input').value,
+                number: document.getElementById('store-num-input').value,
+                address: document.getElementById('store-address-input').value,
+                email: document.getElementById('store-email-input').value,
+                password: document.getElementById('store-password-input').value
+            };
+            localStorage.setItem('lotto_store_profile', JSON.stringify(storeProfile));
+            updateStoreHeader(); setStoreEditing(false); closeStoreDrawer();
+            alert("Store profile updated successfully!");
+        }
+
+        // New Feature: Import Data JSON
+        function importDataJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if(data.storeProfile) {
+                        storeProfile = data.storeProfile;
+                        localStorage.setItem('lotto_store_profile', JSON.stringify(storeProfile));
+                    }
+                    if(data.masterGames) {
+                        masterGames = data.masterGames;
+                        localStorage.setItem('lotto_master_games', JSON.stringify(masterGames));
+                    }
+                    if(data.boxesData) {
+                        boxesData = data.boxesData;
+                        localStorage.setItem('lotto_boxes_data', JSON.stringify(boxesData));
+                    }
+                    if(data.shiftState) {
+                        shiftState = data.shiftState;
+                        localStorage.setItem('lotto_shift_state', JSON.stringify(shiftState));
+                    }
+                    if(data.shiftHistory) {
+                        shiftHistory = data.shiftHistory;
+                        localStorage.setItem('lotto_shift_history', JSON.stringify(shiftHistory));
+                    }
+                    updateStoreHeader();
+                    updateShiftStatus();
+                    renderBoxes();
+                    closeStoreDrawer();
+                    alert("Data imported successfully! The page will now reflect your backup.");
+                } catch (err) {
+                    alert("Error importing file. Make sure it is a valid lotto backup JSON.");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // reset file input
+        }
+
+        function openAdminModal() { document.getElementById('admin-modal').classList.remove('hidden'); }
+        function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); document.getElementById('admin-content-view').classList.add('hidden'); document.getElementById('admin-auth-view').classList.remove('hidden'); }
+       
+        function verifyAdmin() {
+            const pass = document.getElementById('admin-pass-input').value;
+            if(pass === storeProfile.password || pass === 'admin') {
+                document.getElementById('admin-auth-view').classList.add('hidden');
+                document.getElementById('admin-content-view').classList.remove('hidden');
+                renderAdminGames(); document.getElementById('admin-pass-input').value = '';
+            } else { alert("Incorrect Admin Password!"); }
+        }
+
+        function verifyAdminAction(callback) {
+            const pass = prompt("Enter Manager Password to proceed:");
+            if(pass === storeProfile.password || pass === 'admin') { callback(); return true; } 
+            else if(pass !== null) { alert("Incorrect password."); }
+            return false;
+        }
+
+        function renderAdminGames() {
+            const list = document.getElementById('admin-games-list'); list.innerHTML = '';
+            masterGames.forEach((g, idx) => {
+                const item = document.createElement('div');
+                item.className = "flex items-center gap-2 bg-gray-50 p-2 rounded-lg border text-xs";
+                item.innerHTML = `<div class="min-w-0 flex-1"><b>[${g.id}]</b> ${g.name} - <span class="text-emerald-600 font-semibold">$${g.price}</span></div>`;
+                list.appendChild(item);
+            });
+        }
+
+        // Print Functions (Optimized for single page formatting)
+        function printWorksheet() {
+            document.body.classList.add('print-mode-worksheet');
+            document.body.classList.remove('print-mode-report');
+            
+            const printArea = document.getElementById('print-worksheet');
+            const now = new Date().toLocaleString();
+            
+            let gridHtml = '<div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 8px;">';
+            boxesData.forEach((box) => {
+                gridHtml += `
+                    <div style="border: 1px solid #94a3b8; padding: 4px; border-radius: 4px; font-size: 10px; break-inside: avoid; background-color: #fff;">
+                        <div style="font-weight: bold; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; margin-bottom: 2px;">
+                            ${box.label} <span style="font-size: 8px; font-weight: normal; color: #64748b; float: right;">${box.gameId ? '#' + box.gameId : 'No Game'}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                            <span style="color: #475569;">Start:</span><span style="font-family: monospace; font-weight: bold;">${box.startTicket || '___'}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+                            <span style="color: #475569;">End:</span><span style="border-bottom: 1px solid #94a3b8; width: 35px; display: inline-block;"></span>
+                        </div>
+                    </div>
+                `;
+            });
+            gridHtml += '</div>';
+
+            printArea.innerHTML = `
+                <div style="padding: 0; background: white; color: black; font-family: sans-serif; width: 100%; box-sizing: border-box; font-size: 12px;">
+                    <h2 style="font-size: 16px; font-weight: bold; text-align: center; margin: 0 0 8px 0; text-transform: uppercase;">Shift Inventory Worksheet</h2>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; border: 1px solid #334155; padding: 6px; border-radius: 4px; font-size: 10px; background: #f8fafc;">
+                        <div><b>Store:</b> ${storeProfile.name}</div>
+                        <div><b>Retailer #:</b> ${storeProfile.number}</div>
+                        <div><b>Date/Time:</b> ${now}</div>
+                        <div><b>Shift:</b> ${shiftState.name}</div>
+                        <div style="grid-column: span 2; border-top: 1px solid #cbd5e1; padding-top: 4px; display: flex; align-items: flex-end;">
+                            <span style="margin-right: 8px; font-weight: bold;">Clerk Name:</span> <div style="flex: 1; border-bottom: 1px solid #000; height: 12px;"></div>
+                        </div>
+                    </div>
+                    ${gridHtml}
+                    <div style="margin-top: 8px; text-align: center; font-size: 9px; color: #64748b; font-style: italic;">
+                        Use the "Rapid Entry Mode" button in the app to quickly copy these numbers in when you are done!
+                    </div>
+                </div>
+            `;
+            setTimeout(() => { window.print(); }, 150);
+        }
+
+        // Feature 3: Final Report generation for printing fit to 1 page
+        function generateAndPrintFinalReport() {
+            document.body.classList.add('print-mode-report');
+            document.body.classList.remove('print-mode-worksheet');
+            
+            const printArea = document.getElementById('print-final-report');
+            const clerkName = document.getElementById('clerk-name-input').value || "Not Entered";
+            const posMeter = document.getElementById('pos-meter-input').value || "0.00";
+            const variance = document.getElementById('rev-variance').innerText;
+            const total = document.getElementById('header-total-sales').innerText;
+            const now = new Date().toLocaleString();
+            
+            let gridHtml = '<div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-top: 8px;">';
+            boxesData.forEach((box) => {
+                let boxSales = 0;
+                if(box.gameId && box.startTicket && box.endTicket) {
+                    const game = masterGames.find(g => g.id === box.gameId);
+                    if(game) {
+                        const sold = (parseInt(box.endTicket) || 0) - (parseInt(box.startTicket) || 0);
+                        if(sold > 0) boxSales += sold * game.price;
+                    }
+                }
+                
+                gridHtml += `
+                    <div style="border: 1px solid #94a3b8; padding: 4px; border-radius: 4px; font-size: 9px; break-inside: avoid; background-color: #fff;">
+                        <div style="font-weight: bold; border-bottom: 1px solid #e2e8f0; padding-bottom: 2px; margin-bottom: 2px;">
+                            ${box.label} <span style="font-weight: normal; color: #64748b; float: right;">${box.gameId ? '#' + box.gameId : 'No Game'}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 1px;">
+                            <span style="color: #475569;">Start:</span> <b style="font-family: monospace;">${box.startTicket || '-'}</b>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 1px;">
+                            <span style="color: #475569;">End:</span> <b style="font-family: monospace;">${box.endTicket || '-'}</b>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; color: #059669; font-weight: bold; margin-top: 2px; padding-top: 2px; border-top: 1px dashed #cbd5e1;">
+                            <span>Sales:</span> <span>$${boxSales.toFixed(2)}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            gridHtml += '</div>';
+
+            const signatureData = hasSignature ? sigCanvas.toDataURL('image/png') : '';
+            const sigHtml = signatureData ? `<img src="${signatureData}" style="height: 35px; border-bottom: 1px solid #000; width: auto;" />` : `<div style="height: 35px; border-bottom: 1px solid #000;"></div>`;
+
+            printArea.innerHTML = `
+                <div style="padding: 0; background: white; color: black; font-family: sans-serif; width: 100%; box-sizing: border-box;">
+                    <h2 style="font-size: 16px; font-weight: bold; text-align: center; margin: 0 0 8px 0; text-transform: uppercase;">Final Shift Audit Report</h2>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px; border: 1px solid #334155; padding: 6px; border-radius: 4px; font-size: 10px; background: #f8fafc;">
+                        <div><b>Store Name:</b> ${storeProfile.name}</div>
+                        <div><b>Retailer #:</b> ${storeProfile.number}</div>
+                        <div><b>Date/Time Closed:</b> ${now}</div>
+                        <div><b>Shift Logged:</b> ${shiftState.name}</div>
+                    </div>
+                    
+                    ${gridHtml}
+
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; border-top: 1px solid #334155; padding-top: 8px;">
+                        <div style="background: #f1f5f9; padding: 6px; border-radius: 4px; text-align: center; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 9px; color: #475569; text-transform: uppercase; font-weight: bold;">Total Ticket Sales</div>
+                            <div style="font-size: 14px; font-weight: bold;">${total}</div>
+                        </div>
+                        <div style="background: #f1f5f9; padding: 6px; border-radius: 4px; text-align: center; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 9px; color: #475569; text-transform: uppercase; font-weight: bold;">POS Meter Input</div>
+                            <div style="font-size: 14px; font-weight: bold;">$${parseFloat(posMeter).toFixed(2)}</div>
+                        </div>
+                        <div style="background: #f1f5f9; padding: 6px; border-radius: 4px; text-align: center; border: 1px solid #e2e8f0;">
+                            <div style="font-size: 9px; color: #475569; text-transform: uppercase; font-weight: bold;">Shift Variance</div>
+                            <div style="font-size: 14px; font-weight: bold; color: ${parseFloat(variance.replace(/[^0-9.-]+/g,"")) === 0 ? '#059669' : '#dc2626'};">${variance}</div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 12px; font-size: 10px; display: flex; justify-content: space-between; align-items: flex-end;">
+                        <div style="flex: 1; padding-right: 20px;">
+                            <span style="font-weight: bold;">Printed Clerk Name: </span> 
+                            <span style="border-bottom: 1px solid #000; display: inline-block; width: 200px; padding-bottom: 2px;">${clerkName}</span>
+                        </div>
+                        <div style="width: 250px;">
+                            <span style="font-weight: bold; display: block; margin-bottom: 2px;">Clerk Signature:</span>
+                            ${sigHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+            setTimeout(() => { window.print(); }, 150);
+        }
+
+        // Signature Canvas
+        let sigCanvas, sigCtx, isDrawing = false;
+        function openReviewModal() {
+            updateShiftStatus(); document.getElementById('review-modal').classList.remove('hidden'); setTimeout(initSignaturePad, 100);
+        }
+        function closeReviewModal() { document.getElementById('review-modal').classList.add('hidden'); }
+
+        function initSignaturePad() {
+            sigCanvas = document.getElementById('sig-canvas'); if(!sigCanvas) return;
+            sigCtx = sigCanvas.getContext('2d'); sigCtx.strokeStyle = "#000"; sigCtx.lineWidth = 2;
+            sigCanvas.onmousedown = startDraw; sigCanvas.onmousemove = draw; sigCanvas.onmouseup = stopDraw;
+            sigCanvas.ontouchstart = (e) => startDraw(e.touches[0]); sigCanvas.ontouchmove = (e) => draw(e.touches[0]); sigCanvas.ontouchend = stopDraw;
+        }
+
+        function startDraw(e) { isDrawing = true; hasSignature = true; const rect = sigCanvas.getBoundingClientRect(); sigCtx.beginPath(); sigCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top); }
+        function draw(e) { if(!isDrawing) return; const rect = sigCanvas.getBoundingClientRect(); sigCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top); sigCtx.stroke(); }
+        function stopDraw() { isDrawing = false; }
+        function clearSignature() { if (sigCtx) sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height); hasSignature = false; }
+
+        function confirmShiftEnd() {
+            if (shiftState.status !== 'open') return;
+            const clerk = document.getElementById('clerk-name-input').value.trim();
+            if (!clerk) { alert('Enter the clerk or employee name before signing off.'); return; }
+            if (!hasSignature) { alert('Add a signature before signing off.'); return; }
+            const incomplete = boxesData.filter(box => (box.gameId && (!box.startTicket || !box.endTicket)) || (box.oldGame && (!box.oldStart || !box.oldEnd)));
+            if (incomplete.length) { runValidation(); alert('Complete the game and ticket numbers for every active box before signing off.'); return; }
+
+            const totalSales = calculateTotals(); const posMeter = parseFloat(document.getElementById('pos-meter-input').value) || 0; const signedAt = new Date().toISOString();
+            
+            shiftHistory.push({ date: shiftState.date, shift: shiftState.name, clerk, signedAt, totalSales, posMeter, variance: posMeter - totalSales, signature: sigCanvas.toDataURL('image/png'), boxes: JSON.parse(JSON.stringify(boxesData)) });
+            localStorage.setItem('lotto_shift_history', JSON.stringify(shiftHistory));
+
+            if (shiftState.name === 'A') {
+                boxesData = boxesData.map(box => ({
+                    ...box,
+                    startTicket: box.gameId ? box.endTicket : box.startTicket,
+                    endTicket: box.gameId ? '' : box.endTicket,
+                    oldGame: null, oldStart: '', oldEnd: '',
+                    startLocked: !!box.gameId // Lock the new start tickets for shift B
+                }));
+                shiftState = { date: shiftState.date, name: 'B', status: 'open', startedAt: signedAt };
+            } else {
+                shiftState = { ...shiftState, status: 'closed', closedAt: signedAt };
+            }
+
+            localStorage.setItem('lotto_shift_state', JSON.stringify(shiftState));
+            persist(); clearSignature(); document.getElementById('clerk-name-input').value = ''; document.getElementById('pos-meter-input').value = '';
+            updateShiftStatus(); renderBoxes(); closeReviewModal();
+            
+            alert(shiftState.status === 'open' ? 'Shift A signed off. Shift B is now open, and each active game end ticket was carried forward as its new start ticket.' : 'Shift B signed off. The day is closed; Shift A will start on the next calendar day.');
+        }
+
+        function emailReport() {
+            const clerk = document.getElementById('clerk-name-input').value || "Staff";
+            const total = document.getElementById('header-total-sales').innerText;
+            const subject = encodeURIComponent(`Shift Audit Report - ${storeProfile.name} - ${storeProfile.number}`);
+            const body = encodeURIComponent(`Shift Audit Summary:\nStore: ${storeProfile.name}\nShift: ${shiftState.name}\nClerk: ${clerk}\nTotal Sales: ${total}\nTimestamp: ${new Date().toLocaleString()}`);
+            window.location.href = `mailto:${storeProfile.email}?subject=${subject}&body=${body}`;
+        }
+
+    </script>
+    <script>
+        const installButton = document.getElementById('install-app'); let installPrompt;
+        window.addEventListener('beforeinstallprompt', (event) => { event.preventDefault(); installPrompt = event; installButton.classList.remove('hidden'); });
+        installButton.addEventListener('click', async () => { if (!installPrompt) return; installPrompt.prompt(); await installPrompt.userChoice; installPrompt = null; installButton.classList.add('hidden'); });
+        window.addEventListener('appinstalled', () => installButton.classList.add('hidden'));
+        if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./service-worker.js'); }); }
+    </script>
+</body>
+</html>
