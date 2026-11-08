@@ -1,0 +1,20 @@
+{
+  "name": "UR Store Central",
+  "short_name": "UR Store",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3f4f6",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/color/192/shop.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://img.icons8.com/color/512/shop.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
