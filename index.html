@@ -3022,21 +3022,79 @@ function renderMultiStoreModalList() {
         const isCurrent = loc.id === activeLocationId;
         return `
           <tr class="${isCurrent ? 'bg-blue-50/70' : 'hover:bg-slate-50'}">
-            <td class="p-2.5">
-              <div class="font-extrabold text-slate-900">${loc.name}</div>
-              <div class="text-[10px] text-slate-500 font-mono">Store #${loc.number} • ID: ${loc.id}</div>
+            <td class="p-2.5 space-y-0.5">
+              <div class="font-extrabold text-slate-900">${loc.name} (#${loc.number})</div>
+              <div class="text-[11px] text-slate-600">${loc.address || 'No address set'}</div>
+              <div class="text-[10px] text-slate-400 font-mono">Email: ${loc.email || 'None'}</div>
             </td>
             <td class="p-2.5 text-center">
-              ${isCurrent ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">Active Store</span>' : '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Standby</span>'}
+              ${isCurrent ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">Active</span>' : '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Standby</span>'}
             </td>
-            <td class="p-2.5 text-right space-x-1">
-              ${!isCurrent ? `<button type="button" onclick="switchStoreFromModal('${loc.id}')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] px-2.5 py-1 rounded">Switch Here</button>` : ''}
-              <button type="button" onclick="exportSpecificLocationBackup('${loc.id}')" class="bg-slate-700 hover:bg-slate-600 text-white font-bold text-[11px] px-2.5 py-1 rounded" title="Download backup JSON for this store">⬇ Export</button>
+            <td class="p-2.5 text-right space-y-1">
+              <div class="flex justify-end gap-1">
+                ${!isCurrent ? `<button type="button" onclick="switchStoreFromModal('${loc.id}')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] px-2.5 py-1 rounded">Switch</button>` : ''}
+                <button type="button" onclick="deleteStoreLocation('${loc.id}')" class="bg-red-100 hover:bg-red-200 text-red-700 font-bold text-[11px] px-2 py-1 rounded" title="Delete store">Delete</button>
+              </div>
             </td>
           </tr>
         `;
       }).join('');
     }
+
+    function createNewStoreLocation() {
+      const name = document.getElementById('new-location-name-input')?.value?.trim();
+      const number = document.getElementById('new-location-num-input')?.value?.trim() || '100';
+      const address = document.getElementById('new-location-address-input')?.value?.trim() || '';
+      const email = document.getElementById('new-location-email-input')?.value?.trim() || '';
+      const password = document.getElementById('new-location-pass-input')?.value?.trim() || '';
+
+      if (!name) {
+        alert('Please enter a store name.');
+        return;
+      }
+
+      const cleanSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+      const newId = `loc-${cleanSlug}-${Date.now().toString().slice(-4)}`;
+      const newLoc = { id: newId, name, number, address, email, password };
+      
+      locations.push(newLoc);
+      saveLocationsRegistry();
+
+      localStorage.setItem(getStoreProfileStorageKey(newId), JSON.stringify({ name, number, address, email }));
+      localStorage.setItem(getStoreBoxesStorageKey(newId), JSON.stringify(createDefault40Boxes()));
+      localStorage.setItem(getStoreHistoryStorageKey(newId), JSON.stringify([]));
+
+      document.getElementById('new-location-name-input').value = '';
+      document.getElementById('new-location-num-input').value = '';
+      document.getElementById('new-location-address-input').value = '';
+      document.getElementById('new-location-email-input').value = '';
+      document.getElementById('new-location-pass-input').value = '';
+
+      handleLocationSwitch(newId);
+      renderMultiStoreModalList();
+      alert(`Created and switched to new store: ${name}`);
+    }
+
+    function deleteStoreLocation(locId) {
+      if (locations.length <= 1) {
+        alert('You must keep at least one store location.');
+        return;
+      }
+      if (!confirm('Are you sure you want to delete this store location and its isolated cache?')) return;
+
+      locations = locations.filter(l => l.id !== locId);
+      saveLocationsRegistry();
+
+      if (activeLocationId === locId) {
+        activeLocationId = locations[0].id;
+        localStorage.setItem(STORAGE_KEY_ACTIVE_LOC, activeLocationId);
+        loadActiveStoreData();
+      }
+      renderMultiStoreModalList();
+      populateLocationSwitcherDropdown();
+      alert('Store location removed successfully.');
+    }
+
     function exportHistoricalReportsJSON() {
       const history = getLocationHistoricalReports(activeLocationId);
       const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(history, null, 2));
@@ -3047,7 +3105,6 @@ function renderMultiStoreModalList() {
       a.click();
       document.body.removeChild(a);
     }
-
     /* ==========================================================================
        20. FIRST-OF-THE-MONTH AUTO-BACKUP & EMAIL DISPATCH TO REGAS_SHELL@HOTMAIL.COM
        ========================================================================== */
