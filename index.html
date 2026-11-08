@@ -763,39 +763,37 @@ s="text-xs font-bold bg-slate-900 text-white px-2.5 py-1 rounded hover:bg-slate-
               📷 Scan Physical Worksheet Photo
             </button>
           </div>  
-<!-- Active Store Profile Configuration & Box Count Manager -->
-          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
-            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Active Store Profile &amp; Box Inventory Sizing</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-              <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Store / Location Name</label>
-                <input
-                  type="text"
-                  id="admin-store-name"
-                  placeholder="e.g. Regas Shell"
-                  class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold bg-white"
-                />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Store # / Retailer ID</label>
-                <input
-                  type="text"
-                  id="admin-store-number"
-                  placeholder="e.g. 101"
-                  class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold bg-white"
-                />
-              </div>
-              <div>
-                <button
-                  type="button"
-                  onclick="saveActiveStoreProfile()"
-                  class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm py-2 px-4 rounded-lg shadow-sm"
-                >
-                  Save Store Profile
-                </button>
-              </div>
-            </div
->
+<!-- Active Store Profile & Detailed Configuration -->
+<div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+  <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Active Store Profile, Address &amp; Credentials</h3>
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
+    <div>
+      <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Store / Location Name</label>
+      <input type="text" id="admin-store-name" placeholder="e.g. Regas Shell" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white" />
+    </div>
+    <div>
+      <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Store # / Retailer ID</label>
+      <input type="text" id="admin-store-number" placeholder="e.g. 101" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white" />
+    </div>
+    <div class="sm:col-span-2 lg:col-span-1">
+      <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Physical Address</label>
+      <input type="text" id="admin-store-address" placeholder="e.g. 123 Main St" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white" />
+    </div>
+    <div>
+      <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Store Email</label>
+      <input type="email" id="admin-store-email" placeholder="store@hotmail.com" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white" />
+    </div>
+    <div>
+      <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Portal Password</label>
+      <input type="password" id="admin-store-pass" placeholder="Password" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white" />
+    </div>
+    <div class="sm:col-span-2 lg:col-span-3">
+      <button type="button" onclick="saveActiveStoreProfile()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 px-4 rounded-lg shadow-sm transition">
+        💾 Save Complete Store Profile &amp; Credentials
+      </button>
+    </div>
+  </div>
+</div>
 
             <!-- Dynamic Add / Remove Boxes Control Strip -->
             <div class="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
@@ -1349,13 +1347,67 @@ function loadActiveStoreData() {
         if (pRaw) {
           storeProfile = JSON.parse(pRaw);
         } else if (activeLocObj) {
-          storeProfile = { name: activeLocObj.name, number: activeLocObj.number };
+          storeProfile = { 
+            name: activeLocObj.name, 
+            number: activeLocObj.number, 
+            address: activeLocObj.address || '', 
+            email: activeLocObj.email || '', 
+            password: activeLocObj.password || '' 
+          };
         } else {
-          storeProfile = { name: 'Regas Shell', number: '101' };
+          storeProfile = { name: 'Regas Shell', number: '101', address: '', email: '', password: '' };
         }
       } catch (e) {
-        storeProfile = { name: activeLocObj?.name || 'Regas Shell', number: activeLocObj?.number || '101' };
+        storeProfile = { name: activeLocObj?.name || 'Regas Shell', number: activeLocObj?.number || '101', address: '', email: '', password: '' };
       }
+
+      // Populate admin view form inputs
+      const adminName = document.getElementById('admin-store-name');
+      const adminNum = document.getElementById('admin-store-number');
+      const adminAddr = document.getElementById('admin-store-address');
+      const adminEmail = document.getElementById('admin-store-email');
+      const adminPass = document.getElementById('admin-store-pass');
+
+      if (adminName) adminName.value = storeProfile.name || '';
+      if (adminNum) adminNum.value = storeProfile.number || '';
+      if (adminAddr) adminAddr.value = storeProfile.address || '';
+      if (adminEmail) adminEmail.value = storeProfile.email || '';
+      if (adminPass) adminPass.value = storeProfile.password || '';
+
+      // 2. Load active location boxes INDEPENDENTLY per store ID
+      const boxKey = getStoreBoxesStorageKey(activeLocationId);
+      try {
+        const bRaw = localStorage.getItem(boxKey);
+        if (bRaw) {
+          const parsedBoxes = JSON.parse(bRaw);
+          if (Array.isArray(parsedBoxes) && parsedBoxes.length > 0) {
+            boxes = parsedBoxes;
+          } else {
+            boxes = createDefault40Boxes();
+          }
+        } else {
+          boxes = createDefault40Boxes();
+        }
+      } catch (e) {
+        boxes = createDefault40Boxes();
+      }
+      if (!Array.isArray(boxes) || boxes.length === 0) {
+        boxes = createDefault40Boxes();
+      }
+
+      // 3. Update Header & Footer Displays
+      const subTitle = document.getElementById('header-store-subtitle');
+      if (subTitle) subTitle.textContent = `${storeProfile.name} (#${storeProfile.number}) — Shift Audit Matrix`;
+      const footStore = document.getElementById('footer-store-display');
+      if (footStore) footStore.textContent = `Location: ${storeProfile.name} (#${storeProfile.number})`;
+
+      const badgeElem = document.getElementById('admin-box-count-badge');
+      if (badgeElem) badgeElem.textContent = String(boxes.length);
+
+      if (typeof renderDispenserGrid === 'function') {
+        renderDispenserGrid();
+      }
+    }
 
       // 2. Load active location boxes INDEPENDENTLY per store ID
       const boxKey = getStoreBoxesStorageKey(activeLocationId);
