@@ -1399,7 +1399,7 @@ function loadActiveStoreData() {
       }
     }
 
-    function saveBoxesState() {
+  function saveBoxesState() {
       try {
         localStorage.setItem(getStoreBoxesStorageKey(activeLocationId), JSON.stringify(boxes));
       } catch (e) {
