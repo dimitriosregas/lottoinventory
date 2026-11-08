@@ -1338,7 +1338,45 @@ _lotto_profile_${locId}`;
       loadActiveStoreData();
       populateLocationSwitcherDropdown();
     }
-function loadActiveStoreData() {
+function saveActiveStoreProfile() {
+      const nameInp = document.getElementById('admin-store-name')?.value?.trim();
+      const numInp = document.getElementById('admin-store-number')?.value?.trim();
+      const addrInp = document.getElementById('admin-store-address')?.value?.trim() || '';
+      const emailInp = document.getElementById('admin-store-email')?.value?.trim() || '';
+      const passInp = document.getElementById('admin-store-pass')?.value?.trim() || '';
+
+      if (!nameInp) {
+        alert('Please enter a valid store location name.');
+        return;
+      }
+
+      storeProfile.name = nameInp;
+      storeProfile.number = numInp || '100';
+      storeProfile.address = addrInp;
+      storeProfile.email = emailInp;
+      storeProfile.password = passInp;
+
+      try {
+        localStorage.setItem(getStoreProfileStorageKey(activeLocationId), JSON.stringify(storeProfile));
+      } catch (e) {}
+
+      // Update in registry list
+      const locIdx = locations.findIndex(l => l.id === activeLocationId);
+      if (locIdx >= 0) {
+        locations[locIdx].name = storeProfile.name;
+        locations[locIdx].number = storeProfile.number;
+        locations[locIdx].address = storeProfile.address;
+        locations[locIdx].email = storeProfile.email;
+        locations[locIdx].password = storeProfile.password;
+        saveLocationsRegistry();
+      }
+
+      populateLocationSwitcherDropdown();
+      loadActiveStoreData();
+      alert(`Store Profile Saved: ${storeProfile.name} (#${storeProfile.number})`);
+    }
+
+    function loadActiveStoreData() {
       // 1. Load active location profile
       const profKey = getStoreProfileStorageKey(activeLocationId);
       const activeLocObj = locations.find(l => l.id === activeLocationId);
@@ -1403,50 +1441,6 @@ function loadActiveStoreData() {
 
       const badgeElem = document.getElementById('admin-box-count-badge');
       if (badgeElem) badgeElem.textContent = String(boxes.length);
-
-      if (typeof renderDispenserGrid === 'function') {
-        renderDispenserGrid();
-      }
-    }
-
-      // 2. Load active location boxes INDEPENDENTLY per store ID
-      const boxKey = getStoreBoxesStorageKey(activeLocationId);
-      try {
-        const bRaw = localStorage.getItem(boxKey);
-        if (bRaw) {
-          const parsedBoxes = JSON.parse(bRaw);
-          if (Array.isArray(parsedBoxes) && parsedBoxes.length > 0) {
-            boxes = parsedBoxes;
-          } else {
-            boxes = createDefault40Boxes();
-          }
-        } else {
-          boxes = createDefault40Boxes();
-        }
-      } catch (e) {
-        boxes = createDefault40Boxes();
-      }
-
-      if (!Array.isArray(boxes) || boxes.length === 0) {
-        boxes = createDefault40Boxes();
-      }
-
-      // 3. Update Header & Footer Displays
-      const subTitle = document.getElementById('header-store-subtitle');
-      if (subTitle) subTitle.textContent = `${storeProfile.name} (#${storeProfile.number}) — Shift Audit Matrix`;
-
-      const footStore = document.getElementById('footer-store-display');
-      if (footStore) footStore.textContent = `Location: ${storeProfile.name} (#${storeProfile.number})`;
-
-      const adminName = document.getElementById('admin-store-name');
-      const adminNum = document.getElementById('admin-store-number');
-      if (adminName) adminName.value = storeProfile.name;
-      if (adminNum) adminNum.value = storeProfile.number;
-
-      const badgeElem = document.getElementById('admin-box-count-badge');
-      const bElem = document.getElementById('header-total-boxes');
-      if (badgeElem) badgeElem.textContent = String(boxes.length);
-      if (bElem) bElem.textContent = String(boxes.length);
 
       if (typeof renderDispenserGrid === 'function') {
         renderDispenserGrid();
