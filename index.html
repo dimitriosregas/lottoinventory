@@ -1000,50 +1000,52 @@ ass="p-2.5 text-center">Game #</th>
        8. MODALS & POPUP OVERLAYS
        ========================================================================== -->
 
-  <!-- MODAL A: MULTI-LOCATION MANAGER & NON-DESTRUCTIVE IMPORT -->
-  <div id="modal-multi-store" class="fixed inset-0 modal-backdrop hidden z-50 flex items-center justify-center p-3">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full border border-slate-200 overflow-hidden">
-      <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
-        <h3 class="font-extrabold text-sm sm:text-base">Multi-Location Store Management</h3>
-        <button type="button" onclick="closeMultiStoreManagerModal()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+<!-- MODAL A: MULTI-LOCATION MANAGER & CREDENTIALS -->
+<div id="modal-multi-store" class="fixed inset-0 modal-backdrop hidden z-50 flex items-center justify-center p-3">
+  <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden">
+    <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
+      <h3 class="font-extrabold text-sm sm:text-base">Multi-Store Management &amp; Credentials</h3>
+      <button type="button" onclick="closeMultiStoreManagerModal()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+    </div>
+    <div class="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+      <p class="text-xs text-slate-600 leading-relaxed">
+        Manage your store locations, addresses, login credentials, and isolated box layouts. Each location saves its own independent boxes and shift history.
+      </p>
+
+      <!-- Add New Location Form with Address & Credentials -->
+      <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-3">
+        <div class="text-xs font-extrabold text-slate-800 uppercase">Add New Store Location</div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <input type="text" id="new-location-name-input" placeholder="Store Name (e.g. Regas Xpress)" class="text-xs font-semibold border border-slate-300 rounded px-2.5 py-1.5 bg-white" />
+          <input type="text" id="new-location-num-input" placeholder="Store # (e.g. 104)" class="text-xs font-semibold border border-slate-300 rounded px-2.5 py-1.5 bg-white" />
+          <input type="text" id="new-location-address-input" placeholder="Physical Address" class="text-xs font-semibold border border-slate-300 rounded px-2.5 py-1.5 bg-white sm:col-span-2" />
+          <input type="email" id="new-location-email-input" placeholder="Store Email" class="text-xs font-semibold border border-slate-300 rounded px-2.5 py-1.5 bg-white" />
+          <input type="password" id="new-location-pass-input" placeholder="Store Portal Password" class="text-xs font-semibold border border-slate-300 rounded px-2.5 py-1.5 bg-white" />
+        </div>
+        <button type="button" onclick="createNewStoreLocation()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2 rounded shadow"> + Create &amp; Initialize Store Location </button>
       </div>
 
-      <div class="p-5 space-y-4">
-        <p class="text-xs text-slate-600 leading-relaxed">
-          Switch between store locations or import existing location files. Importing a backup file into a specific location will update only that store without deleting or touching any other location.
-        </p>
-
-        <!-- Add New Location Form -->
-        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-wrap items-end gap-2">
-          <div class="flex-1 min-w-[140px]">
-            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">New Store Name</label>
-            <input type="text" id="new-location-name-input" placeholder="e.g. Regas Exxon" class="w-full text-xs font-semibold border border-slate-300 rounded px-2.5 py-1.5 bg-white" />
-          </div>
-          <div class="w-28">
-            <label class="block text-[10px] font-bold text-slate-600 uppercase mb-1">Store #</label>
-            <input type="text" id="new-location-num-input" placeholder="e.g. 102" class="w-full text-xs font-semibold border border-slate-300 rounded px-2.5 py-1.5 bg-white" />
-          </div>
-          <button type="button" onclick="createNewStoreLocation()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2 rounded">
-            + Create Store
-          </button>
-        </div>
-
-        <!-- Registered Store Locations Table -->
-        <div class="border border-slate-200 rounded-xl overflow-hidden max-h-60 overflow-y-auto">
-          <table class="w-full text-left text-xs">
-            <thead class="bg-slate-100 text-slate-700 uppercase font-bold text-[10px] border-b border-slate-200">
-              <tr>
-                <th class="p-2.5">Store Name &amp; ID</th>
-                <th class="p-2.5 text-center">Status</th>
-                <th class="p-2.5 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="multi-store-
-list-tbody" class="divide-y divide-slate-200 font-medium">
-              <!-- Populated by renderMultiStoreModalList() -->
-            </tbody>
-          </table>
-        </div>
+      <!-- Registered Store Locations Table -->
+      <div class="border border-slate-200 rounded-xl overflow-hidden">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-100 text-slate-700 uppercase font-bold text-[10px] border-b border-slate-200">
+            <tr>
+              <th class="p-2.5">Store Details &amp; Address</th>
+              <th class="p-2.5 text-center">Status</th>
+              <th class="p-2.5 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="multi-store-list-tbody" class="divide-y divide-slate-200 font-medium">
+            <!-- Populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="bg-slate-100 px-5 py-3 border-t border-slate-200 text-right">
+      <button type="button" onclick="closeMultiStoreManagerModal()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-4 py-2 rounded-lg"> Done </button>
+    </div>
+  </div>
+</div>
 
         <!-- Non-Destructive Store Import Strip -->
         <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
