@@ -1825,8 +1825,7 @@ const syncInd = document.getElementById('cloud-sync-indicator');
         activeTicket: end
       };
     }
-
-    /* ==========================================================================
+/* ==========================================================================
        12. NON-BLOCKING LIVE INPUT HANDLERS (SOLVES ISSUE #1)
        ========================================================================== */
     function updateBoxFieldDirect(idx, field, val) {
@@ -1834,23 +1833,22 @@ const syncInd = document.getElementById('cloud-sync-indicator');
       boxes[idx][field] = val === '' ? '' : val;
       saveBoxesState();
 
-function updateBoxFieldDirect(idx, field, val) {
-      if (!boxes[idx]) return;
-      boxes[idx][field] = val === '' ? '' : val;
-      saveBoxesState();
-
       if (field === 'gameNum') {
-        const found = masterGames.find(g => String(g.gameNum).trim() === String(val).trim());
+        const cleanNum = String(val).trim();
+        const found = masterGames.find(g => String(g.gameNum).trim() === cleanNum);
         if (found) {
           boxes[idx].gameName = found.name;
-          boxes[idx].price = Number(found.price);
-          boxes[idx].rollCount = Number(found.count);
+          boxes[idx].price = Number(found.price) || 0;
+          boxes[idx].rollCount = Number(found.count) || getDefaultRollCountForPrice(found.price);
           boxes[idx].needsNewGameEntry = false;
-        } else if (String(val).trim() !== '') {
+        } else if (cleanNum !== '') {
+          boxes[idx].gameName = '';
+          boxes[idx].price = 0;
           boxes[idx].needsNewGameEntry = true;
         } else {
           boxes[idx].gameName = '';
           boxes[idx].price = 0;
+          boxes[idx].rollCount = 60;
           boxes[idx].needsNewGameEntry = false;
         }
         saveBoxesState();
@@ -1862,27 +1860,37 @@ function updateBoxFieldDirect(idx, field, val) {
       if (field === 'startTicket') {
         boxes[idx].startTicket = val === '' ? 0 : Number(val);
         saveBoxesState();
-        updateBoxMetricsDisplay(idx);
-        updateHeaderTotalsUI();
-        recalculateReconciliationTotals();
-        return;
-      }
-      updateBoxMetricsDisplay(idx);
-      updateHeaderTotalsUI();
-      recalculateReconciliationTotals();
-    }    
-      if (field === 'startTicket') {
-        boxes[idx].startTicket = val === '' ? 0 : Number(val);
-        saveBoxesState();
-        updateBoxMetricsDisplay(idx);
-        updateHeaderTotalsUI();
-        recalculateReconciliationTotals();
-        return;
       }
 
       updateBoxMetricsDisplay(idx);
       updateHeaderTotalsUI();
       recalculateReconciliationTotals();
+    }
+
+    // Enter key navigation on the grid for rapid data entry
+    function handleGridEnter(event, currentIdx, currentField) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        const nextIdx = currentIdx + 1;
+        if (nextIdx < boxes.length) {
+          const nextInp = document.getElementById(`input-${currentField}-${nextIdx}`);
+          if (nextInp) {
+            nextInp.focus();
+            nextInp.select();
+          }
+        }
+      }
+    }
+
+    // Updates only the text badges inside a card without touching the input elements
+    function updateBoxMetricsDisplay(idx) {
+      const box = boxes[idx];
+      if (!box) return;
+      const soldBadge = document.getElementById(`box-sold-badge-${idx}`);
+      const salesBadge = document.getElementById(`box-sales-badge-${idx}`);
+      const metrics = calculateBoxMetrics(box);
+      if (soldBadge) soldBadge.textContent = `${metrics.ticketsSold} Sold`;
+      if (salesBadge) salesBadge.textContent = `$${metrics.dollarSales.toFixed(2)}`;
     }
 
     // Live End Ticket handler without confusing browser popups
@@ -1892,7 +1900,7 @@ function updateBoxFieldDirect(idx, field, val) {
       const newEnd = val === '' ? '' : Number(val);
       const start = box.startTicket !== '' && box.startTicket !== null ? Number(box.startTicket) : 0;
 
-// If user typed an end ticket number lower than the start ticket, open the Yes/No dialog
+      // If user typed an end ticket number lower than the start ticket, open the Yes/No dialog
       if (newEnd !== '' && newEnd < start) {
         openRolloverDecisionModal(idx, newEnd);
         return;
@@ -1948,13 +1956,11 @@ function updateBoxFieldDirect(idx, field, val) {
       }
 
       if (!isYes) {
-        // User clicked "No, Typo": do not rollover, keep what was there
         cancelRolloverModal();
         renderDispenserGrid();
         return;
       }
 
-      // User clicked "Yes, Started New Roll": advance to Step 2 (Same Game vs New Game)
       document.getElementById('modal-roll-step-1').classList.add('hidden');
       document.getElementById('modal-roll-step-2').classList.remove('hidden');
     }
@@ -1967,7 +1973,6 @@ function updateBoxFieldDirect(idx, field, val) {
       if (isSameGame) {
         finalizeRolloverAction(idx, boxes[idx].gameNum);
       } else {
-        // Show input to enter/search the new game number
         const sec = document.getElementById('modal-roll-newgame-section');
         sec.classList.remove('hidden');
         const inp = document.getElementById('modal-roll-newgame-input');
@@ -1987,7 +1992,7 @@ function updateBoxFieldDirect(idx, field, val) {
       finalizeRolloverAction(idx, newGameNum);
     }
 
-// Finalizes calculations, logs old pack sold, and loads new roll
+    // Finalizes calculations, logs old pack sold, and loads new roll
     function finalizeRolloverAction(idx, finalGameNum) {
       const box = boxes[idx];
       const pendingEnd = document.getElementById('modal-roll-pending-end').value;
@@ -2011,7 +2016,6 @@ function updateBoxFieldDirect(idx, field, val) {
         salesAmount: oldPackSales
       });
 
-      // Update game assignment if changed
       if (finalGameNum !== box.gameNum) {
         box.gameNum = finalGameNum;
         const matched = masterGames.find(g => String(g.gameNum).trim() === finalGameNum);
@@ -2049,6 +2053,7 @@ function updateBoxFieldDirect(idx, field, val) {
       updateHeaderTotalsUI();
       recalculateReconciliationTotals();
     }
+
 
     // Enter key navigation on the grid for rapid data entry
     function handleGridEnter(event, currentIdx, currentField) {
