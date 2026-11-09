@@ -1900,7 +1900,7 @@
       updateHeaderTotalsUI();
     }
 
-    function renderAdminBoxLabelsGrid() {
+function renderAdminBoxLabelsGrid() {
       const container = document.getElementById('admin-box-labels-grid');
       if (!container) return;
       let html = '';
@@ -1914,7 +1914,7 @@
               <span class="text-emerald-700 font-mono">${hasGame && box.price ? '$' + box.price : ''}</span>
             </div>
             <div class="mb-1.5">
-              <input type="text" value="${box.boxNumber || (idx + 1)}" oninput="updateBoxLabelDirect(${idx}, this.value)" class="w-full text-center font-mono font-black text-xs border rounded py-1 px-1.5 bg-white" />
+              <input type="text" value="${box.boxNumber || (idx + 1)}" oninput="updateBoxLabelDirect(${idx}, this.value)" class="w-full text-center font-mono font-black text-xs border rounded py-1 px-1.5 bg-white lotto-input font-bold text-slate-900" />
             </div>
             <div class="text-[10px] text-slate-600 truncate font-medium">${gameLabel}</div>
           </div>
