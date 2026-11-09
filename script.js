@@ -272,19 +272,20 @@ function sanitizeMasterGamesList(arr) {
 }
 
 function loadMasterGames() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_MASTER_GAMES);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        masterGames = sanitizeMasterGamesList(parsed);
-        return;
-      }
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY_MASTER_GAMES);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            masterGames = sanitizeMasterGamesList([...DEFAULT_MASTER_GAMES, ...parsed]);
+            saveGamesState();
+            return;
+          }
+        }
+      } catch (e) {}
+      masterGames = sanitizeMasterGamesList(DEFAULT_MASTER_GAMES);
+      saveGamesState();
     }
-  } catch (e) {}
-  masterGames = sanitizeMasterGamesList(DEFAULT_MASTER_GAMES);
-  saveGamesState();
-}
 
 function saveGamesState() {
   try { localStorage.setItem(STORAGE_KEY_MASTER_GAMES, JSON.stringify(masterGames)); } catch (e) {}
