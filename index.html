@@ -1825,7 +1825,6 @@ const syncInd = document.getElementById('cloud-sync-indicator');
         activeTicket: end
       };
     }
-
 /* ==========================================================================
        12. NON-BLOCKING LIVE INPUT HANDLERS (SOLVES ISSUE #1)
        ========================================================================== */
@@ -1836,12 +1835,18 @@ const syncInd = document.getElementById('cloud-sync-indicator');
 
       if (field === 'gameNum') {
         const cleanVal = String(val).trim();
-        const found = masterGames.find(g => String(g.gameNum).trim() === cleanVal);
+        
+        // ROBUST LOOKUP: Checks for 'gameNum', 'id', or 'number' to guarantee imported games are found
+        const found = masterGames.find(g => 
+          String(g.gameNum).trim() === cleanVal || 
+          String(g.id).trim() === cleanVal || 
+          String(g.number).trim() === cleanVal
+        );
         
         if (found) {
-          boxes[idx].gameName = found.name;
+          boxes[idx].gameName = found.name || '';
           boxes[idx].price = Number(found.price) || 0;
-          boxes[idx].rollCount = Number(found.count) || getDefaultRollCountForPrice(boxes[idx].price);
+          boxes[idx].rollCount = Number(found.count || found.rollCount) || getDefaultRollCountForPrice(boxes[idx].price);
           boxes[idx].needsNewGameEntry = false;
         } else if (cleanVal !== '') {
           boxes[idx].gameName = '';
@@ -1866,6 +1871,7 @@ const syncInd = document.getElementById('cloud-sync-indicator');
         renderDispenserGrid();
       }
     }
+
 
     // Live End Ticket handler without confusing browser popups
     function updateBoxEndTicketLive(idx, val) {
