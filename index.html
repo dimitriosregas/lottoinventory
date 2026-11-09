@@ -1900,12 +1900,24 @@
       if (soldBadge) soldBadge.textContent = `${metrics.ticketsSold} Sold`;
       if (salesBadge) salesBadge.textContent = `$${metrics.dollarSales.toFixed(2)}`;
 
-      if (card) {
+     if (card) {
         card.classList.remove('status-complete', 'status-rollover', 'status-pending', 'status-alert');
         if (metrics.status === 'complete') card.classList.add('status-complete');
         else if (metrics.status === 'rollover') card.classList.add('status-rollover');
         else card.classList.add('status-pending');
       }
+    }
+
+    /* ==========================================================================
+       14. 40-BOX DISPENSER MATRIX & LIST VIEW RENDERER
+       ========================================================================== */
+    function toggleDispenserView() {
+      currentDispenserView = currentDispenserView === 'grid' ? 'list' : 'grid';
+      const btn = document.getElementById('dispenser-view-toggle-btn');
+      if (btn) {
+        btn.textContent = currentDispenserView === 'grid' ? '📋 List View' : '🔲 Grid View';
+      }
+      renderDispenserGrid();
     }
 <!-- ==========================================================================
      END PART 5 OF 10
