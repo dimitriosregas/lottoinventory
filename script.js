@@ -25,7 +25,39 @@ const DEFAULT_MASTER_GAMES = [
   { gameNum: '1025', name: 'MAX MONEY MULTIPLIER', price: 25, count: 30 },
   { gameNum: '1030', name: 'DIAMOND SPECTACULAR', price: 30, count: 30 },
   { gameNum: '1050', name: '$1,000,000 CASH BONANZA', price: 50, count: 20 }
-];
+  { gameNum: '854', name: 'BINGO JUMBO', price: 3, count: 100 },
+  { gameNum: '1204', name: '$50 JUMBO', price: 50, count: 18 },
+  { gameNum: '1247', name: '$30 DELUXE GOLD', price: 30, count: 20 },
+  { gameNum: '1370', name: '200X', price: 20, count: 15 },
+  { gameNum: '1372', name: '$5 COLLECTABLE JUMBO', price: 5, count: 60 },
+  { gameNum: '1374', name: '$10 CASH GAMES', price: 10, count: 30 },
+  { gameNum: '1377', name: '$500K BONUS', price: 10, count: 30 },
+  { gameNum: '1389', name: '$100 TRIPLED $2', price: 2, count: 150 },
+  { gameNum: '1391', name: '$500 FEVER', price: 10, count: 30 },
+  { gameNum: '1392', name: '$1 COLLECTABLE JUMBO', price: 1, count: 300 },
+  { gameNum: '1393', name: '$2 COLLECTABLE JUMBO', price: 2, count: 150 },
+  { gameNum: '1394', name: 'LADY CROSSWORD', price: 3, count: 100 },
+  { gameNum: '1395', name: '$5 COLLECTABLE JUMBO', price: 5, count: 60 },
+  { gameNum: '1396', name: '$10 COLLECTABLE JUMBO', price: 10, count: 30 },
+  { gameNum: '1398', name: 'GIFT TAG CASH', price: 1, count: 300 },
+  { gameNum: '1399', name: 'NUTCRACKER CASH', price: 2, count: 150 },
+  { gameNum: '1400', name: 'HOLIDAY CASH', price: 3, count: 100 },
+  { gameNum: '1402', name: 'MERRY MONEY', price: 5, count: 60 },
+  { gameNum: '1403', name: '$50 $100 $500', price: 10, count: 30 },
+  { gameNum: '1404', name: 'HOLIDAY RICHES', price: 20, count: 15 },
+  { gameNum: '1762', name: "LUCKY 7'S", price: 1, count: 300 },
+  { gameNum: '1802', name: '300X JUMBO', price: 30, count: 20 },
+  { gameNum: '1825', name: '$2 JUMBO', price: 2, count: 150 },
+  { gameNum: '1851', name: '$1 JR JUMBO', price: 1, count: 300 },
+  { gameNum: '1853', name: 'LADY JUMBO', price: 3, count: 100 },
+  { gameNum: '1856', name: '$3 CROSSWORD JUMBO', price: 3, count: 100 },
+  { gameNum: '1858', name: '$5 CROSSWORD', price: 5, count: 60 },
+  { gameNum: '1891', name: 'GIGANTIC JUMBO', price: 30, count: 20 },
+  { gameNum: '1909', name: '$25 JUMBO', price: 25, count: 24 },
+  { gameNum: '1949', name: '$10 JUMBO', price: 10, count: 30 },
+  { gameNum: '1964', name: 'MILL JUMBO', price: 20, count: 15 },
+  { gameNum: '1996', name: 'GIANT JUMBO', price: 5, count: 60 }
+    ];
 
 let activeLocationId = 'loc-regas-shell';
 let locations = [];
