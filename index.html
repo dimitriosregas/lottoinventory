@@ -1610,8 +1610,8 @@
      START PART 5 OF 10 (LINES 1551 - 1955)
      ========================================================================== -->
 
-    /* ==========================================================================
-       11. CORE MATHEMATICAL CALCULATION ENGINE (FIXED FOR ASCENDING TICKET COUNTS)
+ /* ==========================================================================
+       11. CORE MATHEMATICAL CALCULATION ENGINE
        ========================================================================== */
     function calculateBoxMetrics(box) {
       if (!box || !box.gameNum) {
@@ -1655,7 +1655,6 @@
           ticketsSold += Math.max(0, currentStart);
         }
       } else {
-        // Standard single-pack calculation (Tickets count up as sold: e.g. Start 0, End 15 -> 15 sold)
         if (end >= start) {
           ticketsSold = end - start;
         } else {
@@ -1680,7 +1679,7 @@
     }
 
     /* ==========================================================================
-       12. NON-BLOCKING LIVE INPUT HANDLERS (SOLVES ISSUES #1, #2, #3, #4)
+       12. NON-BLOCKING LIVE INPUT HANDLERS
        ========================================================================== */
     function updateBoxFieldDirect(idx, field, val) {
       if (!boxes[idx]) return;
@@ -1720,16 +1719,13 @@
       }
     }
 
-    // Live End Ticket handler: NEVER interrupts typing when entering equal or higher numbers (0 sold)
     function updateBoxEndTicketLive(idx, val) {
       if (!boxes[idx]) return;
       const box = boxes[idx];
       const newEnd = val === '' ? '' : Number(val);
       const start = box.startTicket !== '' && box.startTicket !== null ? Number(box.startTicket) : 0;
 
-      // Only prompt for rollover if the user explicitly types a number lower than start
       if (newEnd !== '' && !isNaN(newEnd) && newEnd < start) {
-        // Wait for blur or enter before triggering modal to prevent keystroke interruption
         box.endTicket = newEnd;
         saveBoxesState();
         updateBoxMetricsDisplay(idx);
@@ -1743,9 +1739,8 @@
       updateBoxMetricsDisplay(idx);
       updateHeaderTotalsUI();
       recalculateReconciliationTotals();
-    }    
+    }
 
-    // Manual 'Roll' button on the card
     function rollNewPackInBox(idx) {
       const box = boxes[idx];
       if (!box || !box.gameNum) {
@@ -1755,14 +1750,12 @@
       openRolloverDecisionModal(idx, '');
     }
 
-    // Opens the new Yes/No Rollover Modal
     function openRolloverDecisionModal(idx, typedEndValue) {
       const box = boxes[idx];
       if (!box) return;
 
       document.getElementById('modal-roll-box-idx').value = idx;
       document.getElementById('modal-roll-pending-end').value = typedEndValue !== undefined ? typedEndValue : '';
-
       document.getElementById('modal-rollover-title').textContent = `Box ${box.boxNumber}: ${box.gameName || 'Game #' + box.gameNum}`;
       
       const msgElem = document.getElementById('modal-roll-step1-msg');
@@ -1775,7 +1768,6 @@
       document.getElementById('modal-roll-step-1').classList.remove('hidden');
       document.getElementById('modal-roll-step-2').classList.add('hidden');
       document.getElementById('modal-roll-newgame-section').classList.add('hidden');
-
       document.getElementById('modal-box-rollover').classList.remove('hidden');
     }
 
@@ -1881,7 +1873,6 @@
       recalculateReconciliationTotals();
     }
 
-    // Fixed Enter key navigation: instantly jumps focus to the next box End # input
     function handleGridEnter(event, currentIdx, currentField) {
       if (event.key === 'Enter') {
         event.preventDefault();
