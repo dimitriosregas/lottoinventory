@@ -144,6 +144,20 @@ function saveActiveStoreProfile() {
     alert('Please enter a valid store location name.');
     return;
   }
+  // ... rest of saveActiveStoreProfile ...
+}
+
+function saveActiveStoreProfile() {
+  const nameInp = document.getElementById('admin-store-name')?.value?.trim();
+  const numInp = document.getElementById('admin-store-number')?.value?.trim();
+  const addrInp = document.getElementById('admin-store-address')?.value?.trim() || '';
+  const emailInp = document.getElementById('admin-store-email')?.value?.trim() || '';
+  const passInp = document.getElementById('admin-store-pass')?.value?.trim() || '';
+
+  if (!nameInp) {
+    alert('Please enter a valid store location name.');
+    return;
+  }
 
   storeProfile.name = nameInp;
   storeProfile.number = numInp || '100';
