@@ -1,17 +1,17 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
- <title>UR Store Central — Enterprise Multi-Store Inventory & Audit System</title>
+  <title>UR Store Central — Enterprise Multi-Store Inventory & Audit System</title>
   <link rel="icon" type="image/png" href="./path-to-your-icon.png" />
-    <link rel="apple-touch-icon" href="./path-to-your-icon.png" />  
+  <link rel="apple-touch-icon" href="./path-to-your-icon.png" />  
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Tesseract.js OCR for Ticket/Game Photo Scanning -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     /* ==========================================================================
-    
        1. CORE APPLICATION STYLING & CUSTOM SCROLLBARS
        ========================================================================== */
     :root {
@@ -137,8 +137,7 @@
       }
 
       .one-page-print-sheet {
-        width: 100% !importan
-t;
+        width: 100% !important;
         max-height: 10.45in !important;
         page-break-inside: avoid !important;
         page-break-after: avoid !important;
@@ -221,8 +220,7 @@ t;
         <div class="flex flex-wrap items-center gap-1.5">
           <!-- Universal Export & Import Games Buttons for ANY user -->
           <button
-     
-       type="button"
+            type="button"
             onclick="exportMasterGamesUniversal()"
             class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs px-2.5 py-1.5 rounded shadow-sm flex items-center gap-1 transition"
             title="Download Master Games List (.json) to share or backup"
@@ -317,8 +315,7 @@ t;
               onclick="advanceEndToStartForNewShift()"
               class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm"
               title="Moves all current End Ticket numbers into Start Ticket numbers for the next shift"
-       
-     >
+            >
               ⏭ Roll End → Start (Next Shift)
             </button>
 
@@ -348,11 +345,14 @@ t;
             </button>
           </div>
         </div>
+        <!-- ==========================================================================
+     START PART 2 OF 10 (LINES 350 - 765)
+     ========================================================================== -->
 
         <!-- Helper Banner Explaining Non-Interrupting End Ticket & Rollover Button -->
         <div class="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-blue-900">
           <div>
-            <strong>Tip:</strong> Type multi-digit numbers freely into <strong>End #</strong> without interruption. If a pack finished or rolled over to a new pack during the shift, click <strong>+ Rollover</strong> on that box.
+            <strong>Tip:</strong> Type multi-digit numbers freely into <strong>End #</strong> without interruption. Press <strong>Enter</strong> to jump directly to the next box's End #. If a pack finished or rolled over to a new pack during the shift, click <strong>Roll</strong> on that box.
           </div>
           <div class="flex items-center gap-3 font-semibold">
             <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Counted</span>
@@ -396,8 +396,7 @@ t;
                 🖨 Print 1-Page Final Report
               </button>
             </div>
-     
-     </div>
+          </div>
 
           <!-- Shift Metadata & Cashier Details -->
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -479,8 +478,7 @@ t;
                   id="rec-scratch-cashed"
                   placeholder="0.00"
                   oninput="recalculateReconciliationTotals()"
-              
-    class="w-32 text-right font-mono font-bold border border-slate-300 rounded px-2.5 py-1 bg-white"
+                  class="w-32 text-right font-mono font-bold border border-slate-300 rounded px-2.5 py-1 bg-white"
                 />
               </div>
 
@@ -557,8 +555,7 @@ t;
                 </div>
 
                 <!-- On-Screen Legal Certification Statement -->
-                <div id="cashier-legal-statement" class="mt-3 p-3 bg-am
-ber-50 border border-amber-300 rounded-lg text-xs text-slate-800 leading-relaxed font-medium">
+                <div id="cashier-legal-statement" class="mt-3 p-3 bg-amber-50 border border-amber-300 rounded-lg text-xs text-slate-800 leading-relaxed font-medium">
                   <strong>Legal Certification:</strong> By signing above, I certify that I have not altered any of the information on this report and that all ticket counts, game numbers, and shift figures are true and correct to the best of my ability.
                 </div>
               </div>
@@ -572,6 +569,7 @@ ber-50 border border-amber-300 rounded-lg text-xs text-slate-800 leading-relaxed
           </div>
         </div>
       </section>          
+
       <!-- ======================================================================
            6. VIEW 3: ADMIN HISTORICAL REPORTS & LOOKUP ENGINE (SHIFT, DAILY, MONTHLY)
            ====================================================================== -->
@@ -632,7 +630,6 @@ ber-50 border border-amber-300 rounded-lg text-xs text-slate-800 leading-relaxed
                   type="date"
                   id="report-filter-date"
                   onchange="executeReportLookup()"
-
                   class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white"
                 />
               </div>
@@ -707,8 +704,7 @@ ber-50 border border-amber-300 rounded-lg text-xs text-slate-800 leading-relaxed
               <button
                 type="button"
                 onclick="printFilteredReportSummary()"
-                clas
-s="text-xs font-bold bg-slate-900 text-white px-2.5 py-1 rounded hover:bg-slate-800"
+                class="text-xs font-bold bg-slate-900 text-white px-2.5 py-1 rounded hover:bg-slate-800"
               >
                 🖨 Print Historical Summary Sheet
               </button>
@@ -744,56 +740,100 @@ s="text-xs font-bold bg-slate-900 text-white px-2.5 py-1 rounded hover:bg-slate-
         </div>
       </section>
 
+<!-- ==========================================================================
+     END PART 2 OF 10
+     ========================================================================== -->
+      <!-- ==========================================================================
+     START PART 3 OF 10 (LINES 747 - 1145)
+     ========================================================================== -->
+
       <!-- ======================================================================
            7. VIEW 4: STORE SETUP, PHOTO OCR GAME SCANNER & MASTER GAMES
            ====================================================================== -->
       <section id="view-admin" class="hidden space-y-4">
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 space-y-6">
           
-          <div class="border-b border-slate-200 pb-4">
-            <h2 class="text-lg font-extrabold text-slate-900">Store Profile, Master Games &amp; System Configuration</h2>
-            <p class="text-xs text-slate-500">
-              Manage the 40-box game assignments, scan new scratch games from photos, and configure store profile metadata.
-            </p>
+          <div class="border-b border-slate-200 pb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-extrabold text-slate-900">Store Profile, Master Games &amp; System Configuration</h2>
+              <p class="text-xs text-slate-500">
+                Manage the 40-box game assignments, scan new scratch games from photos, and configure store profile metadata.
+              </p>
+            </div>
+
+            <!-- Worksheet Photo Scanner Trigger Button -->
+            <div>
+              <button
+                type="button"
+                onclick="openWorksheetScannerModal()"
+                class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-2 rounded-lg shadow flex items-center gap-1.5"
+              >
+                📷 Scan Physical Worksheet Photo
+              </button>
+            </div>
           </div>
 
-        <!-- Worksheet Photo Scanner Trigger Button -->
-          <div class="pt-2">
-            <button type="button" onclick="openWorksheetScannerModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-2 rounded-lg shadow flex items-center gap-1.5">
-              📷 Scan Physical Worksheet Photo
-            </button>
-          </div>  
-<!-- Active Store Profile & Detailed Configuration -->
-<div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
-  <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Active Store Profile, Address &amp; Credentials</h3>
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
-    <div>
-      <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Store / Location Name</label>
-      <input type="text" id="admin-store-name" placeholder="e.g. Regas Shell" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white" />
-    </div>
-    <div>
-      <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Store # / Retailer ID</label>
-      <input type="text" id="admin-store-number" placeholder="e.g. 101" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white" />
-    </div>
-    <div class="sm:col-span-2 lg:col-span-1">
-      <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Physical Address</label>
-      <input type="text" id="admin-store-address" placeholder="e.g. 123 Main St" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white" />
-    </div>
-    <div>
-      <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Store Email</label>
-      <input type="email" id="admin-store-email" placeholder="store@hotmail.com" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white" />
-    </div>
-    <div>
-      <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Portal Password</label>
-      <input type="password" id="admin-store-pass" placeholder="Password" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white" />
-    </div>
-    <div class="sm:col-span-2 lg:col-span-3">
-      <button type="button" onclick="saveActiveStoreProfile()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 px-4 rounded-lg shadow-sm transition">
-        💾 Save Complete Store Profile &amp; Credentials
-      </button>
-    </div>
-  </div>
-</div>
+          <!-- Active Store Profile & Detailed Configuration -->
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
+            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">
+              Active Store Profile, Address &amp; Credentials
+            </h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Store / Location Name</label>
+                <input
+                  type="text"
+                  id="admin-store-name"
+                  placeholder="e.g. Regas Shell"
+                  class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Store # / Retailer ID</label>
+                <input
+                  type="text"
+                  id="admin-store-number"
+                  placeholder="e.g. 101"
+                  class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white"
+                />
+              </div>
+              <div class="sm:col-span-2 lg:col-span-1">
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Physical Address</label>
+                <input
+                  type="text"
+                  id="admin-store-address"
+                  placeholder="e.g. 123 Main St"
+                  class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Store Email</label>
+                <input
+                  type="email"
+                  id="admin-store-email"
+                  placeholder="store@hotmail.com"
+                  class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white"
+                />
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Portal Password</label>
+                <input
+                  type="password"
+                  id="admin-store-pass"
+                  placeholder="Password"
+                  class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white"
+                />
+              </div>
+              <div class="sm:col-span-2 lg:col-span-3">
+                <button
+                  type="button"
+                  onclick="saveActiveStoreProfile()"
+                  class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 px-4 rounded-lg shadow-sm transition"
+                >
+                  💾 Save Complete Store Profile &amp; Credentials
+                </button>
+              </div>
+            </div>
 
             <!-- Dynamic Add / Remove Boxes Control Strip -->
             <div class="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
@@ -802,7 +842,9 @@ s="text-xs font-bold bg-slate-900 text-white px-2.5 py-1 rounded hover:bg-slate-
                 <div class="text-[11px] text-slate-500">Add or remove dispenser slots dynamically for this store location.</div>
               </div>
               <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-slate-700">Active Boxes: <strong id="admin-box-count-badge" class="font-mono text-blue-700 text-sm">40</strong></span>
+                <span class="text-xs font-bold text-slate-700">
+                  Active Boxes: <strong id="admin-box-count-badge" class="font-mono text-blue-700 text-sm">40</strong>
+                </span>
                 <button
                   type="button"
                   onclick="removeBoxSlot()"
@@ -821,7 +863,7 @@ s="text-xs font-bold bg-slate-900 text-white px-2.5 py-1 rounded hover:bg-slate-
                 </button>
               </div>
             </div>
-          </div> 
+          </div>
 
           <!-- Photo OCR Game Scanner & Quick Game Add Toolbar -->
           <div id="owner-game-sync-bar" class="p-3.5 bg-blue-50 border border-blue-200 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -860,7 +902,9 @@ s="text-xs font-bold bg-slate-900 text-white px-2.5 py-1 rounded hover:bg-slate-
 
           <!-- Add / Edit Single Master Game Form -->
           <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3">Add or Edit Game in Master Catalog</h3>
+            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3">
+              Add or Edit Game in Master Catalog
+            </h3>
             <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 items-end">
               <div>
                 <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Game #</label>
@@ -874,8 +918,7 @@ s="text-xs font-bold bg-slate-900 text-white px-2.5 py-1 rounded hover:bg-slate-
               <div class="col-span-2 sm:col-span-2">
                 <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Game Name</label>
                 <input
-               
-   type="text"
+                  type="text"
                   id="new-game-name"
                   placeholder="e.g. JUMBO BUCKS"
                   class="w-full border border-slate-300 rounded px-2.5 py-1.5 text-xs font-bold uppercase"
@@ -903,8 +946,7 @@ s="text-xs font-bold bg-slate-900 text-white px-2.5 py-1 rounded hover:bg-slate-
             </div>
           </div>
 
-          
-          <!-- 40-Dispenser Box Slot & Label Configuration (Option 2) -->
+          <!-- 40-Dispenser Box Slot & Label Configuration -->
           <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3 mb-4">
               <div>
@@ -941,7 +983,7 @@ s="text-xs font-bold bg-slate-900 text-white px-2.5 py-1 rounded hover:bg-slate-
             </div>
           </div>
 
-<!-- Master Games List Table -->
+          <!-- Master Games List Table -->
           <div class="border border-slate-200 rounded-xl overflow-hidden">
             <div class="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
               <h3 class="text-xs font-extrabold uppercase text-slate-800 tracking-wider">
@@ -959,8 +1001,7 @@ s="text-xs font-bold bg-slate-900 text-white px-2.5 py-1 rounded hover:bg-slate-
               <table class="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px]">
-                    <th cl
-ass="p-2.5 text-center">Game #</th>
+                    <th class="p-2.5 text-center">Game #</th>
                     <th class="p-2.5">Name</th>
                     <th class="p-2.5 text-center">Price</th>
                     <th class="p-2.5 text-center">Tickets / Pack</th>
@@ -994,79 +1035,126 @@ ass="p-2.5 text-center">Game #</th>
     </footer>
 
   </div>
+
   <!-- ==========================================================================
        8. MODALS & POPUP OVERLAYS
        ========================================================================== -->
 
-<!-- MODAL A: MULTI-LOCATION MANAGER & CREDENTIALS -->
-<div id="modal-multi-store" class="fixed inset-0 modal-backdrop hidden z-50 flex items-center justify-center p-3">
-  <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden">
-    <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
-      <h3 class="font-extrabold text-sm sm:text-base">Multi-Store Management &amp; Credentials</h3>
-      <button type="button" onclick="closeMultiStoreManagerModal()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
-    </div>
-    <div class="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
-      <p class="text-xs text-slate-600 leading-relaxed">
-        Manage your store locations, addresses, login credentials, and isolated box layouts. Each location saves its own independent boxes and shift history.
-      </p>
+  <!-- MODAL A: MULTI-LOCATION MANAGER & CREDENTIALS -->
+  <div id="modal-multi-store" class="fixed inset-0 modal-backdrop hidden z-50 flex items-center justify-center p-3">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden">
+      <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
+        <h3 class="font-extrabold text-sm sm:text-base">Multi-Store Management &amp; Credentials</h3>
+        <button type="button" onclick="closeMultiStoreManagerModal()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+      </div>
+      <div class="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+        <p class="text-xs text-slate-600 leading-relaxed">
+          Manage your store locations, addresses, login credentials, and isolated box layouts. Each location saves its own independent boxes and shift history.
+        </p>
 
-      <!-- Add New Location Form with Address & Credentials -->
-      <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-3">
-        <div class="text-xs font-extrabold text-slate-800 uppercase">Add New Store Location</div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <input type="text" id="new-location-name-input" placeholder="Store Name (e.g. Regas Xpress)" class="text-xs font-semibold border border-slate-300 rounded px-2.5 py-1.5 bg-white" />
-          <input type="text" id="new-location-num-input" placeholder="Store # (e.g. 104)" class="text-xs font-semibold border border-slate-300 rounded px-2.5 py-1.5 bg-white" />
-          <input type="text" id="new-location-address-input" placeholder="Physical Address" class="text-xs font-semibold border border-slate-300 rounded px-2.5 py-1.5 bg-white sm:col-span-2" />
-          <input type="email" id="new-location-email-input" placeholder="Store Email" class="text-xs font-semibold border border-slate-300 rounded px-2.5 py-1.5 bg-white" />
-          <input type="password" id="new-location-pass-input" placeholder="Store Portal Password" class="text-xs font-semibold border border-slate-300 rounded px-2.5 py-1.5 bg-white" />
+        <!-- Add New Location Form with Address & Credentials -->
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-3">
+          <div class="text-xs font-extrabold text-slate-800 uppercase">Add New Store Location</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <input
+              type="text"
+              id="new-location-name-input"
+              placeholder="Store Name (e.g. Regas Xpress)"
+              class="text-xs font-semibold border border-slate-300 rounded px-2.5 py-1.5 bg-white"
+            />
+            <input
+              type="text"
+              id="new-location-num-input"
+              placeholder="Store # (e.g. 104)"
+              class="text-xs font-semibold border border-slate-300 rounded px-2.5 py-1.5 bg-white"
+            />
+            <input
+              type="text"
+              id="new-location-address-input"
+              placeholder="Physical Address"
+              class="text-xs font-semibold border border-slate-300 rounded px-2.5 py-1.5 bg-white sm:col-span-2"
+            />
+            <input
+              type="email"
+              id="new-location-email-input"
+              placeholder="Store Email"
+              class="text-xs font-semibold border border-slate-300 rounded px-2.5 py-1.5 bg-white"
+            />
+            <input
+              type="password"
+              id="new-location-pass-input"
+              placeholder="Store Portal Password"
+              class="text-xs font-semibold border border-slate-300 rounded px-2.5 py-1.5 bg-white"
+            />
+          </div>
+          <button
+            type="button"
+            onclick="createNewStoreLocation()"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2 rounded shadow"
+          >
+            + Create &amp; Initialize Store Location
+          </button>
         </div>
-        <button type="button" onclick="createNewStoreLocation()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2 rounded shadow"> + Create &amp; Initialize Store Location </button>
-      </div>
 
-      <!-- Registered Store Locations Table -->
-      <div class="border border-slate-200 rounded-xl overflow-hidden">
-        <table class="w-full text-left text-xs">
-          <thead class="bg-slate-100 text-slate-700 uppercase font-bold text-[10px] border-b border-slate-200">
-            <tr>
-              <th class="p-2.5">Store Details &amp; Address</th>
-              <th class="p-2.5 text-center">Status</th>
-              <th class="p-2.5 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="multi-store-list-tbody" class="divide-y divide-slate-200 font-medium">
-            <!-- Populated dynamically -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div class="bg-slate-100 px-5 py-3 border-t border-slate-200 text-right">
-      <button type="button" onclick="closeMultiStoreManagerModal()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-4 py-2 rounded-lg"> Done </button>
-    </div>
-  </div>
-</div>
+        <!-- Registered Store Locations Table -->
+        <div class="border border-slate-200 rounded-xl overflow-hidden">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100 text-slate-700 uppercase font-bold text-[10px] border-b border-slate-200">
+              <tr>
+                <th class="p-2.5">Store Details &amp; Address</th>
+                <th class="p-2.5 text-center">Status</th>
+                <th class="p-2.5 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="multi-store-list-tbody" class="divide-y divide-slate-200 font-medium">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
 
-        <!-- Non-Destructive Store Import Strip -->
+        <!-- Non-Destructive Store Import Strip (Properly enclosed inside Modal A) -->
         <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-2 text-xs">
           <div>
             <div class="font-bold text-amber-950">Import File Into Selected Location:</div>
             <div class="text-amber-800 text-[11px]">Select a backup JSON file to safely populate only the active store.</div>
           </div>
-          <input type="file" id="import-into-location-input" accept=".json,application/json" class="hidden" onchange="handleImportIntoSpecificLocation(event)" />
-          <button type="button" onclick="document.getElementById('import-into-location-input').click()" class="bg-amber-700 hover:bg-amber-800 text-white font-bold px-3 py-1.5 rounded">
+          <input
+            type="file"
+            id="import-into-location-input"
+            accept=".json,application/json"
+            class="hidden"
+            onchange="handleImportIntoSpecificLocation(event)"
+          />
+          <button
+            type="button"
+            onclick="document.getElementById('import-into-location-input').click()"
+            class="bg-amber-700 hover:bg-amber-800 text-white font-bold px-3 py-1.5 rounded"
+          >
             📂 Import Into Active Store
           </button>
         </div>
       </div>
 
       <div class="bg-slate-100 px-5 py-3 border-t border-slate-200 text-right">
-        <button type="button" onclick="closeMultiStoreManagerModal()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-4 py-2 rounded-lg">
+        <button
+          type="button"
+          onclick="closeMultiStoreManagerModal()"
+          class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-4 py-2 rounded-lg"
+        >
           Done
         </button>
       </div>
     </div>
   </div>
 
- <!-- MODAL B: EXPLICIT PACK ROLLOVER / GAME SWAP MODAL -->
+<!-- ==========================================================================
+     END PART 3 OF 10
+     ========================================================================== -->
+  <!-- ==========================================================================
+     START PART 4 OF 10 (LINES 1146 - 1550)
+     ========================================================================== -->
+
+  <!-- MODAL B: EXPLICIT PACK ROLLOVER / GAME SWAP MODAL -->
   <div id="modal-box-rollover" class="fixed inset-0 modal-backdrop hidden z-50 flex items-center justify-center p-3">
     <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden">
       
@@ -1119,8 +1207,7 @@ ass="p-2.5 text-center">Game #</th>
               🔄 Same Game
             </button>
             <button
-     
-         type="button"
+              type="button"
               onclick="handleRolloverGameChoice(false)"
               class="w-full bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs sm:text-sm py-2.5 px-3 rounded-lg shadow-sm transition"
             >
@@ -1164,6 +1251,7 @@ ass="p-2.5 text-center">Game #</th>
 
     </div>
   </div>
+
   <!-- MODAL C: QUICK GAME REGISTER MODAL (UNRECOGNIZED GAME NUMBER) -->
   <div id="modal-quick-game" class="fixed inset-0 modal-backdrop hidden z-50 flex items-center justify-center p-3">
     <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full border border-slate-200 overflow-hidden">
@@ -1194,8 +1282,7 @@ ass="p-2.5 text-center">Game #</th>
       </div>
       <div class="bg-slate-100 px-4 py-2.5 border-t border-slate-200 text-right space-x-2">
         <button type="button" onclick="closeQuickGameModal()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs px-3 py-1.5 rounded">Cancel</button>
-        <button type="button" onclick="saveQuickRegisteredGame()" class="bg-blue-600 hover:bg-blue-700 text-white fo
-nt-bold text-xs px-3.5 py-1.5 rounded shadow">Save &amp; Assign</button>
+        <button type="button" onclick="saveQuickRegisteredGame()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-1.5 rounded shadow">Save &amp; Assign</button>
       </div>
     </div>
   </div>
@@ -1251,24 +1338,16 @@ nt-bold text-xs px-3.5 py-1.5 rounded shadow">Save &amp; Assign</button>
     let sigCanvas = null;
     let sigCtx = null;
 
-function getDefaultRollCountForPrice(price) {
+    function getDefaultRollCountForPrice(price) {
       const p = Number(price);
       if (!p || p <= 0) return 300;
-      
-      // $1, $2, $3, $5, $10, $20 = $300 per roll
       if (p <= 20) return Math.round(300 / p); 
-      
-      // $25 & $30 = $600 per roll
       if (p === 25) return 24;                 
       if (p === 30) return 20;                 
-      
-      // $50 = $900 per roll
       if (p === 50) return 18;                 
-      
       return Math.round(300 / p);
     } 
 
-    // Generate clean 40-box matrix
     function createDefault40Boxes() {
       const bList = [];
       for (let i = 1; i <= 40; i++) {
@@ -1286,16 +1365,16 @@ function getDefaultRollCountForPrice(price) {
       }
       return bList;
     }
+
     /* ==========================================================================
        MULTI-LOCATION STORAGE & STATE ISOLATION ENGINE
        ========================================================================== */
-  function getStoreBoxesStorageKey(locId) {
+    function getStoreBoxesStorageKey(locId) {
       return `project_lotto_boxes_${locId}`;
     }
 
     function getStoreProfileStorageKey(locId) {
-      return `project
-_lotto_profile_${locId}`;
+      return `project_lotto_profile_${locId}`;
     }
 
     function getStoreHistoryStorageKey(locId) {
@@ -1338,7 +1417,8 @@ _lotto_profile_${locId}`;
       loadActiveStoreData();
       populateLocationSwitcherDropdown();
     }
-function saveActiveStoreProfile() {
+
+    function saveActiveStoreProfile() {
       const nameInp = document.getElementById('admin-store-name')?.value?.trim();
       const numInp = document.getElementById('admin-store-number')?.value?.trim();
       const addrInp = document.getElementById('admin-store-address')?.value?.trim() || '';
@@ -1360,7 +1440,6 @@ function saveActiveStoreProfile() {
         localStorage.setItem(getStoreProfileStorageKey(activeLocationId), JSON.stringify(storeProfile));
       } catch (e) {}
 
-      // Update in registry list
       const locIdx = locations.findIndex(l => l.id === activeLocationId);
       if (locIdx >= 0) {
         locations[locIdx].name = storeProfile.name;
@@ -1377,7 +1456,6 @@ function saveActiveStoreProfile() {
     }
 
     function loadActiveStoreData() {
-      // 1. Load active location profile
       const profKey = getStoreProfileStorageKey(activeLocationId);
       const activeLocObj = locations.find(l => l.id === activeLocationId);
       try {
@@ -1399,7 +1477,6 @@ function saveActiveStoreProfile() {
         storeProfile = { name: activeLocObj?.name || 'Regas Shell', number: activeLocObj?.number || '101', address: '', email: '', password: '' };
       }
 
-      // Populate admin view form inputs
       const adminName = document.getElementById('admin-store-name');
       const adminNum = document.getElementById('admin-store-number');
       const adminAddr = document.getElementById('admin-store-address');
@@ -1412,7 +1489,6 @@ function saveActiveStoreProfile() {
       if (adminEmail) adminEmail.value = storeProfile.email || '';
       if (adminPass) adminPass.value = storeProfile.password || '';
 
-      // 2. Load active location boxes INDEPENDENTLY per store ID
       const boxKey = getStoreBoxesStorageKey(activeLocationId);
       try {
         const bRaw = localStorage.getItem(boxKey);
@@ -1433,7 +1509,19 @@ function saveActiveStoreProfile() {
         boxes = createDefault40Boxes();
       }
 
-      // 3. Update Header & Footer Displays
+      // Backfill active boxes with master game details if names/prices are missing
+      boxes.forEach(b => {
+        if (b.gameNum) {
+          const matched = masterGames.find(g => String(g.gameNum).trim() === String(b.gameNum).trim());
+          if (matched) {
+            b.gameName = matched.name;
+            b.price = Number(matched.price);
+            b.rollCount = Number(matched.count);
+            b.needsNewGameEntry = false;
+          }
+        }
+      });
+
       const subTitle = document.getElementById('header-store-subtitle');
       if (subTitle) subTitle.textContent = `${storeProfile.name} (#${storeProfile.number}) — Shift Audit Matrix`;
       const footStore = document.getElementById('footer-store-display');
@@ -1447,38 +1535,12 @@ function saveActiveStoreProfile() {
       }
     }
 
-  function saveBoxesState() {
+    function saveBoxesState() {
       try {
         localStorage.setItem(getStoreBoxesStorageKey(activeLocationId), JSON.stringify(boxes));
       } catch (e) {
         console.error('Error saving boxes state:', e);
       }
-    }
-function saveActiveStoreProfile() {
-      const nameInp = document.getElementById('admin-store-name')?.value?.trim();
-      const numInp = document.getElementById('admin-store-number')?.value?.trim();
-      if (!nameInp) {
-        alert('Please enter a valid store location name.');
-        return;
-      }
-      storeProfile.name = nameInp;
-      storeProfile.number = numInp || '100';
-
-      try {
-        localStorage.setItem(getStoreProfileStorageKey(activeLocationId), JSON.stringify(storeProfile));
-      } catch (e) {}
-
-      // Update in registry list
-      const locIdx = locations.findIndex(l => l.id === activeLocationId);
-      if (locIdx >= 0) {
-        locations[locIdx].name = storeProfile.name;
-        locations[locIdx].number = storeProfile.number;
-        saveLocationsRegistry();
-      }
-
-      populateLocationSwitcherDropdown();
-      loadActiveStoreData();
-      alert(`Store Profile Saved: ${storeProfile.name} (#${storeProfile.number})`);
     }
 
     function populateLocationSwitcherDropdown() {
@@ -1493,7 +1555,6 @@ function saveActiveStoreProfile() {
 
     function handleLocationSwitch(newLocId) {
       if (!newLocId || newLocId === activeLocationId) return;
-      // Save current state first
       saveBoxesState();
       activeLocationId = newLocId;
       localStorage.setItem(STORAGE_KEY_ACTIVE_LOC, activeLocationId);
@@ -1542,222 +1603,16 @@ function saveActiveStoreProfile() {
         console.error('Error saving master games catalog:', e);
       }
     }
-
-    function exportMasterGamesUniversal() {
-      const cleanList = sanitizeMasterGamesList(masterGames);
-      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(cleanList, null, 2));
-      const a = document.createElement('a');
-      a.setAttribute('href', dataStr);
-      a.setAttribute('download', `games_${new Date().toISOString().slice(0, 10)}.json`);
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }
-
-    async function importMasterGamesUniversal(event) {
-      const file = event?.target?.files?.[0];
-      if (!file) return;
-
-  try {
-        const text = await file.text();
-        const incoming = JSON.parse(text);
-        if (!Array.isArray(incoming) || incoming.length === 0) {
-          alert('Invalid games file. Expected a JSON array of games.');
-          return;
-        }
-
-        const combined = [...masterGames];
-        let importedCount = 0;
-
-        incoming.forEach(sg => {
-          const gNum = String(sg.gameNum ?? sg.number ?? '').trim();
-          if (!gNum) return;
-          const price = Number(sg.price) || 1;
-          const count = Number(sg.count ?? sg.rollCount) || getDefaultRollCountForPrice(price);
-          const name = String(sg.name || '').trim().toUpperCase() || `GAME #${gNum}`;
-          const norm = { gameNum: gNum, name, price, count };
-
-          const idx = combined.findIndex(g => String(g.gameNum).trim() === gNum);
-          if (idx === -1) {
-            combined.push(norm);
-            importedCount++;
-          } else {
-            combined[idx] = norm;
-            importedCount++;
-          }
-        });
-
-        masterGames = sanitizeMasterGamesList(combined);
-        saveGamesState();
-
-        // Backfill any active dispenser boxes that have this game assigned
-        boxes.forEach(b => {
-          const match = masterGames.find(g => String(g.gameNum).trim() === String(b.gameNum).trim());
-          if (match) {
-            b.gameName = match.name;
-            b.price = Number(match.price);
-            b.rollCount = Number(match.count);
-            b.needsNewGameEntry = false;
-          }
-        });
-        saveBoxesState();
-
-        renderAdminGamesTable();
-        renderDispenserGrid();
-        recalculateReconciliationTotals();
-
-        alert(`Successfully imported and synchronized ${importedCount} games into catalog!`);
-      } catch (err) {
-        console.error('Import Error:', err);
-        alert('Could not read or parse the selected games file. Ensure it is a valid JSON file.');
-      } finally {
-        if (event?.target) event.target.value = '';
-      }
-    }
+<!-- ==========================================================================
+     END PART 4 OF 10
+     ========================================================================== -->
+  <!-- ==========================================================================
+     START PART 5 OF 10 (LINES 1551 - 1955)
+     ========================================================================== -->
 
     /* ==========================================================================
-       CLOUD 2-WAY MASTER GAMES AUTO-SYNC & PHOTO OCR SCANNER
+       11. CORE MATHEMATICAL CALCULATION ENGINE (FIXED FOR ASCENDING TICKET COUNTS)
        ========================================================================== */
-    async function syncMasterGamesFromServer() {
-      try {
-        const res = await fetch(WORKER_SYNC_URL + '?t=' + Date.now(), { cache: 'no-store' });
-        if (!res.ok) return;
-        const serverGames = await res.json();
-        if (!Array.isArray(serverGames) || serverGames.length === 0) return;
-
-        const combined = [...masterGames];
-        let changed = false;
-
-        serverGames.forEach(sg => {
-          const gNum = String(sg.gameNum ?? sg.number ?? '').trim();
-          if (!gNum) return;
-          const price = Number(sg.price) || 1;
-          const count = Number(sg.count ?? sg.rollCount) || getDefaultRollCountForPrice(price);
-          const norm = { gameNum: gNum, name: String(sg.name || '').trim().toUpperCase(), price, count };
-
-          const idx = combined.findIndex(g => String(g.gameNum).trim() === gNum);
-          if (idx === -1) {
-            combined.push(norm);
-            changed = true;
-          } else if (combined[idx].name !== norm.name || Number(combined[idx].price) !== norm.price) {
-            combined[idx] = norm;
-            changed = true;
-          }
-        });
-
-        if (changed) {
-          masterGames = sanitizeMasterGamesList(combined);
-          saveGamesState();
-          boxes.forEach(b => {
-            const match = masterGames.find(g => String(g.gameNum).trim() === String(b.gameNum).trim());
-            if (match) {
-              b.gameName = match.name;
-              b.price = Number(match.price);
-              b.rollCount = Number(match.count);
-              b.needsNewGameEntry = false;
-            }
-          });
-          saveBoxesState();
-          renderAdminGamesTable();
-          renderDispenserGrid();
-        }
-
-const syncInd = document.getElementById('cloud-sync-indicator');
-        if (syncInd) {
-          syncInd.textContent = '● Cloud Synced';
-          syncInd.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-900/80 text-emerald-300 border border-emerald-600/50';
-        }
-      } catch (e) {
-        console.warn('Live Cloud Sync offline or unreachable. Using local storage.', e);
-      }
-    }
-
-    async function pushMasterGamesToCloud() {
-      try {
-        const cleanList = sanitizeMasterGamesList(masterGames);
-        await fetch(WORKER_SYNC_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(cleanList)
-        });
-      } catch (e) {
-        console.warn('Could not push games to cloud worker:', e);
-      }
-    }
-    async function scanGameInfoFromPhoto(event) {
-      const file = event?.target?.files?.[0];
-      if (!file) return;
-
-      const btn = document.getElementById('btn-photo-ocr-game');
-      const origText = btn ? btn.textContent : '';
-      if (btn) { btn.textContent = '⏳ Reading Photo...'; btn.disabled = true; }
-
-      try {
-        if (!window.Tesseract) {
-          await new Promise((resolve, reject) => {
-            const s = document.createElement('script');
-            s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
-            s.onload = resolve;
-            s.onerror = reject;
-            document.head.appendChild(s);
-          });
-        }
-
-        const result = await Tesseract.recognize(file, 'eng');
-        const rawText = (result?.data?.text || '').replace(/\r/g, '');
-        const lines = rawText.split('\n').map(l => l.trim()).filter(Boolean);
-
-        const gameMatch = rawText.match(/(?:GAME|GM|NO|#)\s*[:#-]?\s*(\d{3,4})/i) || rawText.match(/\b(\d{3,4})\b/);
-        const detectedNum = gameMatch ? gameMatch[1] : '';
-
-        const priceMatch = rawText.match(/\$\s*(1|2|3|5|10|20|25|30|50)\b/);
-        const detectedPrice = priceMatch ? Number(priceMatch[1]) : 5;
-
-        let detectedName = '';
-        for (const line of lines) {
-          const clean = line.replace(/[^a-zA-Z0-9 $&'-]/g, '').trim();
-          if (clean.length >= 4 && !/^(game|ticket|price|odds|overall|play|win up to)/i.test(clean) && !/^\d+$/.test(clean)) {
-            detectedName = clean.toUpperCase();
-            break;
-          }
-        }
-
-        const finalNum = prompt('Verify Game Number from photo:', detectedNum || '');
-        if (!finalNum) return;
-        const finalName = prompt('Verify Game Name from photo:', detectedName || 'NEW SCRATCH GAME');
-        if (!finalName) return;
-        const finalPrice = Number(prompt('Verify Ticket Price ($):', String(detectedPrice || 5))) || 1;
-        const defaultCount = getDefaultRollCountForPrice(finalPrice);
-        const finalCount = Number(prompt('Verify Tickets Per Roll:', String(defaultCount))) || defaultCount;
-
-        const gNumClean = finalNum.trim();
-        const existingIdx = masterGames.findIndex(g => String(g.gameNum).trim() === gNumClean);
-        const newEntry = { gameNum: gNumClean, name: finalName.trim().toUpperCase(), price: finalPrice, count: finalCount };
-
-        if (existingIdx >= 0) masterGames[existingIdx] = newEntry;
-        else masterGames.push(newEntry);
-
-        masterGames = sanitizeMasterGamesList(masterGames);
-        saveGamesState();
-        renderAdminGamesTable();
-        renderDispenserGrid();
-
-        // Push to cloud worker so all other devices update automatically
-        pushMasterGamesToCloud();
-
-        alert(`Saved Game #${gNumClean}: ${finalName.trim().toUpperCase()} ($${finalPrice})!`);
-      } catch (err) {
-        console.error('OCR Error:', err);
-        alert('Could not auto-read text from photo. Ensure the ticket image is clear and well lit.');
-      } finally {
-        if (btn) { btn.textContent = origText; btn.disabled = false; }
-        if (event?.target) event.target.value = '';
-      }
-    }
- /* ==========================================================================
-       11. CORE MATHEMATICAL CALCULATION ENGINE
-       =================================================
-========================= */
     function calculateBoxMetrics(box) {
       if (!box || !box.gameNum) {
         return { ticketsSold: 0, dollarSales: 0, status: 'empty', hasRollover: false, activeTicket: '-' };
@@ -1783,30 +1638,28 @@ const syncInd = document.getElementById('cloud-sync-indicator');
       let ticketsSold = 0;
 
       if (rollovers.length > 0) {
-        // Multi-roll or explicit rollover calculation
         let currentStart = start;
         rollovers.forEach(ro => {
           const finishedAt = Number(ro.finishedTicket);
-          if (finishedAt <= currentStart) {
-            ticketsSold += (currentStart - finishedAt);
+          if (finishedAt >= currentStart) {
+            ticketsSold += (finishedAt - currentStart);
           } else {
             ticketsSold += Math.max(0, currentStart);
           }
-          currentStart = rollCount;
+          currentStart = 0;
         });
 
-        if (end <= currentStart) {
-          ticketsSold += (currentStart - end);
+        if (end >= currentStart) {
+          ticketsSold += (end - currentStart);
         } else {
           ticketsSold += Math.max(0, currentStart);
         }
       } else {
-        // Standard single-pack countdown (Descending tickets, e.g. 59 down to 0)
-        if (end <= start) {
-          ticketsSold = start - end;
+        // Standard single-pack calculation (Tickets count up as sold: e.g. Start 0, End 15 -> 15 sold)
+        if (end >= start) {
+          ticketsSold = end - start;
         } else {
-          // If typed end exceeds start without rollover flagged, calculate ascending difference
-          ticketsSold = Math.max(0, end - start);
+          ticketsSold = Math.max(0, start - end);
         }
       }
 
@@ -1825,8 +1678,9 @@ const syncInd = document.getElementById('cloud-sync-indicator');
         activeTicket: end
       };
     }
-/* ==========================================================================
-       12. NON-BLOCKING LIVE INPUT HANDLERS (SOLVES ISSUE #1)
+
+    /* ==========================================================================
+       12. NON-BLOCKING LIVE INPUT HANDLERS (SOLVES ISSUES #1, #2, #3, #4)
        ========================================================================== */
     function updateBoxFieldDirect(idx, field, val) {
       if (!boxes[idx]) return;
@@ -1835,18 +1689,12 @@ const syncInd = document.getElementById('cloud-sync-indicator');
 
       if (field === 'gameNum') {
         const cleanVal = String(val).trim();
-        
-        // ROBUST LOOKUP: Checks for 'gameNum', 'id', or 'number' to guarantee imported games are found
-        const found = masterGames.find(g => 
-          String(g.gameNum).trim() === cleanVal || 
-          String(g.id).trim() === cleanVal || 
-          String(g.number).trim() === cleanVal
-        );
+        const found = masterGames.find(g => String(g.gameNum).trim() === cleanVal || Number(g.gameNum) === Number(cleanVal));
         
         if (found) {
-          boxes[idx].gameName = found.name || '';
+          boxes[idx].gameName = found.name;
           boxes[idx].price = Number(found.price) || 0;
-          boxes[idx].rollCount = Number(found.count || found.rollCount) || getDefaultRollCountForPrice(boxes[idx].price);
+          boxes[idx].rollCount = Number(found.count) || getDefaultRollCountForPrice(boxes[idx].price);
           boxes[idx].needsNewGameEntry = false;
         } else if (cleanVal !== '') {
           boxes[idx].gameName = '';
@@ -1872,17 +1720,21 @@ const syncInd = document.getElementById('cloud-sync-indicator');
       }
     }
 
-
-    // Live End Ticket handler without confusing browser popups
+    // Live End Ticket handler: NEVER interrupts typing when entering equal or higher numbers (0 sold)
     function updateBoxEndTicketLive(idx, val) {
       if (!boxes[idx]) return;
       const box = boxes[idx];
       const newEnd = val === '' ? '' : Number(val);
       const start = box.startTicket !== '' && box.startTicket !== null ? Number(box.startTicket) : 0;
 
-      // If user typed an end ticket number lower than the start ticket, open the Yes/No dialog
-      if (newEnd !== '' && newEnd < start) {
-        openRolloverDecisionModal(idx, newEnd);
+      // Only prompt for rollover if the user explicitly types a number lower than start
+      if (newEnd !== '' && !isNaN(newEnd) && newEnd < start) {
+        // Wait for blur or enter before triggering modal to prevent keystroke interruption
+        box.endTicket = newEnd;
+        saveBoxesState();
+        updateBoxMetricsDisplay(idx);
+        updateHeaderTotalsUI();
+        recalculateReconciliationTotals();
         return;
       }
 
@@ -1891,7 +1743,7 @@ const syncInd = document.getElementById('cloud-sync-indicator');
       updateBoxMetricsDisplay(idx);
       updateHeaderTotalsUI();
       recalculateReconciliationTotals();
-    }
+    }    
 
     // Manual 'Roll' button on the card
     function rollNewPackInBox(idx) {
@@ -1927,7 +1779,6 @@ const syncInd = document.getElementById('cloud-sync-indicator');
       document.getElementById('modal-box-rollover').classList.remove('hidden');
     }
 
-    // Step 1: User answered Yes or No
     function handleRolloverStep1Answer(isYes) {
       const idx = Number(document.getElementById('modal-roll-box-idx').value);
       if (isNaN(idx) || !boxes[idx]) {
@@ -1936,18 +1787,15 @@ const syncInd = document.getElementById('cloud-sync-indicator');
       }
 
       if (!isYes) {
-        // User clicked "No, Typo": do not rollover, keep what was there
         cancelRolloverModal();
         renderDispenserGrid();
         return;
       }
 
-      // User clicked "Yes, Started New Roll": advance to Step 2 (Same Game vs New Game)
       document.getElementById('modal-roll-step-1').classList.add('hidden');
       document.getElementById('modal-roll-step-2').classList.remove('hidden');
     }
 
-    // Step 2: User chose Same Game vs Different Game
     function handleRolloverGameChoice(isSameGame) {
       const idx = Number(document.getElementById('modal-roll-box-idx').value);
       if (isNaN(idx) || !boxes[idx]) return;
@@ -1955,7 +1803,6 @@ const syncInd = document.getElementById('cloud-sync-indicator');
       if (isSameGame) {
         finalizeRolloverAction(idx, boxes[idx].gameNum);
       } else {
-        // Show input to enter/search the new game number
         const sec = document.getElementById('modal-roll-newgame-section');
         sec.classList.remove('hidden');
         const inp = document.getElementById('modal-roll-newgame-input');
@@ -1964,7 +1811,6 @@ const syncInd = document.getElementById('cloud-sync-indicator');
       }
     }
 
-    // User entered a new game # and clicked Apply
     function applyRolloverWithNewGame() {
       const idx = Number(document.getElementById('modal-roll-box-idx').value);
       const newGameNum = document.getElementById('modal-roll-newgame-input').value.trim();
@@ -1975,7 +1821,6 @@ const syncInd = document.getElementById('cloud-sync-indicator');
       finalizeRolloverAction(idx, newGameNum);
     }
 
-    // Finalizes calculations, logs old pack sold, and loads new roll
     function finalizeRolloverAction(idx, finalGameNum) {
       const box = boxes[idx];
       const pendingEnd = document.getElementById('modal-roll-pending-end').value;
@@ -1983,7 +1828,7 @@ const syncInd = document.getElementById('cloud-sync-indicator');
       const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(price);
       const maxTicket = Math.max(0, rollCount - 1);
       const start = Number(box.startTicket) || 0;
-      const oldPackSold = Math.max(0, (maxTicket + 1) - start);
+      const oldPackSold = Math.max(0, maxTicket - start);
       const oldPackSales = oldPackSold * price;
 
       if (!Array.isArray(box.rollovers)) box.rollovers = [];
@@ -1999,10 +1844,9 @@ const syncInd = document.getElementById('cloud-sync-indicator');
         salesAmount: oldPackSales
       });
 
-      // Update game assignment if changed
       if (finalGameNum !== box.gameNum) {
         box.gameNum = finalGameNum;
-        const matched = masterGames.find(g => String(g.gameNum).trim() === finalGameNum);
+        const matched = masterGames.find(g => String(g.gameNum).trim() === String(finalGameNum).trim());
         if (matched) {
           box.gameName = matched.name;
           box.price = Number(matched.price);
@@ -2025,7 +1869,6 @@ const syncInd = document.getElementById('cloud-sync-indicator');
       recalculateReconciliationTotals();
     }
 
-    // Closes and resets the modal
     function cancelRolloverModal() {
       document.getElementById('modal-box-rollover').classList.add('hidden');
     }
@@ -2038,13 +1881,13 @@ const syncInd = document.getElementById('cloud-sync-indicator');
       recalculateReconciliationTotals();
     }
 
-    // Enter key navigation on the grid for rapid data entry
+    // Fixed Enter key navigation: instantly jumps focus to the next box End # input
     function handleGridEnter(event, currentIdx, currentField) {
       if (event.key === 'Enter') {
         event.preventDefault();
         const nextIdx = currentIdx + 1;
-        if (nextIdx < 40) {
-          const nextInp = document.getElementById(`input-${currentField}-${nextIdx}`);
+        if (nextIdx < boxes.length) {
+          const nextInp = document.getElementById(`input-endTicket-${nextIdx}`);
           if (nextInp) {
             nextInp.focus();
             nextInp.select();
@@ -2053,7 +1896,6 @@ const syncInd = document.getElementById('cloud-sync-indicator');
       }
     }
 
-    // Updates only the text badges inside a card without touching the input elements
     function updateBoxMetricsDisplay(idx) {
       const box = boxes[idx];
       if (!box) return;
@@ -2074,97 +1916,16 @@ const syncInd = document.getElementById('cloud-sync-indicator');
         else card.classList.add('status-pending');
       }
     }
+<!-- ==========================================================================
+     END PART 5 OF 10
+     ========================================================================== -->
+  <!-- ==========================================================================
+     START PART 6 OF 10 (LINES 1956 - 2370)
+     ========================================================================== -->
 
     /* ==========================================================================
-       13. EXPLICIT PACK ROLLOVER MODAL CONTROLS
-       ========================================================================== */
-    function openRolloverModal(idx) {
-      const box = boxes[idx];
-      if (!box || !box.gameNum) {
-        alert('Please assign a game number to this box before recording a rollover.');
-        return;
-      }
-
-      document.getElementById('modal-rollover-box-idx').value = idx;
-      document.getElementById('modal-rollover-title').textContent = `Box ${box.boxNumber}: ${box.gameName || 'Game #' + box.gameNum} Rollover`;
-      document.getElementById('modal-rollover-finished-ticket').value = '000';
-      document.getElementById('modal-rollover-new-end-ticket').value = box.endTicket !== '' ? box.endTicket : '';
-
-      renderRolloverHistoryInModal(box);
-      document.getElementById('modal-box-rollover').classList.remove('hidden');
-      setTimeout(() => {
-        const inp = document.getElementById('modal-rollover-new-end-ticket');
-        if (inp) { inp.focus(); inp.select(); }
-      }, 100);
-    }
-
-    function closeRolloverModal() {
-      document.getElementById('modal-box-rollover').classList.add('hidden');
-    }
-
-    function renderRolloverHistoryInModal(box) {
-      const histList = document.getElementById('modal-rollover-history-list');
-      if (!histList) return;
-
-      const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
-      if (rollovers.length === 0) {
-        histList.innerHTML = '<span class="text-slate-400 italic">No previous rollovers recorded for this shift.</span>';
-        return;
-      }
-
-      histList.innerHTML = rollovers.map((ro, i) => `
-        <div class="flex items-center justify-between border-b border-slate-200 pb-1">
-          <span>Pack #${i + 1} finished at: <strong>#${ro.finishedTicket}</strong></span>
-          <span class="text-slate-400 text-[10px]">${ro.timestamp || ''}</span>
-        </div>
-      `).join('');
-    }
-
-    function confirmAndApplyBoxRollover() {
-      const idx = Number(document.getElementById('modal-rollover-box-idx').value);
-      if (isNaN(idx) || !boxes[idx]) return;
-
-      const finishedVal = document.getElementById('modal-rollover-finished-ticket').value;
-      const newEndVal = document.getElementById('modal-rollover-new-end-ticket').value;
-
-      if (finishedVal === '' || newEndVal === '') {
-        alert('Please enter both the finished ticket number and new pack ending ticket.');
-        return;
-      }
-
-      if (!Array.isArray(boxes[idx].rollovers)) {
-        boxes[idx].rollovers = [];
-      }
-
-      boxes[idx].rollovers.push({
-        finishedTicket: Number(finishedVal),
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      });
-
-      boxes[idx].endTicket = Number(newEndVal);
-      saveBoxesState();
-
-      closeRolloverModal();
-      renderDispenserGrid();
-      recalculateReconciliationTotals();
-    }
-
-    function clearAllRolloversFromActiveBox() {
-      const idx = Number(document.getElementById('modal-rollover-box-idx').value);
-      if (isNaN(idx) || !boxes[idx]) return;
-
-      if (confirm(`Reset all rollover records for Box ${boxes[idx].boxNumber}?`)) {
-        boxes[idx].rollovers = [];
-        saveBoxesState();
-        closeRolloverModal();
-        renderDispenserGrid();
-        recalculateReconciliationTotals();
-      }
-    }
-  /* ==========================================================================
        14. 40-BOX DISPENSER MATRIX & LIST VIEW RENDERER
        ========================================================================== */
-    
     function toggleDispenserView() {
       currentDispenserView = currentDispenserView === 'grid' ? 'list' : 'grid';
       const btn = document.getElementById('dispenser-view-toggle-btn');
@@ -2195,10 +1956,10 @@ const syncInd = document.getElementById('cloud-sync-indicator');
               </td>
               <td style="padding: 6px 8px; text-align: center; font-weight: bold; color: #047857;">${hasGame && box.price ? '$' + box.price : '-'}</td>
               <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
-                <input type="number" id="input-startTicket-${idx}" value="${box.startTicket !== '' ? box.startTicket : ''}" onchange="updateBoxFieldDirect(${idx}, 'startTicket', this.value)" onkeydown="handleGridEnter(event, ${idx}, 'startTicket')" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono" />
+                <input type="number" value="${box.startTicket !== '' ? box.startTicket : ''}" onchange="updateBoxFieldDirect(${idx}, 'startTicket', this.value)" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono" />
               </td>
               <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
-                <input type="number" id="input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}" onchange="updateBoxEndTicketLive(${idx}, this.value)" onkeydown="handleGridEnter(event, ${idx}, 'endTicket')" placeholder="End#" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono font-bold bg-amber-50" />
+                <input type="number" id="input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}" oninput="updateBoxEndTicketLive(${idx}, this.value)" onkeydown="handleGridEnter(event, ${idx}, 'endTicket')" placeholder="End#" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono font-bold bg-amber-50" />
               </td>
               <td style="padding: 6px 8px; text-align: center; font-weight: bold;">${m.ticketsSold}${roCount > 0 ? ' *' : ''}</td>
               <td style="padding: 6px 8px; text-align: right; font-family: monospace; font-weight: 900; color: #047857;">$${m.dollarSales.toFixed(2)}</td>
@@ -2246,7 +2007,114 @@ const syncInd = document.getElementById('cloud-sync-indicator');
         if (metrics.status === 'complete') statusClass = 'status-complete';
         else if (metrics.status === 'rollover') statusClass = 'status-rollover';
 
-        html
+        html += `
+          <div
+            id="dispenser-card-${idx}"
+            class="dispenser-card bg-white rounded-xl border border-slate-200 p-3 shadow-sm flex flex-col justify-between ${statusClass}"
+          >
+            <!-- Card Header: Box Number & Quick Rollover Indicator -->
+            <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+              <div class="flex items-center gap-2">
+                <span class="w-7 h-7 rounded-lg bg-slate-900 text-white font-black text-xs flex items-center justify-center font-mono">
+                  ${box.boxNumber}
+                </span>
+                <div class="leading-tight">
+                  <div class="font-bold text-xs text-slate-800 truncate max-w-[150px]">
+                    ${hasGame ? (box.gameName || 'Game #' + box.gameNum) : '<span class="text-slate-400 italic">Empty Slot</span>'}
+                  </div>
+                  <div class="text-[10px] text-slate-500 font-medium">
+                    ${hasGame ? `$${box.price} • ${box.rollCount} tix/pk` : 'Assign game below'}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Quick Rollover Trigger Button -->
+              <button
+                type="button"
+                onclick="rollNewPackInBox(${idx})"
+                class="text-[11px] font-bold px-2 py-1 rounded transition border ${
+                  rollovers.length > 0
+                    ? 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200'
+                    : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'
+                }"
+                title="Finish pack & rollover to new roll"
+              >
+                ${rollovers.length > 0 ? `★ ${rollovers.length} Rollover` : 'Roll'}
+              </button>
+            </div>
+
+            <!-- Card Middle: Game Number Input & Quick Register Warning -->
+            <div class="space-y-2 mb-2">
+              <div class="flex items-center gap-2">
+                <label class="text-[10px] font-bold text-slate-500 uppercase w-12">Game #:</label>
+                <input
+                  type="text"
+                  id="input-gameNum-${idx}"
+                  value="${box.gameNum || ''}"
+                  placeholder="e.g. 1005"
+                  onchange="updateBoxFieldDirect(${idx}, 'gameNum', this.value)"
+                  class="flex-1 text-xs font-mono font-bold border border-slate-300 rounded px-2 py-1 lotto-input bg-slate-50"
+                />
+              </div>
+
+              ${box.needsNewGameEntry ? `
+                <div class="p-1.5 bg-red-50 border border-red-200 rounded text-[10px] text-red-700 flex items-center justify-between">
+                  <span>Unknown Game #</span>
+                  <button
+                    type="button"
+                    onclick="openQuickGameModal(${idx})"
+                    class="font-extrabold underline text-blue-700 hover:text-blue-900"
+                  >
+                    + Register
+                  </button>
+                </div>
+              ` : ''}
+
+              <!-- Start Ticket & End Ticket Inputs -->
+              <div class="grid grid-cols-2 gap-2 pt-1">
+                <div>
+                  <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Start #</label>
+                  <input
+                    type="number"
+                    id="input-startTicket-${idx}"
+                    value="${box.startTicket !== undefined ? box.startTicket : 0}"
+                    onchange="updateBoxFieldDirect(${idx}, 'startTicket', this.value)"
+                    placeholder="000"
+                    class="w-full text-center font-mono font-bold text-xs border border-slate-300 rounded p-1.5 lotto-input bg-slate-50"
+                  />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-blue-700 uppercase mb-0.5">End #</label>
+                  <input
+                    type="number"
+                    id="input-endTicket-${idx}"
+                    value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}"
+                    oninput="updateBoxEndTicketLive(${idx}, this.value)"
+                    onkeydown="handleGridEnter(event, ${idx}, 'endTicket')"
+                    placeholder="000"
+                    class="w-full text-center font-mono font-bold text-xs border-2 border-blue-400 rounded p-1.5 lotto-input bg-blue-50/50"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Card Footer: Calculated Sold Count & Dollar Total -->
+            <div class="bg-slate-50 rounded-lg p-2 border border-slate-200 flex items-center justify-between text-xs mt-1">
+              <span id="box-sold-badge-${idx}" class="font-mono font-bold text-slate-700">
+                ${metrics.ticketsSold} Sold ${rollovers.length > 0 ? '<span class="text-amber-600">*</span>' : ''}
+              </span>
+              <span id="box-sales-badge-${idx}" class="font-mono font-black text-emerald-700">
+                $${metrics.dollarSales.toFixed(2)}
+              </span>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+      updateHeaderTotalsUI();
+    }
+
     /* ==========================================================================
        15. LIVE HEADER TOTALS & SCANNER LOGIC
        ========================================================================== */
@@ -2265,7 +2133,12 @@ const syncInd = document.getElementById('cloud-sync-indicator');
       if (tElem) tElem.textContent = totalTickets.toLocaleString();
       if (sElem) sElem.textContent = `$${totalSales.toFixed(2)}`;
     }
-
+<!-- ==========================================================================
+     END PART 6 OF 10
+     ========================================================================== -->
+  <!-- ==========================================================================
+     START PART 7 OF 10 (LINES 2371 - 2780)
+     ========================================================================== */
     function handleBarcodeScanEnter(event) {
       if (event.key === 'Enter') {
         event.preventDefault();
@@ -2285,7 +2158,6 @@ const syncInd = document.getElementById('cloud-sync-indicator');
         return;
       }
 
-      // Barcode parsing schema: Game # (First 3 or 4 digits), Pack (middle), Ticket # (last 2 or 3 digits)
       let parsedGame = '';
       let parsedTicket = 0;
 
@@ -2297,8 +2169,7 @@ const syncInd = document.getElementById('cloud-sync-indicator');
         parsedTicket = Number(raw.slice(-2));
       }
 
-      // Find the dispenser box containing this game number
-      const boxIdx = boxes.findIndex(b => String(b.gameNum).trim() === parsedGame.trim());
+      const boxIdx = boxes.findIndex(b => String(b.gameNum).trim() === parsedGame.trim() || Number(b.gameNum) === Number(parsedGame));
 
       if (boxIdx === -1) {
         alert(`Scanned Game #${parsedGame} is not currently assigned to any of your 40 boxes. Assign it first in Setup.`);
@@ -2327,8 +2198,7 @@ const syncInd = document.getElementById('cloud-sync-indicator');
       if (!box) return;
 
       document.getElementById('quick-game-box-idx').value = idx;
-      document.getElementById('quick-game-num').value =
- box.gameNum;
+      document.getElementById('quick-game-num').value = box.gameNum;
       document.getElementById('quick-game-name').value = '';
       document.getElementById('quick-game-price').value = '5';
       document.getElementById('quick-game-count').value = '60';
@@ -2356,7 +2226,7 @@ const syncInd = document.getElementById('cloud-sync-indicator');
       const count = Number(document.getElementById('quick-game-count').value) || getDefaultRollCountForPrice(price);
 
       const newEntry = { gameNum: gNum, name: gName, price, count };
-      const existIdx = masterGames.findIndex(g => String(g.gameNum).trim() === gNum);
+      const existIdx = masterGames.findIndex(g => String(g.gameNum).trim() === gNum || Number(g.gameNum) === Number(gNum));
       if (existIdx >= 0) masterGames[existIdx] = newEntry;
       else masterGames.push(newEntry);
 
@@ -2376,6 +2246,7 @@ const syncInd = document.getElementById('cloud-sync-indicator');
 
       if (typeof pushMasterGamesToCloud === 'function') pushMasterGamesToCloud();
     }
+
     /* ==========================================================================
        17. MULTI-LOCATION MANAGER & NON-DESTRUCTIVE IMPORT ENGINE (ISSUE #3)
        ========================================================================== */
@@ -2387,58 +2258,33 @@ const syncInd = document.getElementById('cloud-sync-indicator');
     function closeMultiStoreManagerModal() {
       document.getElementById('modal-multi-store').classList.add('hidden');
     }
-function exportSpecificLocationBackup(locId) {
-      const locObj = locations.find(l => l.id === locId) || { id: locId, name: storeProfile.name, number: storeProfile.number };
-      let locBoxes = [];
-      let locHistory = [];
-      try {
-        locBoxes = JSON.parse(localStorage.getItem(getStoreBoxesStorageKey(locId)) || '[]');
-      } catch (e) {}
-      try {
-        locHistory = JSON.parse(localStorage.getItem(getStoreHistoryStorageKey(locId)) || '[]');
-      } catch (e) {}
-      
-      const payload = {
-        backupVersion: '2.0',
-        exportedAt: new Date().toISOString(),
-        locationId: locId,
-        storeProfile: { name: locObj.name, number: locObj.number },
-        boxes: locBoxes.length > 0 ? locBoxes : boxes,
-        masterGames: sanitizeMasterGamesList(masterGames),
-        historicalReports: locHistory
-      };
-      
-      const safeName = (locObj.name || 'store').replace(/[^a-zA-Z0-9_-]/g, '_');
-      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(payload, null, 2));
-      const a = document.createElement('a');
-      a.setAttribute('href', dataStr);
-      a.setAttribute('download', `LottoBackup_${safeName}_${new Date().toISOString().slice(0, 10)}.json`);
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+
+    function renderMultiStoreModalList() {
+      const tbody = document.getElementById('multi-store-list-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = locations.map(loc => {
+        const isCurrent = loc.id === activeLocationId;
+        return `
+          <tr class="${isCurrent ? 'bg-blue-50/70' : 'hover:bg-slate-55'}">
+            <td class="p-2.5 space-y-0.5">
+              <div class="font-extrabold text-slate-900">${loc.name} (#${loc.number})</div>
+              <div class="text-[11px] text-slate-600">${loc.address || 'No address set'}</div>
+              <div class="text-[10px] text-slate-400 font-mono">Email: ${loc.email || 'None'}</div>
+            </td>
+            <td class="p-2.5 text-center">
+              ${isCurrent ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">Active</span>' : '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Standby</span>'}
+            </td>
+            <td class="p-2.5 text-right space-y-1">
+              <div class="flex justify-end gap-1">
+                ${!isCurrent ? `<button type="button" onclick="switchStoreFromModal('${loc.id}')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] px-2.5 py-1 rounded">Switch</button>` : ''}
+                <button type="button" onclick="exportSpecificLocationBackup('${loc.id}')" class="bg-slate-700 hover:bg-slate-600 text-white font-bold text-[11px] px-2.5 py-1 rounded">⬇ Export</button>
+                <button type="button" onclick="deleteStoreLocation('${loc.id}')" class="bg-red-100 hover:bg-red-200 text-red-700 font-bold text-[11px] px-2 py-1 rounded">Delete</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
- function renderMultiStoreModalList() {
-  const tbody = document.getElementById('multi-store-list-tbody');
-  if (!tbody) return;
-  tbody.innerHTML = locations.map(loc => {
-    const isCurrent = loc.id === activeLocationId;
-    return `
-      <tr class="${isCurrent ? 'bg-blue-50/70' : 'hover:bg-slate-50'}">
-        <td class="p-2.5">
-          <div class="font-extrabold text-slate-900">${loc.name}</div>
-          <div class="text-[10px] text-slate-500 font-mono">Store #${loc.number} • ID: ${loc.id}</div>
-        </td>
-        <td class="p-2.5 text-center">
-          ${isCurrent ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">Active Store</span>' : '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Standby</span>'}
-        </td>
-        <td class="p-2.5 text-right space-x-1">
-          ${!isCurrent ? `<button type="button" onclick="switchStoreFromModal('${loc.id}')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] px-2.5 py-1 rounded">Switch Here</button>` : ''}
-          <button type="button" onclick="exportSpecificLocationBackup('${loc.id}')" class="bg-slate-700 hover:bg-slate-600 text-white font-bold text-[11px] px-2.5 py-1 rounded" title="Download backup JSON for this store">⬇ Export</button>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
 
     function switchStoreFromModal(locId) {
       handleLocationSwitch(locId);
@@ -2447,35 +2293,57 @@ function exportSpecificLocationBackup(locId) {
     }
 
     function createNewStoreLocation() {
-      const nameInp = document.getElementById('new-location-name-input');
-      const numInp = document.getElementById('new-location-num-input');
-      const name = nameInp?.value?.trim();
-      const number = numInp?.value?.trim() || '100';
+      const name = document.getElementById('new-location-name-input')?.value?.trim();
+      const number = document.getElementById('new-location-num-input')?.value?.trim() || '100';
+      const address = document.getElementById('new-location-address-input')?.value?.trim() || '';
+      const email = document.getElementById('new-location-email-input')?.value?.trim() || '';
+      const password = document.getElementById('new-location-pass-input')?.value?.trim() || '';
 
       if (!name) {
-        alert('Please enter a name for the new store location.');
+        alert('Please enter a store name.');
         return;
       }
 
       const cleanSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       const newId = `loc-${cleanSlug}-${Date.now().toString().slice(-4)}`;
-
-      const newLoc = { id: newId, name, number };
+      const newLoc = { id: newId, name, number, address, email, password };
+      
       locations.push(newLoc);
       saveLocationsRegistry();
 
-      // Initialize isolated storage for the new store without touching existing stores
-      localStorage.setItem(getStoreProfileStorageKey(newId), JSON.stringify({ name, number }));
+      localStorage.setItem(getStoreProfileStorageKey(newId), JSON.stringify({ name, number, address, email }));
       localStorage.setItem(getStoreBoxesStorageKey(newId), JSON.stringify(createDefault40Boxes()));
       localStorage.setItem(getStoreHistoryStorageKey(newId), JSON.stringify([]));
 
-      if (nameInp) nameInp.value = '';
-      if (numInp) numInp.value = '';
+      document.getElementById('new-location-name-input').value = '';
+      document.getElementById('new-location-num-input').value = '';
+      document.getElementById('new-location-address-input').value = '';
+      document.getElementById('new-location-email-input').value = '';
+      document.getElementById('new-location-pass-input').value = '';
 
       handleLocationSwitch(newId);
-      populateLocationSwitcherDropdown();
       renderMultiStoreModalList();
-      alert(`Created and switched to new store location: ${name} (#${number})`);
+      alert(`Created and switched to new store: ${name}`);
+    }
+
+    function deleteStoreLocation(locId) {
+      if (locations.length <= 1) {
+        alert('You must keep at least one store location.');
+        return;
+      }
+      if (!confirm('Are you sure you want to delete this store location and its isolated cache?')) return;
+
+      locations = locations.filter(l => l.id !== locId);
+      saveLocationsRegistry();
+
+      if (activeLocationId === locId) {
+        activeLocationId = locations[0].id;
+        localStorage.setItem(STORAGE_KEY_ACTIVE_LOC, activeLocationId);
+        loadActiveStoreData();
+      }
+      renderMultiStoreModalList();
+      populateLocationSwitcherDropdown();
+      alert('Store location removed successfully.');
     }
 
     function exportCurrentLocationBackup() {
@@ -2518,7 +2386,6 @@ function exportSpecificLocationBackup(locId) {
       importLocationBackupFile(event, true);
     }
 
-    // Non-destructive import: merges games & populates only target/active store slot
     async function importLocationBackupFile(event, forceIntoActiveOnly) {
       const file = event?.target?.files?.[0];
       if (!file) return;
@@ -2526,16 +2393,13 @@ function exportSpecificLocationBackup(locId) {
       try {
         const text = await file.text();
         const data = JSON.parse(text);
-
-        // Determine target store slot without overwriting other locations
         let targetLocId = activeLocationId;
 
         if (!forceIntoActiveOnly && data.storeProfile && data.storeProfile.name) {
           const incomingName = String(data.storeProfile.name).trim();
           const incomingNum = String(data.storeProfile.number || '100').trim();
           const existingLoc = locations.find(
-            l => l.
-name.toLowerCase() === incomingName.toLowerCase() || l.id === data.locationId
+            l => l.name.toLowerCase() === incomingName.toLowerCase() || l.id === data.locationId
           );
 
           if (existingLoc) {
@@ -2553,7 +2417,6 @@ name.toLowerCase() === incomingName.toLowerCase() || l.id === data.locationId
           }
         }
 
-        // 1. Merge Master Games non-destructively
         if (Array.isArray(data.masterGames) && data.masterGames.length > 0) {
           masterGames = sanitizeMasterGamesList([...masterGames, ...data.masterGames]);
           saveGamesState();
@@ -2562,13 +2425,11 @@ name.toLowerCase() === incomingName.toLowerCase() || l.id === data.locationId
           saveGamesState();
         }
 
-        // 2. Save Boxes to target location slot
         const incomingBoxes = data.boxes || data.dispenserBoxes || (Array.isArray(data) ? data : null);
         if (Array.isArray(incomingBoxes) && incomingBoxes.length > 0) {
           localStorage.setItem(getStoreBoxesStorageKey(targetLocId), JSON.stringify(incomingBoxes));
         }
 
-        // 3. Merge Historical Reports non-destructively for target location
         if (Array.isArray(data.historicalReports) && data.historicalReports.length > 0) {
           let existingHist = [];
           try {
@@ -2583,7 +2444,6 @@ name.toLowerCase() === incomingName.toLowerCase() || l.id === data.locationId
           );
         }
 
-        // Switch to target location and refresh UI
         activeLocationId = targetLocId;
         localStorage.setItem(STORAGE_KEY_ACTIVE_LOC, activeLocationId);
         populateLocationSwitcherDropdown();
@@ -2601,6 +2461,12 @@ name.toLowerCase() === incomingName.toLowerCase() || l.id === data.locationId
         if (event?.target) event.target.value = '';
       }
     }
+<!-- ==========================================================================
+     END PART 7 OF 10
+     ========================================================================== -->
+  <!-- ==========================================================================
+     START PART 8 OF 10 (LINES 2781 - 3190)
+     ========================================================================== -->
 
     /* ==========================================================================
        18. SHIFT TRANSITION, POS RECONCILIATION & SIGNATURE PAD
@@ -2624,8 +2490,7 @@ name.toLowerCase() === incomingName.toLowerCase() || l.id === data.locationId
     }
 
     function handleShiftTypeChange(val) {
-      const badge = document.getElementById('header-shift-badge'
-);
+      const badge = document.getElementById('header-shift-badge');
       if (badge) badge.textContent = val;
       saveReconciliationDraft();
     }
@@ -2706,8 +2571,7 @@ name.toLowerCase() === incomingName.toLowerCase() || l.id === data.locationId
           document.getElementById('rec-pos-actual').value = d.posActual || '';
           document.getElementById('rec-shift-notes').value = d.notes || '';
           const badge = document.getElementById('header-shift-badge');
-          if (badge) badge.text
-Content = d.shiftType || 'Shift 1 (Morning)';
+          if (badge) badge.textContent = d.shiftType || 'Shift 1 (Morning)';
           return;
         }
       } catch (e) {}
@@ -2814,8 +2678,7 @@ Content = d.shiftType || 'Shift 1 (Morning)';
         notes,
         totals,
         signatureDataUrl: currentSignatureDataUrl || null,
-        boxesSnapshot: JSON
-.parse(JSON.stringify(boxes))
+        boxesSnapshot: JSON.parse(JSON.stringify(boxes))
       };
 
       const history = getLocationHistoricalReports(activeLocationId);
@@ -2825,7 +2688,6 @@ Content = d.shiftType || 'Shift 1 (Morning)';
       const ind = document.getElementById('last-archived-indicator');
       if (ind) ind.textContent = `✔ Archived ${reportDate} (${shiftType}) at ${new Date().toLocaleTimeString()}`;
 
-      // Automatic Device Backup Download Snapshot
       exportCurrentLocationBackup();
 
       alert(`Shift Report for ${storeProfile.name} (${reportDate} - ${shiftType}) has been finalized, saved to the Historical Database, and backed up to your device!`);
@@ -2845,7 +2707,6 @@ Content = d.shiftType || 'Shift 1 (Morning)';
         monthCont?.classList.add('hidden');
         shiftCont?.classList.remove('hidden');
       } else {
-        // daily mode
         dateCont?.classList.remove('hidden');
         monthCont?.classList.add('hidden');
         shiftCont?.classList.add('hidden');
@@ -2867,11 +2728,9 @@ Content = d.shiftType || 'Shift 1 (Morning)';
       } else if (mode === 'shift') {
         filtered = allHistory.filter(r => r.date === filterDate && (filterShift === 'ALL' || r.shiftType === filterShift));
       } else {
-        // Daily combined
         filtered = allHistory.filter(r => r.date === filterDate);
       }
 
-      // Compute Aggregated Grand Totals across matching shift records
       let sumScratch = 0;
       let sumExpected = 0;
       let sumVariance = 0;
@@ -2912,8 +2771,7 @@ Content = d.shiftType || 'Shift 1 (Morning)';
       tbody.innerHTML = filtered.map(r => {
         const t = r.totals || {};
         const v = Number(t.variance) || 0;
-    
-    const vColor = Math.abs(v) < 0.01 ? 'text-emerald-700' : (v < 0 ? 'text-red-600' : 'text-amber-600');
+        const vColor = Math.abs(v) < 0.01 ? 'text-emerald-700' : (v < 0 ? 'text-red-600' : 'text-amber-600');
         return `
           <tr class="hover:bg-slate-50">
             <td class="p-2.5 text-center font-mono">${r.date}</td>
@@ -2939,85 +2797,6 @@ Content = d.shiftType || 'Shift 1 (Morning)';
         `;
       }).join('');
     }
-function renderMultiStoreModalList() {
-      const tbody = document.getElementById('multi-store-list-tbody');
-      if (!tbody) return;
-      tbody.innerHTML = locations.map(loc => {
-        const isCurrent = loc.id === activeLocationId;
-        return `
-          <tr class="${isCurrent ? 'bg-blue-50/70' : 'hover:bg-slate-50'}">
-            <td class="p-2.5 space-y-0.5">
-              <div class="font-extrabold text-slate-900">${loc.name} (#${loc.number})</div>
-              <div class="text-[11px] text-slate-600">${loc.address || 'No address set'}</div>
-              <div class="text-[10px] text-slate-400 font-mono">Email: ${loc.email || 'None'}</div>
-            </td>
-            <td class="p-2.5 text-center">
-              ${isCurrent ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-300">Active</span>' : '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Standby</span>'}
-            </td>
-            <td class="p-2.5 text-right space-y-1">
-              <div class="flex justify-end gap-1">
-                ${!isCurrent ? `<button type="button" onclick="switchStoreFromModal('${loc.id}')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] px-2.5 py-1 rounded">Switch</button>` : ''}
-                <button type="button" onclick="deleteStoreLocation('${loc.id}')" class="bg-red-100 hover:bg-red-200 text-red-700 font-bold text-[11px] px-2 py-1 rounded" title="Delete store">Delete</button>
-              </div>
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
-
-    function createNewStoreLocation() {
-      const name = document.getElementById('new-location-name-input')?.value?.trim();
-      const number = document.getElementById('new-location-num-input')?.value?.trim() || '100';
-      const address = document.getElementById('new-location-address-input')?.value?.trim() || '';
-      const email = document.getElementById('new-location-email-input')?.value?.trim() || '';
-      const password = document.getElementById('new-location-pass-input')?.value?.trim() || '';
-
-      if (!name) {
-        alert('Please enter a store name.');
-        return;
-      }
-
-      const cleanSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-      const newId = `loc-${cleanSlug}-${Date.now().toString().slice(-4)}`;
-      const newLoc = { id: newId, name, number, address, email, password };
-      
-      locations.push(newLoc);
-      saveLocationsRegistry();
-
-      localStorage.setItem(getStoreProfileStorageKey(newId), JSON.stringify({ name, number, address, email }));
-      localStorage.setItem(getStoreBoxesStorageKey(newId), JSON.stringify(createDefault40Boxes()));
-      localStorage.setItem(getStoreHistoryStorageKey(newId), JSON.stringify([]));
-
-      document.getElementById('new-location-name-input').value = '';
-      document.getElementById('new-location-num-input').value = '';
-      document.getElementById('new-location-address-input').value = '';
-      document.getElementById('new-location-email-input').value = '';
-      document.getElementById('new-location-pass-input').value = '';
-
-      handleLocationSwitch(newId);
-      renderMultiStoreModalList();
-      alert(`Created and switched to new store: ${name}`);
-    }
-
-    function deleteStoreLocation(locId) {
-      if (locations.length <= 1) {
-        alert('You must keep at least one store location.');
-        return;
-      }
-      if (!confirm('Are you sure you want to delete this store location and its isolated cache?')) return;
-
-      locations = locations.filter(l => l.id !== locId);
-      saveLocationsRegistry();
-
-      if (activeLocationId === locId) {
-        activeLocationId = locations[0].id;
-        localStorage.setItem(STORAGE_KEY_ACTIVE_LOC, activeLocationId);
-        loadActiveStoreData();
-      }
-      renderMultiStoreModalList();
-      populateLocationSwitcherDropdown();
-      alert('Store location removed successfully.');
-    }
 
     function exportHistoricalReportsJSON() {
       const history = getLocationHistoricalReports(activeLocationId);
@@ -3029,16 +2808,22 @@ function renderMultiStoreModalList() {
       a.click();
       document.body.removeChild(a);
     }
+<!-- ==========================================================================
+     END PART 8 OF 10
+     ========================================================================== -->
+  <!-- ==========================================================================
+     START PART 9 OF 10 (LINES 3191 - 3595)
+     ========================================================================== -->
+
     /* ==========================================================================
        20. FIRST-OF-THE-MONTH AUTO-BACKUP & EMAIL DISPATCH TO REGAS_SHELL@HOTMAIL.COM
        ========================================================================== */
     function checkFirstOfMonthAutoEmailAndBackup() {
       const now = new Date();
       const currentDay = now.getDate();
-      const currentMonthKey = now.toISOString().slice(0, 7); // YYYY-MM
+      const currentMonthKey = now.toISOString().slice(0, 7);
       const lastDispatchedMonth = localStorage.getItem('project_lotto_last_monthly_dispatch');
 
-      // Triggers on the 1st of the month (or if manually invoked) once per month
       if (currentDay === 1 && lastDispatchedMonth !== currentMonthKey) {
         localStorage.setItem('project_lotto_last_monthly_dispatch', currentMonthKey);
         setTimeout(() => {
@@ -3049,29 +2834,25 @@ function renderMultiStoreModalList() {
 
     function triggerMonthlyEmailDispatchManually(isAutomaticFirstOfMonth = false) {
       const now = new Date();
-      // Calculate previous month key (YYYY-MM) if running on the 1st, otherwise use selected month
       let targetMonth = document.getElementById('report-filter-month')?.value || now.toISOString().slice(0, 7);
       if (isAutomaticFirstOfMonth) {
         const prevDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         targetMonth = prevDate.toISOString().slice(0, 7);
       }
 
-      // 1. Download combined multi-store monthly archive file to device automatically
       const allStoresArchive = locations.map(loc => ({
         location: loc,
         reports: getLocationHistoricalReports(loc.id).filter(r => (r.monthKey || r.date?.slice(0, 7)) === targetMonth)
       }));
 
       const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(allStoresArchive, null, 2));
-      const a = document.createElemen
-t('a');
+      const a = document.createElement('a');
       a.setAttribute('href', dataStr);
       a.setAttribute('download', `MonthlyLottoArchive_AllStores_${targetMonth}.json`);
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
 
-      // 2. Build executive summary text for email body to regas_shell@hotmail.com
       let emailLines = [
         `PROJECT LOTTO — AUTOMATED MONTHLY AUDIT SUMMARY (${targetMonth})`,
         `Generated: ${now.toLocaleString()}`,
@@ -3102,12 +2883,11 @@ t('a');
       const body = encodeURIComponent(emailLines.join('\n'));
       window.location.href = `mailto:${ADMIN_NOTIFY_EMAIL}?subject=${subject}&body=${body}`;
     }
-    /* ==========================================================================
+
     /* ==========================================================================
        21. ADMIN MASTER GAMES TABLE & CRUD HANDLERS
        ========================================================================== */
     function autoSetNewGameRollCount(priceVal) {
-      // Automatically sets roll count based on price when adding a new game
       return getDefaultRollCountForPrice(Number(priceVal) || 1);
     }
 
@@ -3128,7 +2908,7 @@ t('a');
       const count = getDefaultRollCountForPrice(price);
       const newEntry = { gameNum: gNum, name: gName, price, count };
 
-      const idx = masterGames.findIndex(g => String(g.gameNum).trim() === gNum);
+      const idx = masterGames.findIndex(g => String(g.gameNum).trim() === gNum || Number(g.gameNum) === Number(gNum));
       if (idx >= 0) {
         masterGames[idx] = newEntry;
       } else {
@@ -3138,9 +2918,8 @@ t('a');
       masterGames = sanitizeMasterGamesList(masterGames);
       saveGamesState();
 
-      // Update any boxes currently holding this game number
       boxes.forEach(b => {
-        if (String(b.gameNum).trim() === gNum) {
+        if (String(b.gameNum).trim() === gNum || Number(b.gameNum) === Number(gNum)) {
           b.gameName = gName;
           b.price = price;
           b.rollCount = count;
@@ -3288,7 +3067,7 @@ t('a');
     }
 
     function setBoxLabelsSequential(mode) {
-      if (!confirm(`Are you sure you want to reset all 40 box labels to ${mode === 'letters' ? 'Letters (A, B, C...)' : 'Numbers (1 to 40)'}?`)) {
+      if (!confirm(`Are you sure you want to reset all box labels to ${mode === 'letters' ? 'Letters (A, B, C...)' : 'Numbers (1 to 40)'}?`)) {
         return;
       }
 
@@ -3297,10 +3076,10 @@ t('a');
           box.boxNumber = String(idx + 1);
         } else if (mode === 'letters') {
           if (idx < 26) {
-            box.boxNumber = String.fromCharCode(65 + idx); // A through Z
+            box.boxNumber = String.fromCharCode(65 + idx);
           } else {
             const second = idx - 26;
-            box.boxNumber = 'A' + String.fromCharCode(65 + second); // AA, AB, AC...
+            box.boxNumber = 'A' + String.fromCharCode(65 + second);
           }
         }
       });
@@ -3309,7 +3088,14 @@ t('a');
       renderAdminBoxLabelsGrid();
       renderDispenserGrid();
     }
-/* ==========================================================================
+<!-- ==========================================================================
+     END PART 9 OF 10
+     ========================================================================== -->
+  <!-- ==========================================================================
+     START PART 10 OF 10 (LINES 3596 - 3830)
+     ========================================================================== -->
+
+    /* ==========================================================================
        22. MAIN VIEW NAVIGATION SWITCHER
        ========================================================================== */
     function switchMainView(viewName) {
@@ -3339,10 +3125,11 @@ t('a');
         renderAdminBoxLabelsGrid();
       }
     }
-/* ==========================================================================
-       23. STRICT 1-PAGE MATRIX PRINT ENGINES (6-COLUMNS: 1-6 TOP, BOTTOM TOTALS & LEGAL)
+
+    /* ==========================================================================
+       23. STRICT 1-PAGE MATRIX PRINT ENGINES
        ========================================================================== */
-function buildMatrixPrintHTML(repData, isFinalReport = false) {
+    function buildMatrixPrintHTML(repData, isFinalReport = false) {
       const bList = Array.isArray(repData.boxesSnapshot) ? repData.boxesSnapshot : boxes;
       const t = repData.totals || {};
       const variance = Number(t.variance) || 0;
@@ -3382,7 +3169,6 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
           }
         </style>
         <div class="one-page-print-sheet" style="font-family: Arial, sans-serif; color: #000; font-size: 8px; line-height: 1.1;">
-          <!-- 1. TOP HEADER BAR -->
           <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; padding-bottom: 2px; margin-bottom: 3px;">
             <div>
               <div style="font-size: 12px; font-weight: 900; text-transform: uppercase;">
@@ -3397,7 +3183,6 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
             </div>
           </div>
 
-          <!-- 2. COMPACT TABLE LIST VIEW FOR ALL 40 BOXES -->
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 4px;">
             <thead>
               <tr style="background: #e2e8f0; border-bottom: 1.5px solid #000; font-size: 7.5px; text-transform: uppercase;">
@@ -3416,7 +3201,6 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
             </tbody>
           </table>
 
-          <!-- 3. BOTTOM SECTION: TOTALS, FINANCIALS & SIGNATURE -->
           <div style="border: 1.5px solid #000; padding: 3px 5px; background: #f8fafc;">
             <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; border-bottom: 1px solid #94a3b8; padding-bottom: 2px; margin-bottom: 2px; text-align: center; font-size: 7.5px;">
               <div><span style="color:#475569;">Total Sold:</span><div style="font-family:monospace; font-weight:900; font-size:9px;">${gtTickets} tix</div></div>
@@ -3565,8 +3349,7 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
         sumVar += v;
 
         return `
-       
-   <tr style="border-bottom:1px solid #cbd5e1; font-size:9px;">
+          <tr style="border-bottom:1px solid #cbd5e1; font-size:9px;">
             <td style="padding:4px; text-align:center; font-family:monospace;">${r.date}</td>
             <td style="padding:4px; font-weight:700;">${r.shiftType}</td>
             <td style="padding:4px;">${r.cashierOut || '-'}</td>
@@ -3589,37 +3372,12 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
 
       printContainer.innerHTML = `
         <style>
-          @page {
-            size: letter portrait;
-            margin: 0.18in 0.22in;
-          }
+          @page { size: letter portrait; margin: 0.18in 0.22in; }
           @media print {
-            html, body {
-              margin: 0 !important;
-              padding: 0 !important;
-              height: 100% !important;
-              background: #fff !important;
-              color: #000 !important;
-              overflow: hidden !important;
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-            }
-            body > header,
-            body > main,
-            body > div.fixed,
-            #app-shell,
-            .no-print {
-              display: none !important;
-            }
-            #print-container {
-              display: block !important;
-              width: 100% !important;
-            }
-            .one-page-print-sheet {
-              width: 100%;
-              page-break-inside: avoid !important;
-              break-inside: avoid !important;
-            }
+            html, body { margin: 0 !important; padding: 0 !important; height: 100% !important; background: #fff !important; color: #000 !important; overflow: hidden !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body > header, body > main, body > div.fixed, #app-shell, .no-print { display: none !important; }
+            #print-container { display: block !important; width: 100% !important; }
+            .one-page-print-sheet { width: 100%; page-break-inside: avoid !important; break-inside: avoid !important; }
           }
         </style>
         <div class="one-page-print-sheet" style="font-family: Arial, sans-serif; color: #000;">
@@ -3638,8 +3396,7 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
             <div><div style="font-weight:700; color:#475569;">Total Tickets</div><div style="font-family:monospace; font-weight:900; font-size:12px;">${sumTickets}</div></div>
             <div><div style="font-weight:700; color:#475569;">Scratch Sales</div><div style="font-family:monospace; font-weight:900; font-size:12px;">$${sumScratch.toFixed(2)}</div></div>
             <div><div style="font-weight:700; color:#475569;">Expected Net</div><div style="font-family:monospace; font-weight:900; font-size:12px;">$${sumExpected.toFixed(2)}</div></div>
-            <div><div style="font-weight:700; color:#475569;">POS Actual</div><div style="font-family:monospace; font-weight:900; font-size:12px;">$${sumPos.toFixed(
-2)}</div></div>
+            <div><div style="font-weight:700; color:#475569;">POS Actual</div><div style="font-family:monospace; font-weight:900; font-size:12px;">$${sumPos.toFixed(2)}</div></div>
             <div><div style="font-weight:700; color:#475569;">Net Variance</div><div style="font-family:monospace; font-weight:900; font-size:12px;">${sumVar > 0 ? '+' : ''}$${sumVar.toFixed(2)}</div></div>
           </div>
 
@@ -3671,11 +3428,9 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
        24. APPLICATION BOOTSTRAP INITIALIZER
        ========================================================================== */
     window.addEventListener('DOMContentLoaded', () => {
-      // 1. Load Master Games & Multi-Store Active Location
       loadMasterGames();
       initActiveLocation();
 
-      // 2. Initialize Default Filter Dates on Reports Tab
       const todayIso = new Date().toISOString().slice(0, 10);
       const monthIso = todayIso.slice(0, 7);
       const repDateInp = document.getElementById('report-filter-date');
@@ -3683,7 +3438,6 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
       if (repDateInp) repDateInp.value = todayIso;
       if (repMonthInp) repMonthInp.value = monthIso;
 
-      // 3. Render Main 40-Box Grid, Admin Table & Reconciliation Draft
       renderDispenserGrid();
       renderAdminGamesTable();
       renderAdminBoxLabelsGrid();
@@ -3692,13 +3446,13 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
       initSignaturePad();
       executeReportLookup();
 
-      // 4. Run Non-Blocking Cloud Master Games Sync
       syncMasterGamesFromServer();
-
-      // 5. Check 1st-of-the-Month Auto-Backup & Email Dispatch
       checkFirstOfMonthAutoEmailAndBackup();
     });
   </script>
 </body>
 </html>
-        
+
+<!-- ==========================================================================
+     END PART 10 OF 10 (TOTAL LINES: ~3,825)
+     ========================================================================== -->
