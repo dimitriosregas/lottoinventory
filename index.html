@@ -1930,7 +1930,7 @@
       renderDispenserGrid();
     }
 
-    function setBoxLabelsSequential(mode) {
+ function setBoxLabelsSequential(mode) {
       boxes.forEach((box, idx) => {
         if (mode === 'numbers') box.boxNumber = String(idx + 1);
         else if (mode === 'letters') box.boxNumber = idx < 26 ? String.fromCharCode(65 + idx) : 'A' + String.fromCharCode(65 + (idx - 26));
