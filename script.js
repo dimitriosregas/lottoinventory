@@ -1506,3 +1506,63 @@ function printThermalReceipt(isWorksheetMode = false) {
 
   window.print();
 }
+/* ==========================================================================
+   HISTORICAL SUMMARY PRINT MODULE
+   ========================================================================== */
+
+function printFilteredReportSummary() {
+  const tbody = document.getElementById('historical-reports-tbody');
+  if (!tbody || tbody.innerText.includes('No archived shift reports found')) {
+    alert('No shift records to print for the current filter.');
+    return;
+  }
+
+  let printContainer = document.getElementById('print-container');
+  if (!printContainer) {
+    printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    document.body.appendChild(printContainer);
+  }
+
+  const tableHTML = tbody.innerHTML;
+  const storeTitle = `${storeProfile.name} (#${storeProfile.number})`;
+
+  printContainer.innerHTML = `
+    <style>
+      @page { size: letter landscape; margin: 0.3in; }
+      @media print {
+        html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; color: #000 !important; font-family: Arial, sans-serif !important; font-size: 10px !important; }
+        body > header, body > main, body > div.fixed, #app-shell, .no-print { display: none !important; }
+        #print-container { display: block !important; width: 100% !important; }
+      }
+    </style>
+    <div style="padding: 10px;">
+      <div style="text-align: center; margin-bottom: 12px; border-bottom: 2px solid #000; padding-bottom: 6px;">
+        <div style="font-size: 16px; font-weight: bold; text-transform: uppercase;">${storeTitle}</div>
+        <div style="font-size: 12px; font-weight: bold; margin-top: 2px;">HISTORICAL SHIFT AUDIT SUMMARY REPORT</div>
+        <div style="font-size: 10px; color: #555; margin-top: 2px;">Generated on ${new Date().toLocaleString()}</div>
+      </div>
+      <table style="width: 100%; border-collapse: collapse; font-size: 9.5px;">
+        <thead>
+          <tr style="background: #f1f5f9; border-bottom: 2px solid #000; text-transform: uppercase;">
+            <th style="padding: 6px; text-align: center;">Date</th>
+            <th style="padding: 6px; text-align: left;">Shift</th>
+            <th style="padding: 6px; text-align: left;">Outgoing Cashier</th>
+            <th style="padding: 6px; text-align: center;">Tickets</th>
+            <th style="padding: 6px; text-align: right;">Scratch $</th>
+            <th style="padding: 6px; text-align: right;">Online $</th>
+            <th style="padding: 6px; text-align: right;">Expected Net</th>
+            <th style="padding: 6px; text-align: right;">POS Actual</th>
+            <th style="padding: 6px; text-align: right;">Variance</th>
+            <th style="padding: 6px; text-align: center;">Signature</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableHTML}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  window.print();
+}
