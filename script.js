@@ -187,10 +187,26 @@ function loadMasterGames() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        masterGames = sanitizeMasterGamesList([...DEFAULT_MASTER_GAMES, ...parsed]);
+        // Merge default master games with any locally added custom games, avoiding duplicates
+        const combined = [...DEFAULT_MASTER_GAMES];
+        parsed.forEach(customGame => {
+          const num = String(customGame.gameNum ?? '').trim();
+          if (num && !combined.some(g => String(g.gameNum).trim() === num)) {
+            combined.push(customGame);
+          }
+        });
+        masterGames = sanitizeMasterGamesList(combined);
         saveGamesState();
         return;
       }
+    }
+  } catch (e) {
+    console.warn('Error loading master games from storage, falling back to defaults.', e);
+  }
+  
+  masterGames = sanitizeMasterGamesList(DEFAULT_MASTER_GAMES);
+  saveGamesState();
+}
     }
   } catch (e) {}
   masterGames = sanitizeMasterGamesList(DEFAULT_MASTER_GAMES);
