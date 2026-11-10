@@ -1,5 +1,5 @@
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (CLEAN RELOAD)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 1 OF 6)
    ========================================================================== */
 
 const STORAGE_KEY_LOCATIONS = 'project_lotto_locations_v1';
@@ -68,7 +68,6 @@ let currentSignatureDataUrl = null;
 let isDrawingSignature = false;
 let sigCanvas = null;
 let sigCtx = null;
-
 function getDefaultRollCountForPrice(price) {
   const p = Number(price);
   if (!p || p <= 0) return 300;
@@ -729,6 +728,7 @@ function saveQuickRegisteredGame() {
   renderDispenserGrid();
   recalculateReconciliationTotals();
 }
+
 function recalculateReconciliationTotals() {
   let scratchSales = 0;
   let totalTickets = 0;
@@ -839,7 +839,6 @@ function clearSignaturePad() {
   sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
   currentSignatureDataUrl = null;
 }
-
 function getLocationHistoricalReports(locId = activeLocationId) {
   try {
     const raw = localStorage.getItem(getStoreHistoryStorageKey(locId));
@@ -887,7 +886,6 @@ function finalizeAndSaveShiftReport() {
   const ind = document.getElementById('last-archived-indicator');
   if (ind) ind.textContent = `✔ Archived ${reportDate} (${shiftType}) at ${new Date().toLocaleTimeString()}`;
 
-  exportCurrentLocationBackup();
   alert(`Shift Report for ${storeProfile.name} archived successfully!`);
 }
 
@@ -1007,6 +1005,7 @@ function triggerMonthlyEmailDispatchManually() {
   a.click();
   document.body.removeChild(a);
 }
+
 function saveNewMasterGameManual() {
   const numInp = document.getElementById('new-game-num');
   const nameInp = document.getElementById('new-game-name');
