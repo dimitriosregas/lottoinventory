@@ -1512,7 +1512,7 @@ function printThermalReceipt(isWorksheetMode = false) {
 
 function printFilteredReportSummary() {
   const tbody = document.getElementById('historical-reports-tbody');
-  if (!tbody || tbody.innerText.includes('No archived shift reports found')) {
+  if (!tbody || tbody.innerText.includes('No archived shift reports found') || tbody.innerText.includes('No shift reports found')) {
     alert('No shift records to print for the current filter.');
     return;
   }
