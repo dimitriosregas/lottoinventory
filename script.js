@@ -398,28 +398,41 @@ function updateBoxEndTicketLive(idx, val) {
   recalculateReconciliationTotals();
 }
 
-// Vertical Enter Key Navigation: Start -> End -> Next Row Start
+// Vertical Column Navigation: Jump down to the Start input of the NEXT box
 function handleStartKeydown(event, currentIdx) {
   if (event.key === 'Enter') {
     event.preventDefault();
-    const endInp = document.getElementById(`input-endTicket-${currentIdx}`) || document.getElementById(`list-input-endTicket-${currentIdx}`);
-    if (endInp) {
-      endInp.focus();
-      endInp.select();
+    const nextIdx = currentIdx + 1;
+    const nextStartInp = document.getElementById(`input-startTicket-${nextIdx}`) || document.getElementById(`list-input-startTicket-${nextIdx}`);
+    if (nextStartInp) {
+      nextStartInp.focus();
+      nextStartInp.select();
     }
   }
 }
 
+// Vertical Column Navigation: Jump down to the End input of the NEXT box
 function handleGridEnter(event, currentIdx) {
   if (event.key === 'Enter') {
     event.preventDefault();
     const nextIdx = currentIdx + 1;
-    if (nextIdx < boxes.length) {
-      const nextStartInp = document.getElementById(`input-startTicket-${nextIdx}`) || document.getElementById(`list-input-startTicket-${nextIdx}`);
-      if (nextStartInp) {
-        nextStartInp.focus();
-        nextStartInp.select();
-      }
+    const nextEndInp = document.getElementById(`input-endTicket-${nextIdx}`) || document.getElementById(`list-input-endTicket-${nextIdx}`);
+    if (nextEndInp) {
+      nextEndInp.focus();
+      nextEndInp.select();
+    }
+  }
+}
+
+// Vertical Column Navigation: Jump down to the Game # input of the NEXT box
+function handleGameNumKeydown(event, currentIdx) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    const nextIdx = currentIdx + 1;
+    const nextGameInp = document.getElementById(`input-gameNum-${nextIdx}`) || document.getElementById(`list-input-gameNum-${nextIdx}`);
+    if (nextGameInp) {
+      nextGameInp.focus();
+      nextGameInp.select();
     }
   }
 }
