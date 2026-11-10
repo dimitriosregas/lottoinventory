@@ -272,15 +272,19 @@ function loadActiveStoreData() {
     boxes = createDefault40Boxes();
   }
 
-  boxes.forEach(b => {
+   boxes.forEach(b => {
     if (b.gameNum) {
       const matched = masterGames.find(g => String(g.gameNum).trim() === String(b.gameNum).trim());
       if (matched) {
         b.gameName = matched.name;
         b.price = Number(matched.price);
         b.rollCount = Number(matched.count);
-        b.needsNewGameEntry = false;
+        b.needsNewGameEntry = false; // Clears the unknown flag for matched games
+      } else {
+        b.needsNewGameEntry = true; // Flags if the game number truly doesn't exist
       }
+    } else {
+      b.needsNewGameEntry = false;
     }
   });
 
