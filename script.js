@@ -524,17 +524,17 @@ function renderDispenserGrid() {
             ${box.boxNumber || (idx + 1)}
           </td>
           <td style="padding: 6px 8px; text-align: center; font-family: monospace; font-weight: bold;">
-            <input type="text" id="list-input-gameNum-${idx}" value="${box.gameNum || ''}" ${gameNumReadonlyAttr} onclick="${isLocked ? `handleLockedGameNumClick(this, ${idx})` : ''}" oninput="updateBoxFieldDirect(${idx}, 'gameNum', this.value)" title="${isLocked ? 'Locked after setup. Click to request unlock.' : 'Game Number'}" placeholder="Game#" class="${gameNumClass}" />
+            <input type="text" id="list-input-gameNum-${idx}" value="${box.gameNum || ''}" ${gameNumReadonlyAttr} onclick="${isLocked ? `handleLockedGameNumClick(this, ${idx})` : ''}" oninput="updateBoxFieldDirect(${idx}, 'gameNum', this.value)" onkeydown="handleColumnEnter(event, ${idx}, 'gameNum')" title="${isLocked ? 'Locked after setup. Click to request unlock.' : 'Game Number'}" placeholder="Game#" class="${gameNumClass}" />
           </td>
           <td id="list-gamename-${idx}" style="padding: 6px 8px; font-weight: 600;">
             ${hasGame ? (box.gameName || 'Game #' + box.gameNum) + (box.needsNewGameEntry ? ` <button type="button" onclick="openQuickGameModal(${idx})" class="ml-1 text-[10px] font-extrabold underline text-blue-700">+ Register</button>` : '') : '<span class="text-slate-400 italic">Empty Box</span>'}
           </td>
           <td id="list-price-${idx}" style="padding: 6px 8px; text-align: center; font-weight: bold; color: #047857;">${hasGame && box.price ? '$' + box.price : '-'}</td>
           <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
-            <input type="number" id="list-input-startTicket-${idx}" value="${box.startTicket !== '' && box.startTicket !== undefined ? box.startTicket : 0}" oninput="updateBoxFieldDirect(${idx}, 'startTicket', this.value)" onkeydown="handleStartKeydown(event, ${idx})" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input" />
+            <input type="number" id="list-input-startTicket-${idx}" value="${box.startTicket !== '' && box.startTicket !== undefined ? box.startTicket : 0}" oninput="updateBoxFieldDirect(${idx}, 'startTicket', this.value)" onkeydown="handleColumnEnter(event, ${idx}, 'startTicket')" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input" />
           </td>
           <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
-            <input type="number" id="input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}" oninput="updateBoxEndTicketLive(${idx}, this.value)" onkeydown="handleGridEnter(event, ${idx})" placeholder="End#" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono font-bold lotto-input" />
+            <input type="number" id="input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}" oninput="updateBoxEndTicketLive(${idx}, this.value)" onkeydown="handleColumnEnter(event, ${idx}, 'endTicket')" placeholder="End#" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono font-bold lotto-input" />
           </td>
           <td id="list-sold-${idx}" style="padding: 6px 8px; text-align: center; font-weight: bold;">${m.ticketsSold}${roCount > 0 ? ' *' : ''}</td>
           <td id="list-sales-${idx}" style="padding: 6px 8px; text-align: right; font-family: monospace; font-weight: 900; color: #047857;">$${m.dollarSales.toFixed(2)}</td>
