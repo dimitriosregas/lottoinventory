@@ -1,5 +1,5 @@
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (CLEAN RELOAD)
    ========================================================================== */
 
 const STORAGE_KEY_LOCATIONS = 'project_lotto_locations_v1';
@@ -51,7 +51,6 @@ const DEFAULT_MASTER_GAMES = [
   { gameNum: '1851', name: '$1 JR JUMBO', price: 1, count: 300 },
   { gameNum: '1853', name: 'LADY JUMBO', price: 3, count: 100 },
   { gameNum: '1856', name: '$3 CROSSWORD JUMBO', price: 3, count: 100 },
-  { gameNum: '1858', name: '$5 CROSSWORD', price: 5, count: 60 },
   { gameNum: '1891', name: 'GIGANTIC JUMBO', price: 30, count: 20 },
   { gameNum: '1909', name: '$25 JUMBO', price: 25, count: 24 },
   { gameNum: '1949', name: '$10 JUMBO', price: 10, count: 30 },
@@ -102,6 +101,46 @@ function getStoreBoxesStorageKey(locId) { return `project_lotto_boxes_${locId}`;
 function getStoreProfileStorageKey(locId) { return `project_lotto_profile_${locId}`; }
 function getStoreHistoryStorageKey(locId) { return `project_lotto_history_${locId}`; }
 
+function sanitizeMasterGamesList(arr) {
+  if (!Array.isArray(arr)) return [];
+  const map = new Map();
+  arr.forEach(item => {
+    const num = String(item.gameNum ?? item.number ?? '').trim();
+    if (!num) return;
+    const price = Number(item.price) || 1;
+    const count = Number(item.count ?? item.rollCount) || getDefaultRollCountForPrice(price);
+    const name = String(item.name || '').trim().toUpperCase() || `GAME #${num}`;
+    map.set(num, { gameNum: num, name, price, count });
+  });
+  return Array.from(map.values()).sort((a, b) => Number(a.gameNum) - Number(b.gameNum));
+}
+
+function loadMasterGames() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_MASTER_GAMES);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const combined = [...DEFAULT_MASTER_GAMES];
+        parsed.forEach(customGame => {
+          const num = String(customGame.gameNum ?? '').trim();
+          if (num && !combined.some(g => String(g.gameNum).trim() === num)) {
+            combined.push(customGame);
+          }
+        });
+        masterGames = sanitizeMasterGamesList(combined);
+        saveGamesState();
+        return;
+      }
+    }
+  } catch (e) {}
+  masterGames = sanitizeMasterGamesList(DEFAULT_MASTER_GAMES);
+  saveGamesState();
+}
+
+function saveGamesState() {
+  try { localStorage.setItem(STORAGE_KEY_MASTER_GAMES, JSON.stringify(masterGames)); } catch (e) {}
+}
 function loadLocationsRegistry() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_LOCATIONS);
@@ -131,112 +170,6 @@ function initActiveLocation() {
   }
   loadActiveStoreData();
   populateLocationSwitcherDropdown();
-}
-
-function saveActiveStoreProfile() {
-  const nameInp = document.getElementById('admin-store-name')?.value?.trim();
-  const numInp = document.getElementById('admin-store-number')?.value?.trim();
-  const addrInp = document.getElementById('admin-store-address')?.value?.trim() || '';
-  const emailInp = document.getElementById('admin-store-email')?.value?.trim() || '';
-  const passInp = document.getElementById('admin-store-pass')?.value?.trim() || '';
-
-  if (!nameInp) {
-    alert('Please enter a valid store location name.');
-    return;
-  }
-  // ... rest of saveActiveStoreProfile ...
-}
-
-function saveActiveStoreProfile() {
-  const nameInp = document.getElementById('admin-store-name')?.value?.trim();
-  const numInp = document.getElementById('admin-store-number')?.value?.trim();
-  const addrInp = document.getElementById('admin-store-address')?.value?.trim() || '';
-  const emailInp = document.getElementById('admin-store-email')?.value?.trim() || '';
-  const passInp = document.getElementById('admin-store-pass')?.value?.trim() || '';
-
-  if (!nameInp) {
-    alert('Please enter a valid store location name.');
-    return;
-  }
-
-  storeProfile.name = nameInp;
-  storeProfile.number = numInp || '100';
-  storeProfile.address = addrInp;
-  storeProfile.email = emailInp;
-  storeProfile.password = passInp;
-
-  try { localStorage.setItem(getStoreProfileStorageKey(activeLocationId), JSON.stringify(storeProfile)); } catch (e) {}
-
-  const locIdx = locations.findIndex(l => l.id === activeLocationId);
-  if (locIdx >= 0) {
-    locations[locIdx].name = storeProfile.name;
-    locations[locIdx].number = storeProfile.number;
-    locations[locIdx].address = storeProfile.address;
-    locations[locIdx].email = storeProfile.email;
-    locations[locIdx].password = storeProfile.password;
-    saveLocationsRegistry();
-  }
-
-  populateLocationSwitcherDropdown();
-  loadActiveStoreData();
-  alert(`Store Profile Saved: ${storeProfile.name} (#${storeProfile.number})`);
-}
-function loadMasterGames() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_MASTER_GAMES);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        // Merge default master games with any locally added custom games, avoiding duplicates
-        const combined = [...DEFAULT_MASTER_GAMES];
-        parsed.forEach(customGame => {
-          const num = String(customGame.gameNum ?? '').trim();
-          if (num && !combined.some(g => String(g.gameNum).trim() === num)) {
-            combined.push(customGame);
-          }
-        });
-function loadMasterGames() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_MASTER_GAMES);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        const combined = [...DEFAULT_MASTER_GAMES];
-        parsed.forEach(customGame => {
-          const num = String(customGame.gameNum ?? '').trim();
-          if (num && !combined.some(g => String(g.gameNum).trim() === num)) {
-            combined.push(customGame);
-          }
-        });
-        masterGames = sanitizeMasterGamesList(combined);
-        saveGamesState();
-        return;
-      }
-    }
-  } catch (e) {
-    console.warn('Error loading master games from storage, falling back to defaults.', e);
-  }
-  
-  masterGames = sanitizeMasterGamesList(DEFAULT_MASTER_GAMES);
-  saveGamesState();
-}
-
-function saveGamesState() {
-  try { localStorage.setItem(STORAGE_KEY_MASTER_GAMES, JSON.stringify(masterGames)); } catch (e) {}
-}
-
-function sanitizeMasterGamesList(arr) {
-  if (!Array.isArray(arr)) return [];
-  const map = new Map();
-  arr.forEach(item => {
-    const num = String(item.gameNum ?? item.number ?? '').trim();
-    if (!num) return;
-    const price = Number(item.price) || 1;
-    const count = Number(item.count ?? item.rollCount) || getDefaultRollCountForPrice(price);
-    const name = String(item.name || '').trim().toUpperCase() || `GAME #${num}`;
-    map.set(num, { gameNum: num, name, price, count });
-  });
-  return Array.from(map.values()).sort((a, b) => Number(a.gameNum) - Number(b.gameNum));
 }
 
 function loadActiveStoreData() {
@@ -280,16 +213,16 @@ function loadActiveStoreData() {
     boxes = createDefault40Boxes();
   }
 
-   boxes.forEach(b => {
+  boxes.forEach(b => {
     if (b.gameNum) {
       const matched = masterGames.find(g => String(g.gameNum).trim() === String(b.gameNum).trim());
       if (matched) {
         b.gameName = matched.name;
         b.price = Number(matched.price);
         b.rollCount = Number(matched.count);
-        b.needsNewGameEntry = false; // Clears the unknown flag for matched games
+        b.needsNewGameEntry = false;
       } else {
-        b.needsNewGameEntry = true; // Flags if the game number truly doesn't exist
+        b.needsNewGameEntry = true;
       }
     } else {
       b.needsNewGameEntry = false;
@@ -312,6 +245,41 @@ function saveBoxesState() {
   try { localStorage.setItem(getStoreBoxesStorageKey(activeLocationId), JSON.stringify(boxes)); } catch (e) {}
 }
 
+function saveActiveStoreProfile() {
+  const nameInp = document.getElementById('admin-store-name')?.value?.trim();
+  const numInp = document.getElementById('admin-store-number')?.value?.trim();
+  const addrInp = document.getElementById('admin-store-address')?.value?.trim() || '';
+  const emailInp = document.getElementById('admin-store-email')?.value?.trim() || '';
+  const passInp = document.getElementById('admin-store-pass')?.value?.trim() || '';
+
+  if (!nameInp) {
+    alert('Please enter a valid store location name.');
+    return;
+  }
+
+  storeProfile.name = nameInp;
+  storeProfile.number = numInp || '100';
+  storeProfile.address = addrInp;
+  storeProfile.email = emailInp;
+  storeProfile.password = passInp;
+
+  try { localStorage.setItem(getStoreProfileStorageKey(activeLocationId), JSON.stringify(storeProfile)); } catch (e) {}
+
+  const locIdx = locations.findIndex(l => l.id === activeLocationId);
+  if (locIdx >= 0) {
+    locations[locIdx].name = storeProfile.name;
+    locations[locIdx].number = storeProfile.number;
+    locations[locIdx].address = storeProfile.address;
+    locations[locIdx].email = storeProfile.email;
+    locations[locIdx].password = storeProfile.password;
+    saveLocationsRegistry();
+  }
+
+  populateLocationSwitcherDropdown();
+  loadActiveStoreData();
+  alert(`Store Profile Saved: ${storeProfile.name} (#${storeProfile.number})`);
+}
+
 function populateLocationSwitcherDropdown() {
   const select = document.getElementById('location-switcher-select');
   if (!select) return;
@@ -332,7 +300,6 @@ function handleLocationSwitch(newLocId) {
   recalculateReconciliationTotals();
   if (typeof executeReportLookup === 'function') executeReportLookup();
 }
-
 function calculateBoxMetrics(box) {
   if (!box || !box.gameNum) {
     return { ticketsSold: 0, dollarSales: 0, status: 'empty', hasRollover: false, activeTicket: '-' };
@@ -415,117 +382,6 @@ function updateBoxEndTicketLive(idx, val) {
   updateBoxMetricsDisplay(idx);
   updateHeaderTotalsUI();
   recalculateReconciliationTotals();
-}
-function rollNewPackInBox(idx) {
-  const box = boxes[idx];
-  if (!box || !box.gameNum) {
-    alert('Please assign a game number to this box before recording a rollover.');
-    return;
-  }
-  openRolloverDecisionModal(idx, '');
-}
-
-function openRolloverDecisionModal(idx, typedEndValue) {
-  const box = boxes[idx];
-  if (!box) return;
-
-  document.getElementById('modal-roll-box-idx').value = idx;
-  document.getElementById('modal-roll-pending-end').value = typedEndValue !== undefined ? typedEndValue : '';
-  document.getElementById('modal-rollover-title').textContent = `Box ${box.boxNumber}: ${box.gameName || 'Game #' + box.gameNum}`;
-  
-  const msgElem = document.getElementById('modal-roll-step1-msg');
-  if (typedEndValue !== '') {
-    msgElem.innerHTML = `You typed ticket <strong>#${typedEndValue}</strong>, which is lower than the start ticket (<strong>#${box.startTicket}</strong>).<br><br>Did you finish the previous pack and start a new roll?`;
-  } else {
-    msgElem.innerHTML = `Do you want to finish the current pack in <strong>Box ${box.boxNumber}</strong> and load a new roll starting at #0?`;
-  }
-
-  document.getElementById('modal-roll-step-1').classList.remove('hidden');
-  document.getElementById('modal-roll-step-2').classList.add('hidden');
-  document.getElementById('modal-roll-newgame-section').classList.add('hidden');
-  document.getElementById('modal-box-rollover').classList.remove('hidden');
-}
-
-function handleRolloverStep1Answer(isYes) {
-  const idx = Number(document.getElementById('modal-roll-box-idx').value);
-  if (isNaN(idx) || !boxes[idx]) { cancelRolloverModal(); return; }
-  if (!isYes) { cancelRolloverModal(); renderDispenserGrid(); return; }
-  document.getElementById('modal-roll-step-1').classList.add('hidden');
-  document.getElementById('modal-roll-step-2').classList.remove('hidden');
-}
-
-function handleRolloverGameChoice(isSameGame) {
-  const idx = Number(document.getElementById('modal-roll-box-idx').value);
-  if (isNaN(idx) || !boxes[idx]) return;
-  if (isSameGame) {
-    finalizeRolloverAction(idx, boxes[idx].gameNum);
-  } else {
-    const sec = document.getElementById('modal-roll-newgame-section');
-    sec.classList.remove('hidden');
-    const inp = document.getElementById('modal-roll-newgame-input');
-    inp.value = '';
-    inp.focus();
-  }
-}
-
-function applyRolloverWithNewGame() {
-  const idx = Number(document.getElementById('modal-roll-box-idx').value);
-  const newGameNum = document.getElementById('modal-roll-newgame-input').value.trim();
-  if (!newGameNum) { alert('Please enter a Game Number.'); return; }
-  finalizeRolloverAction(idx, newGameNum);
-}
-
-function finalizeRolloverAction(idx, finalGameNum) {
-  const box = boxes[idx];
-  const pendingEnd = document.getElementById('modal-roll-pending-end').value;
-  const price = Number(box.price) || 0;
-  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(price);
-  const maxTicket = Math.max(0, rollCount - 1);
-  const start = Number(box.startTicket) || 0;
-  const oldPackSold = Math.max(0, maxTicket - start);
-  const oldPackSales = oldPackSold * price;
-
-  if (!Array.isArray(box.rollovers)) box.rollovers = [];
-  box.rollovers.push({
-    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    date: new Date().toISOString().slice(0, 10),
-    gameNum: box.gameNum,
-    gameName: box.gameName,
-    price: price,
-    startTicket: start,
-    finishedTicket: maxTicket,
-    endTicket: maxTicket,
-    ticketsSold: oldPackSold,
-    salesAmount: oldPackSales
-  });
-
-  if (finalGameNum !== box.gameNum) {
-    box.gameNum = finalGameNum;
-    const matched = masterGames.find(g => String(g.gameNum).trim() === String(finalGameNum).trim());
-    if (matched) {
-      box.gameName = matched.name;
-      box.price = Number(matched.price);
-      box.rollCount = Number(matched.count);
-      box.needsNewGameEntry = false;
-    } else {
-      box.gameName = '';
-      box.price = 0;
-      box.needsNewGameEntry = true;
-    }
-  }
-
-  box.startTicket = 0;
-  box.endTicket = pendingEnd !== '' ? Number(pendingEnd) : '';
-  box.rollsReplaced = (Number(box.rollsReplaced) || 0) + 1;
-
-  saveBoxesState();
-  cancelRolloverModal();
-  renderDispenserGrid();
-  recalculateReconciliationTotals();
-}
-
-function cancelRolloverModal() {
-  document.getElementById('modal-box-rollover').classList.add('hidden');
 }
 
 function handleGridEnter(event, currentIdx) {
@@ -719,40 +575,116 @@ function updateHeaderTotalsUI() {
   if (tElem) tElem.textContent = totalTickets.toLocaleString();
   if (sElem) sElem.textContent = `$${totalSales.toFixed(2)}`;
 }
-function exportMasterGamesUniversal() {
-  const payload = sanitizeMasterGamesList(masterGames);
-  const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(payload, null, 2));
-  const a = document.createElement('a');
-  a.setAttribute('href', dataStr);
-  a.setAttribute('download', `MasterGamesCatalog_${new Date().toISOString().slice(0, 10)}.json`);
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+function rollNewPackInBox(idx) {
+  const box = boxes[idx];
+  if (!box || !box.gameNum) {
+    alert('Please assign a game number to this box before recording a rollover.');
+    return;
+  }
+  openRolloverDecisionModal(idx, '');
 }
 
-function importMasterGamesUniversal(event) {
-  const file = event?.target?.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const parsed = JSON.parse(e.target.result);
-      const arr = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.masterGames) ? parsed.masterGames : []);
-      if (arr.length === 0) {
-        alert('No valid games found in JSON file.');
-        return;
-      }
-      masterGames = sanitizeMasterGamesList([...masterGames, ...arr]);
-      saveGamesState();
-      loadActiveStoreData();
-      renderAdminGamesTable();
-      renderDispenserGrid();
-      alert(`Imported games! Total in catalog: ${masterGames.length}`);
-    } catch (err) {
-      alert('Failed to parse Master Games JSON file.');
+function openRolloverDecisionModal(idx, typedEndValue) {
+  const box = boxes[idx];
+  if (!box) return;
+
+  document.getElementById('modal-roll-box-idx').value = idx;
+  document.getElementById('modal-roll-pending-end').value = typedEndValue !== undefined ? typedEndValue : '';
+  document.getElementById('modal-rollover-title').textContent = `Box ${box.boxNumber}: ${box.gameName || 'Game #' + box.gameNum}`;
+  
+  const msgElem = document.getElementById('modal-roll-step1-msg');
+  if (typedEndValue !== '') {
+    msgElem.innerHTML = `You typed ticket <strong>#${typedEndValue}</strong>, which is lower than the start ticket (<strong>#${box.startTicket}</strong>).<br><br>Did you finish the previous pack and start a new roll?`;
+  } else {
+    msgElem.innerHTML = `Do you want to finish the current pack in <strong>Box ${box.boxNumber}</strong> and load a new roll starting at #0?`;
+  }
+
+  document.getElementById('modal-roll-step-1').classList.remove('hidden');
+  document.getElementById('modal-roll-step-2').classList.add('hidden');
+  document.getElementById('modal-roll-newgame-section').classList.add('hidden');
+  document.getElementById('modal-box-rollover').classList.remove('hidden');
+}
+
+function handleRolloverStep1Answer(isYes) {
+  const idx = Number(document.getElementById('modal-roll-box-idx').value);
+  if (isNaN(idx) || !boxes[idx]) { cancelRolloverModal(); return; }
+  if (!isYes) { cancelRolloverModal(); renderDispenserGrid(); return; }
+  document.getElementById('modal-roll-step-1').classList.add('hidden');
+  document.getElementById('modal-roll-step-2').classList.remove('hidden');
+}
+
+function handleRolloverGameChoice(isSameGame) {
+  const idx = Number(document.getElementById('modal-roll-box-idx').value);
+  if (isNaN(idx) || !boxes[idx]) return;
+  if (isSameGame) {
+    finalizeRolloverAction(idx, boxes[idx].gameNum);
+  } else {
+    const sec = document.getElementById('modal-roll-newgame-section');
+    sec.classList.remove('hidden');
+    const inp = document.getElementById('modal-roll-newgame-input');
+    inp.value = '';
+    inp.focus();
+  }
+}
+
+function applyRolloverWithNewGame() {
+  const idx = Number(document.getElementById('modal-roll-box-idx').value);
+  const newGameNum = document.getElementById('modal-roll-newgame-input').value.trim();
+  if (!newGameNum) { alert('Please enter a Game Number.'); return; }
+  finalizeRolloverAction(idx, newGameNum);
+}
+
+function finalizeRolloverAction(idx, finalGameNum) {
+  const box = boxes[idx];
+  const pendingEnd = document.getElementById('modal-roll-pending-end').value;
+  const price = Number(box.price) || 0;
+  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(price);
+  const maxTicket = Math.max(0, rollCount - 1);
+  const start = Number(box.startTicket) || 0;
+  const oldPackSold = Math.max(0, maxTicket - start);
+  const oldPackSales = oldPackSold * price;
+
+  if (!Array.isArray(box.rollovers)) box.rollovers = [];
+  box.rollovers.push({
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    date: new Date().toISOString().slice(0, 10),
+    gameNum: box.gameNum,
+    gameName: box.gameName,
+    price: price,
+    startTicket: start,
+    finishedTicket: maxTicket,
+    endTicket: maxTicket,
+    ticketsSold: oldPackSold,
+    salesAmount: oldPackSales
+  });
+
+  if (finalGameNum !== box.gameNum) {
+    box.gameNum = finalGameNum;
+    const matched = masterGames.find(g => String(g.gameNum).trim() === String(finalGameNum).trim());
+    if (matched) {
+      box.gameName = matched.name;
+      box.price = Number(matched.price);
+      box.rollCount = Number(matched.count);
+      box.needsNewGameEntry = false;
+    } else {
+      box.gameName = '';
+      box.price = 0;
+      box.needsNewGameEntry = true;
     }
-  };
-  reader.readAsText(file);
+  }
+
+  box.startTicket = 0;
+  box.endTicket = pendingEnd !== '' ? Number(pendingEnd) : '';
+  box.rollsReplaced = (Number(box.rollsReplaced) || 0) + 1;
+
+  saveBoxesState();
+  cancelRolloverModal();
+  renderDispenserGrid();
+  recalculateReconciliationTotals();
+}
+
+function cancelRolloverModal() {
+  document.getElementById('modal-box-rollover').classList.add('hidden');
 }
 
 function openQuickGameModal(idx) {
@@ -797,158 +729,6 @@ function saveQuickRegisteredGame() {
   renderDispenserGrid();
   recalculateReconciliationTotals();
 }
-
-function openMultiStoreManagerModal() {
-  renderMultiStoreModalList();
-  document.getElementById('modal-multi-store').classList.remove('hidden');
-}
-
-function closeMultiStoreManagerModal() {
-  document.getElementById('modal-multi-store').classList.add('hidden');
-}
-
-function renderMultiStoreModalList() {
-  const tbody = document.getElementById('multi-store-list-tbody');
-  if (!tbody) return;
-  tbody.innerHTML = locations.map(loc => {
-    const isCurrent = loc.id === activeLocationId;
-    return `
-      <tr class="${isCurrent ? 'bg-blue-50/70' : 'hover:bg-slate-50'}">
-        <td class="p-2.5 space-y-0.5">
-          <div class="font-extrabold text-slate-900">${loc.name} (#${loc.number})</div>
-          <div class="text-[11px] text-slate-600">${loc.address || 'No address set'}</div>
-        </td>
-        <td class="p-2.5 text-center">
-          ${isCurrent ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800">Active</span>' : '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Standby</span>'}
-        </td>
-        <td class="p-2.5 text-right space-x-1">
-          ${!isCurrent ? `<button type="button" onclick="switchStoreFromModal('${loc.id}')" class="bg-blue-600 text-white text-[11px] px-2.5 py-1 rounded">Switch</button>` : ''}
-          <button type="button" onclick="exportSpecificLocationBackup('${loc.id}')" class="bg-slate-700 text-white text-[11px] px-2.5 py-1 rounded">⬇ Export</button>
-          <button type="button" onclick="deleteStoreLocation('${loc.id}')" class="bg-red-100 text-red-700 text-[11px] px-2 py-1 rounded">Delete</button>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
-
-function switchStoreFromModal(locId) {
-  handleLocationSwitch(locId);
-  populateLocationSwitcherDropdown();
-  renderMultiStoreModalList();
-}
-
-function createNewStoreLocation() {
-  const name = document.getElementById('new-location-name-input')?.value?.trim();
-  const number = document.getElementById('new-location-num-input')?.value?.trim() || '100';
-  const address = document.getElementById('new-location-address-input')?.value?.trim() || '';
-
-  if (!name) { alert('Please enter a store name.'); return; }
-  const cleanSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  const newId = `loc-${cleanSlug}-${Date.now().toString().slice(-4)}`;
-  locations.push({ id: newId, name, number, address });
-  saveLocationsRegistry();
-
-  localStorage.setItem(getStoreProfileStorageKey(newId), JSON.stringify({ name, number, address }));
-  localStorage.setItem(getStoreBoxesStorageKey(newId), JSON.stringify(createDefault40Boxes()));
-  localStorage.setItem(getStoreHistoryStorageKey(newId), JSON.stringify([]));
-
-  handleLocationSwitch(newId);
-  renderMultiStoreModalList();
-  alert(`Created and switched to new store: ${name}`);
-}
-
-function deleteStoreLocation(locId) {
-  if (locations.length <= 1) { alert('You must keep at least one store location.'); return; }
-  if (!confirm('Are you sure you want to delete this store location?')) return;
-  locations = locations.filter(l => l.id !== locId);
-  saveLocationsRegistry();
-  if (activeLocationId === locId) {
-    activeLocationId = locations[0].id;
-    localStorage.setItem(STORAGE_KEY_ACTIVE_LOC, activeLocationId);
-    loadActiveStoreData();
-  }
-  renderMultiStoreModalList();
-  populateLocationSwitcherDropdown();
-}
-
-function exportCurrentLocationBackup() { exportSpecificLocationBackup(activeLocationId); }
-
-function exportSpecificLocationBackup(locId) {
-  const locObj = locations.find(l => l.id === locId) || { name: storeProfile.name, number: storeProfile.number };
-  let locBoxes = [];
-  let locHistory = [];
-  try { locBoxes = JSON.parse(localStorage.getItem(getStoreBoxesStorageKey(locId)) || '[]'); } catch (e) {}
-  try { locHistory = JSON.parse(localStorage.getItem(getStoreHistoryStorageKey(locId)) || '[]'); } catch (e) {}
-
-  const payload = {
-    backupVersion: '2.0',
-    exportedAt: new Date().toISOString(),
-    locationId: locId,
-    storeProfile: { name: locObj.name, number: locObj.number, address: locObj.address || '' },
-    boxes: locBoxes.length > 0 ? locBoxes : boxes,
-    masterGames: sanitizeMasterGamesList(masterGames),
-    historicalReports: locHistory
-  };
-
-  const safeName = (locObj.name || 'store').replace(/[^a-zA-Z0-9_-]/g, '_');
-  const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(payload, null, 2));
-  const a = document.createElement('a');
-  a.setAttribute('href', dataStr);
-  a.setAttribute('download', `LottoBackup_${safeName}_${new Date().toISOString().slice(0, 10)}.json`);
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
-
-function importLocationBackupFile(event) {
-  const file = event?.target?.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (Array.isArray(data.masterGames) && data.masterGames.length > 0) {
-        masterGames = sanitizeMasterGamesList([...masterGames, ...data.masterGames]);
-        saveGamesState();
-      }
-      if (Array.isArray(data.boxes)) {
-        boxes = data.boxes;
-        saveBoxesState();
-      }
-      if (data.storeProfile) {
-        storeProfile = data.storeProfile;
-        localStorage.setItem(getStoreProfileStorageKey(activeLocationId), JSON.stringify(storeProfile));
-      }
-      loadActiveStoreData();
-      renderDispenserGrid();
-      alert('Backup restored successfully!');
-    } catch (err) {
-      alert('Failed to parse backup JSON file.');
-    }
-  };
-  reader.readAsText(file);
-}
-
-function advanceEndToStartForNewShift() {
-  if (!confirm('Move all current End Ticket numbers into Start Ticket numbers for the new shift?')) return;
-  boxes.forEach(b => {
-    if (b.endTicket !== '' && b.endTicket !== undefined && b.endTicket !== null) {
-      b.startTicket = Number(b.endTicket);
-    }
-    b.endTicket = '';
-    b.rollovers = [];
-  });
-  saveBoxesState();
-  renderDispenserGrid();
-  recalculateReconciliationTotals();
-}
-
-function handleShiftTypeChange(val) {
-  const badge = document.getElementById('header-shift-badge');
-  if (badge) badge.textContent = val;
-  saveReconciliationDraft();
-}
-
 function recalculateReconciliationTotals() {
   let scratchSales = 0;
   let totalTickets = 0;
@@ -1059,6 +839,7 @@ function clearSignaturePad() {
   sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
   currentSignatureDataUrl = null;
 }
+
 function getLocationHistoricalReports(locId = activeLocationId) {
   try {
     const raw = localStorage.getItem(getStoreHistoryStorageKey(locId));
@@ -1226,7 +1007,6 @@ function triggerMonthlyEmailDispatchManually() {
   a.click();
   document.body.removeChild(a);
 }
-
 function saveNewMasterGameManual() {
   const numInp = document.getElementById('new-game-num');
   const nameInp = document.getElementById('new-game-name');
@@ -1419,7 +1199,7 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
           <div style="font-size: 12px; font-weight: 900; text-transform: uppercase;">
             ${repData.storeName || storeProfile.name} (#${repData.storeNumber || storeProfile.number}) — ${isFinalReport ? 'Shift Lottery Audit' : 'Shift Count Worksheet'}
           </div>
-          <div style="font-size: 8px; color: #334155; margin-top: 1px;">Date: <strong>${repData.date}</strong> &nbsp;|&nbsp; Shift: <strong>${repData.shiftType}</strong></div>
+          <div style="font-size: 8px; color: #334155; margin-top: 1px;">Date: <strong>${repData.date}</strong>  |  Shift: <strong>${repData.shiftType}</strong></div>
         </div>
         <div style="text-align: right; font-size: 7.5px; font-weight: bold;">AUDIT REPORT</div>
       </div>
@@ -1450,8 +1230,8 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
         <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
           <div style="flex: 1.2;">
             <div style="display: flex; gap: 10px; font-size: 7.5px;">
-              <div><strong>Outgoing:</strong> ${repData.cashierOut || '&nbsp;'}</div>
-              <div><strong>Incoming:</strong> ${repData.cashierIn || '&nbsp;'}</div>
+              <div><strong>Outgoing:</strong> ${repData.cashierOut || ' '}</div>
+              <div><strong>Incoming:</strong> ${repData.cashierIn || ' '}</div>
             </div>
           </div>
           <div style="width: 140px; text-align: center; border-left: 1px solid #94a3b8; padding-left: 4px;">
