@@ -1417,9 +1417,7 @@ function printThermalReceipt(isWorksheetMode = false) {
 
   let rowsHTML = boxes.map((box, idx) => {
     const m = calculateBoxMetrics(box);
-    const hasGame = Boolean(box.gameNum);
     
-    // If worksheet mode, leave End blank with lines for manual write-in
     let endDisplay = '___';
     let soldDisplay = '___';
     let salesDisplay = '$___';
@@ -1499,7 +1497,7 @@ function printThermalReceipt(isWorksheetMode = false) {
       </div>
 
       <div style="margin-top: 10px; text-align: center;">
-        ${!isWorksheetMode && currentSignatureDataUrl ? `<img src="${currentSignatureDataUrl}" style="max-height: 30px; max-width: 140px; display: block; margin: 0 auto;" />` : `<div style="height: 20px;"></div>`}
+        ${!isWorksheetMode && typeof currentSignatureDataUrl !== 'undefined' && currentSignatureDataUrl ? `<img src="${currentSignatureDataUrl}" style="max-height: 30px; max-width: 140px; display: block; margin: 0 auto;" />` : `<div style="height: 20px;"></div>`}
         <div style="border-top: 1px solid #000; font-size: 8px; margin-top: 2px;">CASHIER SIGNATURE</div>
       </div>
       <div style="text-align: center; font-size: 8px; margin-top: 8px; color: #555;">*** END OF REPORT ***\n\x1D\x56\x41\x00</div>
