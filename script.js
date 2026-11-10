@@ -1398,10 +1398,10 @@ window.addEventListener('DOMContentLoaded', () => {
   executeReportLookup();
 });
 /* ==========================================================================
-   3 1/8" THERMAL RECEIPT PRINTER MODULE
+   3 1/8" THERMAL RECEIPT & WORKSHEET PRINTER MODULE
    ========================================================================== */
 
-function printThermalReceipt() {
+function printThermalReceipt(isWorksheetMode = false) {
   let printContainer = document.getElementById('print-container');
   if (!printContainer) {
     printContainer = document.createElement('div');
@@ -1412,25 +1412,34 @@ function printThermalReceipt() {
   const totals = recalculateReconciliationTotals();
   const dateStr = document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10);
   const shiftStr = document.getElementById('rec-shift-type')?.value || 'Shift 1';
+  const cashierOutStr = document.getElementById('rec-cashier-out')?.value || '________________';
+  const cashierInStr = document.getElementById('rec-cashier-in')?.value || '________________';
 
-  let boxesChecklistHTML = boxes.map((box, idx) => {
+  let rowsHTML = boxes.map((box, idx) => {
     const m = calculateBoxMetrics(box);
     const hasGame = Boolean(box.gameNum);
+    
+    // If worksheet mode, leave End blank with lines for manual write-in
+    let endDisplay = '___';
+    let soldDisplay = '___';
+    let salesDisplay = '$___';
+
+    if (!isWorksheetMode) {
+      endDisplay = box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '___';
+      soldDisplay = m.ticketsSold;
+      salesDisplay = `$${m.dollarSales.toFixed(2)}`;
+    }
+
     return `
-      <div style="border-bottom: 1px dashed #000; padding: 4px 0; font-size: 11px;">
-        <div style="display: flex; justify-content: space-between; font-weight: bold;">
-          <span>BOX #${box.boxNumber || (idx + 1)}: #${box.gameNum || 'EMPTY'}</span>
-          <span>$${m.dollarSales.toFixed(2)}</span>
-        </div>
-        <div style="font-size: 10px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-          ${box.gameName || 'Unassigned'}
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 2px; font-family: monospace;">
-          <span>Start: ${box.startTicket !== undefined ? box.startTicket : 0}</span>
-          <span>End: ${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '___'}</span>
-          <span>Sold: <b>${m.ticketsSold}</b></span>
-        </div>
-      </div>
+      <tr style="border-bottom: 1px dashed #000;">
+        <td style="padding: 3px 1px; text-align: center; font-weight: bold;">${box.boxNumber || (idx + 1)}</td>
+        <td style="padding: 3px 1px; text-align: center;">${box.gameNum || '-'}</td>
+        <td style="padding: 3px 1px; text-align: center; font-weight: bold;">$${box.price || 0}</td>
+        <td style="padding: 3px 1px; text-align: center;">${box.startTicket !== undefined ? box.startTicket : 0}</td>
+        <td style="padding: 3px 1px; text-align: center; font-family: monospace;">${endDisplay}</td>
+        <td style="padding: 3px 1px; text-align: center;">${soldDisplay}</td>
+        <td style="padding: 3px 1px; text-align: right; font-weight: bold;">${salesDisplay}</td>
+      </tr>
     `;
   }).join('');
 
@@ -1438,134 +1447,62 @@ function printThermalReceipt() {
     <style>
       @page { size: 80mm auto; margin: 0; }
       @media print {
-        html, body { width: 76mm; margin: 0 !important; padding: 2mm !important; font-family: 'Courier New', Courier, monospace !important; font-size: 11px !important; color: #000 !important; background: #fff !important; }
+        html, body { width: 76mm; margin: 0 !important; padding: 1mm 2mm !important; font-family: 'Courier New', Courier, monospace !important; font-size: 10px !important; color: #000 !important; background: #fff !important; }
         body > header, body > main, body > div.fixed, #app-shell, .no-print { display: none !important; }
         #print-container { display: block !important; width: 76mm !important; }
       }
     </style>
-    <div style="width: 72mm; font-family: 'Courier New', Courier, monospace; line-height: 1.2;">
-      <div style="text-align: center; font-weight: bold; font-size: 14px; margin-bottom: 2px;">
+    <div style="width: 72mm; font-family: 'Courier New', Courier, monospace; line-height: 1.15;">
+      <div style="text-align: center; font-weight: bold; font-size: 13px; margin-bottom: 2px;">
         ${storeProfile.name}
       </div>
-      <div style="text-align: center; font-size: 10px; margin-bottom: 6px;">
+      <div style="text-align: center; font-size: 9px; margin-bottom: 4px;">
         Store #${storeProfile.number}<br>
-        Date: ${dateStr} | ${shiftStr}
-      </div>
-      <div style="border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 2px 0; margin-bottom: 4px; font-weight: bold; font-size: 10px; text-align: center;">
-        LOTTERY CHECKLIST AUDIT
+        Date: ${dateStr} | ${shiftStr}<br>
+        <b>${isWorksheetMode ? '--- COUNT WORKSHEET ---' : '--- FINAL AUDIT RECEIPT ---'}</b>
       </div>
 
-      ${boxesChecklistHTML}
+      <table style="width: 100%; border-collapse: collapse; font-size: 9px; margin-top: 4px;">
+        <thead>
+          <tr style="border-bottom: 1px solid #000; border-top: 1px solid #000; font-size: 8.5px;">
+            <th style="text-align: center; padding: 2px 0;">Bx</th>
+            <th style="text-align: center; padding: 2px 0;">Game</th>
+            <th style="text-align: center; padding: 2px 0;">$</th>
+            <th style="text-align: center; padding: 2px 0;">Start</th>
+            <th style="text-align: center; padding: 2px 0;">End</th>
+            <th style="text-align: center; padding: 2px 0;">Tix</th>
+            <th style="text-align: right; padding: 2px 0;">Total $</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHTML}
+        </tbody>
+      </table>
 
-      <div style="border-top: 2px solid #000; margin-top: 6px; padding-top: 4px; font-size: 11px;">
-        <div style="display: flex; justify-content: space-between;"><span>Total Sold Tix:</span> <b>${totals.totalTickets}</b></div>
-        <div style="display: flex; justify-content: space-between;"><span>Scratch Sales:</span> <b>$${totals.scratchSales.toFixed(2)}</b></div>
-        <div style="display: flex; justify-content: space-between;"><span>Online Sales:</span> <b>$${totals.onlineSales.toFixed(2)}</b></div>
-        <div style="display: flex; justify-content: space-between; border-top: 1px dashed #000; margin-top: 2px; padding-top: 2px;"><span>Expected Net:</span> <b>$${totals.expectedNet.toFixed(2)}</b></div>
-        <div style="display: flex; justify-content: space-between;"><span>POS Actual:</span> <b>$${totals.posActual.toFixed(2)}</b></div>
-        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; border-top: 1px solid #000; margin-top: 2px; padding-top: 2px;">
-          <span>VARIANCE:</span> 
-          <span>${totals.variance > 0 ? '+' : ''}$${totals.variance.toFixed(2)}</span>
+      ${!isWorksheetMode ? `
+        <div style="border-top: 1px solid #000; margin-top: 6px; padding-top: 3px; font-size: 10px;">
+          <div style="display: flex; justify-content: space-between;"><span>Total Sold Tix:</span> <b>${totals.totalTickets}</b></div>
+          <div style="display: flex; justify-content: space-between;"><span>Scratch Sales:</span> <b>$${totals.scratchSales.toFixed(2)}</b></div>
+          <div style="display: flex; justify-content: space-between;"><span>Online Sales:</span> <b>$${totals.onlineSales.toFixed(2)}</b></div>
+          <div style="display: flex; justify-content: space-between; border-top: 1px dashed #000; margin-top: 2px; padding-top: 2px;"><span>Expected Net:</span> <b>$${totals.expectedNet.toFixed(2)}</b></div>
+          <div style="display: flex; justify-content: space-between;"><span>POS Actual:</span> <b>$${totals.posActual.toFixed(2)}</b></div>
+          <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 11px; border-top: 1px solid #000; margin-top: 2px; padding-top: 2px;">
+            <span>VARIANCE:</span> 
+            <span>${totals.variance > 0 ? '+' : ''}$${totals.variance.toFixed(2)}</span>
+          </div>
         </div>
+      ` : ''}
+
+      <div style="margin-top: 8px; font-size: 9px;">
+        <div>Out: ${cashierOutStr}</div>
+        <div style="margin-top: 2px;">In: ${cashierInStr}</div>
       </div>
 
-      <div style="margin-top: 10px; font-size: 10px;">
-        <div>Out: ${document.getElementById('rec-cashier-out')?.value || '________________'}</div>
-        <div style="margin-top: 4px;">In: ${document.getElementById('rec-cashier-in')?.value || '________________'}</div>
+      <div style="margin-top: 10px; text-align: center;">
+        ${!isWorksheetMode && currentSignatureDataUrl ? `<img src="${currentSignatureDataUrl}" style="max-height: 30px; max-width: 140px; display: block; margin: 0 auto;" />` : `<div style="height: 20px;"></div>`}
+        <div style="border-top: 1px solid #000; font-size: 8px; margin-top: 2px;">CASHIER SIGNATURE</div>
       </div>
-
-      <div style="margin-top: 15px; text-align: center;">
-        ${currentSignatureDataUrl ? `<img src="${currentSignatureDataUrl}" style="max-height: 35px; max-width: 150px; display: block; margin: 0 auto;" />` : `<div style="height: 25px;"></div>`}
-        <div style="border-top: 1px solid #000; font-size: 9px; margin-top: 2px;">CASHIER SIGNATURE</div>
-      </div>
-      <div style="text-align: center; font-size: 9px; margin-top: 10px; color: #555;">*** END OF REPORT ***</div>
-    </div>
-  `;
-
-  window.print();
-}
-/* ==========================================================================
-   3 1/8" THERMAL RECEIPT PRINTER MODULE
-   ========================================================================== */
-
-function printThermalReceipt() {
-  let printContainer = document.getElementById('print-container');
-  if (!printContainer) {
-    printContainer = document.createElement('div');
-    printContainer.id = 'print-container';
-    document.body.appendChild(printContainer);
-  }
-
-  const totals = recalculateReconciliationTotals();
-  const dateStr = document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10);
-  const shiftStr = document.getElementById('rec-shift-type')?.value || 'Shift 1';
-
-  let boxesChecklistHTML = boxes.map((box, idx) => {
-    const m = calculateBoxMetrics(box);
-    const hasGame = Boolean(box.gameNum);
-    return `
-      <div style="border-bottom: 1px dashed #000; padding: 4px 0; font-size: 11px;">
-        <div style="display: flex; justify-content: space-between; font-weight: bold;">
-          <span>BOX #${box.boxNumber || (idx + 1)}: #${box.gameNum || 'EMPTY'}</span>
-          <span>$${m.dollarSales.toFixed(2)}</span>
-        </div>
-        <div style="font-size: 10px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-          ${box.gameName || 'Unassigned'}
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 2px; font-family: monospace;">
-          <span>Start: ${box.startTicket !== undefined ? box.startTicket : 0}</span>
-          <span>End: ${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '___'}</span>
-          <span>Sold: <b>${m.ticketsSold}</b></span>
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  printContainer.innerHTML = `
-    <style>
-      @page { size: 80mm auto; margin: 0; }
-      @media print {
-        html, body { width: 76mm; margin: 0 !important; padding: 2mm !important; font-family: 'Courier New', Courier, monospace !important; font-size: 11px !important; color: #000 !important; background: #fff !important; }
-        body > header, body > main, body > div.fixed, #app-shell, .no-print { display: none !important; }
-        #print-container { display: block !important; width: 76mm !important; }
-      }
-    </style>
-    <div style="width: 72mm; font-family: 'Courier New', Courier, monospace; line-height: 1.2;">
-      <div style="text-align: center; font-weight: bold; font-size: 14px; margin-bottom: 2px;">
-        ${storeProfile.name}
-      </div>
-      <div style="text-align: center; font-size: 10px; margin-bottom: 6px;">
-        Store #${storeProfile.number}<br>
-        Date: ${dateStr} | ${shiftStr}
-      </div>
-      <div style="border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 2px 0; margin-bottom: 4px; font-weight: bold; font-size: 10px; text-align: center;">
-        LOTTERY CHECKLIST AUDIT
-      </div>
-
-      ${boxesChecklistHTML}
-
-      <div style="border-top: 2px solid #000; margin-top: 6px; padding-top: 4px; font-size: 11px;">
-        <div style="display: flex; justify-content: space-between;"><span>Total Sold Tix:</span> <b>${totals.totalTickets}</b></div>
-        <div style="display: flex; justify-content: space-between;"><span>Scratch Sales:</span> <b>$${totals.scratchSales.toFixed(2)}</b></div>
-        <div style="display: flex; justify-content: space-between;"><span>Online Sales:</span> <b>$${totals.onlineSales.toFixed(2)}</b></div>
-        <div style="display: flex; justify-content: space-between; border-top: 1px dashed #000; margin-top: 2px; padding-top: 2px;"><span>Expected Net:</span> <b>$${totals.expectedNet.toFixed(2)}</b></div>
-        <div style="display: flex; justify-content: space-between;"><span>POS Actual:</span> <b>$${totals.posActual.toFixed(2)}</b></div>
-        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; border-top: 1px solid #000; margin-top: 2px; padding-top: 2px;">
-          <span>VARIANCE:</span> 
-          <span>${totals.variance > 0 ? '+' : ''}$${totals.variance.toFixed(2)}</span>
-        </div>
-      </div>
-
-      <div style="margin-top: 10px; font-size: 10px;">
-        <div>Out: ${document.getElementById('rec-cashier-out')?.value || '________________'}</div>
-        <div style="margin-top: 4px;">In: ${document.getElementById('rec-cashier-in')?.value || '________________'}</div>
-      </div>
-
-      <div style="margin-top: 15px; text-align: center;">
-        ${currentSignatureDataUrl ? `<img src="${currentSignatureDataUrl}" style="max-height: 35px; max-width: 150px; display: block; margin: 0 auto;" />` : `<div style="height: 25px;"></div>`}
-        <div style="border-top: 1px solid #000; font-size: 9px; margin-top: 2px;">CASHIER SIGNATURE</div>
-      </div>
-      <div style="text-align: center; font-size: 9px; margin-top: 10px; color: #555;">*** END OF REPORT ***</div>
+      <div style="text-align: center; font-size: 8px; margin-top: 8px; color: #555;">*** END OF REPORT ***\n\x1D\x56\x41\x00</div>
     </div>
   `;
 
