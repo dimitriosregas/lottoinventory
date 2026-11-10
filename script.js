@@ -1,11 +1,11 @@
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 1 OF 6)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (COMPLETE & UNIFIED)
    ========================================================================== */
 
 const STORAGE_KEY_LOCATIONS = 'project_lotto_locations_v1';
 const STORAGE_KEY_ACTIVE_LOC = 'project_lotto_active_loc_id_v1';
 const STORAGE_KEY_MASTER_GAMES = 'project_lotto_master_games_v1';
-const STORAGE_KEY_SETUP_LOCKED = 'project_lotto_setup_locked_v1';
+const STORAGE_KEY_SETUP_LOCKED = 'project_lotto_setuplocked_v1';
 const WORKER_SYNC_URL = 'https://lottoinventory.dimitriosregas.workers.dev/games';
 const ADMIN_NOTIFY_EMAIL = 'regas_shell@hotmail.com';
 
@@ -253,9 +253,66 @@ function loadActiveStoreData() {
   if (typeof renderDispenserGrid === 'function') renderDispenserGrid();
   if (typeof renderAdminBoxLabelsGrid === 'function') renderAdminBoxLabelsGrid();
 }
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 2 OF 6)
-   ========================================================================== */
+
+function saveBoxesState() {
+  try { localStorage.setItem(getStoreBoxesStorageKey(activeLocationId), JSON.stringify(boxes)); } catch (e) {}
+}
+
+function saveActiveStoreProfile() {
+  const nameInp = document.getElementById('admin-store-name')?.value?.trim();
+  const numInp = document.getElementById('admin-store-number')?.value?.trim();
+  const addrInp = document.getElementById('admin-store-address')?.value?.trim() || '';
+  const emailInp = document.getElementById('admin-store-email')?.value?.trim() || '';
+  const passInp = document.getElementById('admin-store-pass')?.value?.trim() || '';
+
+  if (!nameInp) {
+    alert('Please enter a valid store location name.');
+    return;
+  }
+
+  storeProfile.name = nameInp;
+  storeProfile.number = numInp || '100';
+  storeProfile.address = addrInp;
+  storeProfile.email = emailInp;
+  storeProfile.password = passInp;
+
+  try { localStorage.setItem(getStoreProfileStorageKey(activeLocationId), JSON.stringify(storeProfile)); } catch (e) {}
+
+  const locIdx = locations.findIndex(l => l.id === activeLocationId);
+  if (locIdx >= 0) {
+    locations[locIdx].name = storeProfile.name;
+    locations[locIdx].number = storeProfile.number;
+    locations[locIdx].address = storeProfile.address;
+    locations[locIdx].email = storeProfile.email;
+    locations[locIdx].password = storeProfile.password;
+    saveLocationsRegistry();
+  }
+
+  populateLocationSwitcherDropdown();
+  loadActiveStoreData();
+  alert(`Store Profile Saved: ${storeProfile.name} (#${storeProfile.number})`);
+}
+
+function populateLocationSwitcherDropdown() {
+  const select = document.getElementById('location-switcher-select');
+  if (!select) return;
+  select.innerHTML = locations.map(loc => `
+    <option value="${loc.id}" ${loc.id === activeLocationId ? 'selected' : ''}>
+      ${loc.name} (${loc.number})
+    </option>
+  `).join('');
+}
+
+function handleLocationSwitch(newLocId) {
+  if (!newLocId || newLocId === activeLocationId) return;
+  saveBoxesState();
+  activeLocationId = newLocId;
+  localStorage.setItem(STORAGE_KEY_ACTIVE_LOC, activeLocationId);
+  loadActiveStoreData();
+  renderDispenserGrid();
+  recalculateReconciliationTotals();
+  if (typeof executeReportLookup === 'function') executeReportLookup();
+}
 
 function calculateBoxMetrics(box) {
   if (!box || !box.gameNum) {
@@ -411,9 +468,6 @@ function updateBoxMetricsDisplay(idx) {
   if (listSold) listSold.textContent = `${metrics.ticketsSold}${roCount > 0 ? ' *' : ''}`;
   if (listSales) listSales.textContent = `$${metrics.dollarSales.toFixed(2)}`;
 }
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 3 OF 6)
-   ========================================================================== */
 
 function toggleDispenserView() {
   currentDispenserView = currentDispenserView === 'grid' ? 'list' : 'grid';
@@ -453,8 +507,8 @@ function renderDispenserGrid() {
 
       return `
         <tr style="border-bottom: 1px solid #e2e8f0; background: #fff;" class="hover:bg-slate-50 transition">
-          <td style="padding: 6px 8px; text-align: center; background: #0f172a;">
-            <input type="text" value="${box.boxNumber || (idx + 1)}" oninput="updateBoxLabelDirect(${idx}, this.value)" title="Edit Box #" class="w-12 text-center text-xs font-mono font-black rounded px-1 py-0.5 lotto-input" />
+          <td style="padding: 6px 8px; text-align: center; background: #0f172a; font-family: monospace; font-weight: bold; color: #fff;">
+            ${box.boxNumber || (idx + 1)}
           </td>
           <td style="padding: 6px 8px; text-align: center; font-family: monospace; font-weight: bold;">
             <input type="text" id="list-input-gameNum-${idx}" value="${box.gameNum || ''}" ${gameNumReadonlyAttr} onclick="${isLocked ? `handleLockedGameNumClick(this, ${idx})` : ''}" oninput="updateBoxFieldDirect(${idx}, 'gameNum', this.value)" title="${isLocked ? 'Locked after setup. Click to request unlock.' : 'Game Number'}" placeholder="Game#" class="${gameNumClass}" />
@@ -520,7 +574,9 @@ function renderDispenserGrid() {
       <div id="dispenser-card-${idx}" class="dispenser-card bg-white rounded-xl border border-slate-200 p-3 shadow-sm flex flex-col justify-between ${statusClass}">
         <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
           <div class="flex items-center gap-2">
-            <input type="text" value="${box.boxNumber || (idx + 1)}" oninput="updateBoxLabelDirect(${idx}, this.value)" title="Edit Box #" class="w-10 h-7 text-center rounded-lg font-black text-xs font-mono lotto-input" />
+            <div class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-900 text-white font-black text-xs font-mono" title="Slot / Box #">
+              ${box.boxNumber || (idx + 1)}
+            </div>
             <div class="leading-tight">
               <div id="box-title-${idx}" class="font-bold text-xs text-slate-800 truncate max-w-[140px]">${hasGame ? (box.gameName || 'Game #' + box.gameNum) : '<span class="text-slate-400 italic">Empty Box</span>'}</div>
               <div id="box-sub-${idx}" class="text-[10px] text-slate-500 font-medium">${hasGame ? `$${box.price} • ${box.rollCount} tix/pk` : 'Assign game below'}</div>
@@ -575,9 +631,6 @@ function updateHeaderTotalsUI() {
   if (tElem) tElem.textContent = totalTickets.toLocaleString();
   if (sElem) sElem.textContent = `$${totalSales.toFixed(2)}`;
 }
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 4 OF 6)
-   ========================================================================== */
 
 function rollNewPackInBox(idx) {
   const box = boxes[idx];
@@ -844,9 +897,6 @@ function clearSignaturePad() {
   sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
   currentSignatureDataUrl = null;
 }
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 5 OF 6)
-   ========================================================================== */
 
 function getLocationHistoricalReports(locId = activeLocationId) {
   try {
@@ -1142,9 +1192,6 @@ function setBoxLabelsSequential(mode) {
   renderAdminBoxLabelsGrid();
   renderDispenserGrid();
 }
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 6 OF 6)
-   ========================================================================== */
 
 function switchMainView(viewName) {
   const views = ['grid', 'reconcile', 'reports', 'admin'];
@@ -1160,7 +1207,6 @@ function switchMainView(viewName) {
     }
   });
 
-  // If navigating out of setup / grid view, mark setup as locked so game numbers become read-only by default
   if (viewName !== 'admin' && !isSetupLocked) {
     isSetupLocked = true;
     try { localStorage.setItem(getStoreSetupLockKey(activeLocationId), 'true'); } catch (e) {}
@@ -1328,7 +1374,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const todayIso = new Date().toISOString().slice(0, 10);
   const monthIso = todayIso.slice(0, 7);
   if (document.getElementById('report-filter-date')) document.getElementById('report-filter-date').value = todayIso;
-  if (document.getElementById('report-filter-month')) document.getElementById('report-filter-month'].value = monthIso;
+  if (document.getElementById('report-filter-month')) document.getElementById('report-filter-month').value = monthIso;
 
   renderDispenserGrid();
   renderAdminGamesTable();
