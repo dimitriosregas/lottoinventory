@@ -5,6 +5,7 @@
 const STORAGE_KEY_LOCATIONS = 'project_lotto_locations_v1';
 const STORAGE_KEY_ACTIVE_LOC = 'project_lotto_active_loc_id_v1';
 const STORAGE_KEY_MASTER_GAMES = 'project_lotto_master_games_v1';
+const STORAGE_KEY_SETUP_LOCKED = 'project_lotto_setup_locked_v1';
 const WORKER_SYNC_URL = 'https://lottoinventory.dimitriosregas.workers.dev/games';
 const ADMIN_NOTIFY_EMAIL = 'regas_shell@hotmail.com';
 
@@ -63,11 +64,13 @@ let locations = [];
 let storeProfile = { name: 'Regas Shell', number: '101' };
 let boxes = [];
 let masterGames = [];
+let isSetupLocked = false;
 let currentDispenserView = 'grid';
 let currentSignatureDataUrl = null;
 let isDrawingSignature = false;
 let sigCanvas = null;
 let sigCtx = null;
+
 function getDefaultRollCountForPrice(price) {
   const p = Number(price);
   if (!p || p <= 0) return 300;
@@ -99,6 +102,7 @@ function createDefault40Boxes() {
 function getStoreBoxesStorageKey(locId) { return `project_lotto_boxes_${locId}`; }
 function getStoreProfileStorageKey(locId) { return `project_lotto_profile_${locId}`; }
 function getStoreHistoryStorageKey(locId) { return `project_lotto_history_${locId}`; }
+function getStoreSetupLockKey(locId) { return `project_lotto_setuplocked_${locId}`; }
 
 function sanitizeMasterGamesList(arr) {
   if (!Array.isArray(arr)) return [];
@@ -140,6 +144,7 @@ function loadMasterGames() {
 function saveGamesState() {
   try { localStorage.setItem(STORAGE_KEY_MASTER_GAMES, JSON.stringify(masterGames)); } catch (e) {}
 }
+
 function loadLocationsRegistry() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_LOCATIONS);
@@ -173,6 +178,15 @@ function initActiveLocation() {
 
 function loadActiveStoreData() {
   const profKey = getStoreProfileStorageKey(activeLocationId);
+  const lockKey = getStoreSetupLockKey(activeLocationId);
+  
+  try {
+    const lockedRaw = localStorage.getItem(lockKey);
+    isSetupLocked = lockedRaw === 'true';
+  } catch (e) {
+    isSetupLocked = false;
+  }
+
   const activeLocObj = locations.find(l => l.id === activeLocationId);
   try {
     const pRaw = localStorage.getItem(profKey);
@@ -239,66 +253,10 @@ function loadActiveStoreData() {
   if (typeof renderDispenserGrid === 'function') renderDispenserGrid();
   if (typeof renderAdminBoxLabelsGrid === 'function') renderAdminBoxLabelsGrid();
 }
+/* ==========================================================================
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 2 OF 6)
+   ========================================================================== */
 
-function saveBoxesState() {
-  try { localStorage.setItem(getStoreBoxesStorageKey(activeLocationId), JSON.stringify(boxes)); } catch (e) {}
-}
-
-function saveActiveStoreProfile() {
-  const nameInp = document.getElementById('admin-store-name')?.value?.trim();
-  const numInp = document.getElementById('admin-store-number')?.value?.trim();
-  const addrInp = document.getElementById('admin-store-address')?.value?.trim() || '';
-  const emailInp = document.getElementById('admin-store-email')?.value?.trim() || '';
-  const passInp = document.getElementById('admin-store-pass')?.value?.trim() || '';
-
-  if (!nameInp) {
-    alert('Please enter a valid store location name.');
-    return;
-  }
-
-  storeProfile.name = nameInp;
-  storeProfile.number = numInp || '100';
-  storeProfile.address = addrInp;
-  storeProfile.email = emailInp;
-  storeProfile.password = passInp;
-
-  try { localStorage.setItem(getStoreProfileStorageKey(activeLocationId), JSON.stringify(storeProfile)); } catch (e) {}
-
-  const locIdx = locations.findIndex(l => l.id === activeLocationId);
-  if (locIdx >= 0) {
-    locations[locIdx].name = storeProfile.name;
-    locations[locIdx].number = storeProfile.number;
-    locations[locIdx].address = storeProfile.address;
-    locations[locIdx].email = storeProfile.email;
-    locations[locIdx].password = storeProfile.password;
-    saveLocationsRegistry();
-  }
-
-  populateLocationSwitcherDropdown();
-  loadActiveStoreData();
-  alert(`Store Profile Saved: ${storeProfile.name} (#${storeProfile.number})`);
-}
-
-function populateLocationSwitcherDropdown() {
-  const select = document.getElementById('location-switcher-select');
-  if (!select) return;
-  select.innerHTML = locations.map(loc => `
-    <option value="${loc.id}" ${loc.id === activeLocationId ? 'selected' : ''}>
-      ${loc.name} (${loc.number})
-    </option>
-  `).join('');
-}
-
-function handleLocationSwitch(newLocId) {
-  if (!newLocId || newLocId === activeLocationId) return;
-  saveBoxesState();
-  activeLocationId = newLocId;
-  localStorage.setItem(STORAGE_KEY_ACTIVE_LOC, activeLocationId);
-  loadActiveStoreData();
-  renderDispenserGrid();
-  recalculateReconciliationTotals();
-  if (typeof executeReportLookup === 'function') executeReportLookup();
-}
 function calculateBoxMetrics(box) {
   if (!box || !box.gameNum) {
     return { ticketsSold: 0, dollarSales: 0, status: 'empty', hasRollover: false, activeTicket: '-' };
@@ -383,13 +341,28 @@ function updateBoxEndTicketLive(idx, val) {
   recalculateReconciliationTotals();
 }
 
+// Vertical Enter Key Navigation: Start -> End -> Next Row Start
+function handleStartKeydown(event, currentIdx) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    const endInp = document.getElementById(`input-endTicket-${currentIdx}`) || document.getElementById(`list-input-endTicket-${currentIdx}`);
+    if (endInp) {
+      endInp.focus();
+      endInp.select();
+    }
+  }
+}
+
 function handleGridEnter(event, currentIdx) {
   if (event.key === 'Enter') {
     event.preventDefault();
     const nextIdx = currentIdx + 1;
     if (nextIdx < boxes.length) {
-      const nextInp = document.getElementById(`input-endTicket-${nextIdx}`);
-      if (nextInp) { nextInp.focus(); nextInp.select(); }
+      const nextStartInp = document.getElementById(`input-startTicket-${nextIdx}`) || document.getElementById(`list-input-startTicket-${nextIdx}`);
+      if (nextStartInp) {
+        nextStartInp.focus();
+        nextStartInp.select();
+      }
     }
   }
 }
@@ -438,6 +411,9 @@ function updateBoxMetricsDisplay(idx) {
   if (listSold) listSold.textContent = `${metrics.ticketsSold}${roCount > 0 ? ' *' : ''}`;
   if (listSales) listSales.textContent = `$${metrics.dollarSales.toFixed(2)}`;
 }
+/* ==========================================================================
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 3 OF 6)
+   ========================================================================== */
 
 function toggleDispenserView() {
   currentDispenserView = currentDispenserView === 'grid' ? 'list' : 'grid';
@@ -446,29 +422,49 @@ function toggleDispenserView() {
   renderDispenserGrid();
 }
 
+function handleLockedGameNumClick(inputElem, idx) {
+  if (inputElem.readOnly) {
+    if (confirm(`Unlock Game # for Box ${boxes[idx]?.boxNumber || (idx + 1)}? (Make sure you only edit this if you need to reassign setup games).`)) {
+      inputElem.readOnly = false;
+      inputElem.classList.remove('bg-slate-100', 'cursor-not-allowed', 'text-slate-500');
+      inputElem.classList.add('border-blue-500', 'bg-white');
+      inputElem.focus();
+      inputElem.select();
+    }
+  }
+}
+
 function renderDispenserGrid() {
   const container = document.getElementById('dispenser-grid-container');
   if (!container) return;
+
+  const isLocked = Boolean(isSetupLocked);
 
   if (currentDispenserView === 'list') {
     const rowsHtml = boxes.map((box, idx) => {
       const m = calculateBoxMetrics(box);
       const hasGame = Boolean(box.gameNum);
       const roCount = Array.isArray(box.rollovers) ? box.rollovers.length : 0;
+      
+      const gameNumReadonlyAttr = isLocked ? 'readonly' : '';
+      const gameNumClass = isLocked 
+        ? 'w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input bg-slate-100 cursor-pointer text-slate-600' 
+        : 'w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input font-bold';
+
       return `
         <tr style="border-bottom: 1px solid #e2e8f0; background: #fff;" class="hover:bg-slate-50 transition">
           <td style="padding: 6px 8px; text-align: center; background: #0f172a;">
             <input type="text" value="${box.boxNumber || (idx + 1)}" oninput="updateBoxLabelDirect(${idx}, this.value)" title="Edit Box #" class="w-12 text-center text-xs font-mono font-black rounded px-1 py-0.5 lotto-input" />
           </td>
           <td style="padding: 6px 8px; text-align: center; font-family: monospace; font-weight: bold;">
-            <input type="text" id="list-input-gameNum-${idx}" value="${box.gameNum || ''}" oninput="updateBoxFieldDirect(${idx}, 'gameNum', this.value)" placeholder="Game#" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input" />
+            <input type="text" id="list-input-gameNum-${idx}" value="${box.gameNum || ''}" ${gameNumReadonlyAttr} onclick="${isLocked ? `handleLockedGameNumClick(this, ${idx})` : ''}" oninput="updateBoxFieldDirect(${idx}, 'gameNum', this.value)" title="${isLocked ? 'Locked after setup. Click to request unlock.' : 'Game Number'}" placeholder="Game#" class="${gameNumClass}" />
           </td>
           <td id="list-gamename-${idx}" style="padding: 6px 8px; font-weight: 600;">
             ${hasGame ? (box.gameName || 'Game #' + box.gameNum) + (box.needsNewGameEntry ? ` <button type="button" onclick="openQuickGameModal(${idx})" class="ml-1 text-[10px] font-extrabold underline text-blue-700">+ Register</button>` : '') : '<span class="text-slate-400 italic">Empty Box</span>'}
           </td>
           <td id="list-price-${idx}" style="padding: 6px 8px; text-align: center; font-weight: bold; color: #047857;">${hasGame && box.price ? '$' + box.price : '-'}</td>
           <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
-            <input type="number" id="list-input-startTicket-${idx}" value="${box.startTicket !== '' && box.startTicket !== undefined ? box.startTicket : 0}" oninput="updateBoxFieldDirect(${idx}, 'startTicket', this.value)" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input" />
+            <input type="number" id="list-input-startTicket-${idx}" value="${box.startTicket !== '' && box.startTicket !== undefined ? box.startTicket : 0}" oninput="updateBoxFieldDirect(${idx}, 'startTicket', this.value)" onkeydown="handleStartKeydown(event, ${idx})" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input" />
           </td>
           <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
             <input type="number" id="input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}" oninput="updateBoxEndTicketLive(${idx}, this.value)" onkeydown="handleGridEnter(event, ${idx})" placeholder="End#" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono font-bold lotto-input" />
@@ -515,6 +511,11 @@ function renderDispenserGrid() {
     if (metrics.status === 'complete') statusClass = 'status-complete';
     else if (metrics.status === 'rollover') statusClass = 'status-rollover';
 
+    const gridGameNumReadonly = isLocked ? 'readonly' : '';
+    const gridGameNumClass = isLocked 
+      ? 'flex-1 text-xs font-mono border border-slate-300 rounded px-2 py-1 lotto-input bg-slate-100 cursor-pointer text-slate-600' 
+      : 'flex-1 text-xs font-mono font-bold border border-slate-300 rounded px-2 py-1 lotto-input';
+
     html += `
       <div id="dispenser-card-${idx}" class="dispenser-card bg-white rounded-xl border border-slate-200 p-3 shadow-sm flex flex-col justify-between ${statusClass}">
         <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
@@ -532,7 +533,7 @@ function renderDispenserGrid() {
         <div class="space-y-2 mb-2">
           <div class="flex items-center gap-2">
             <label class="text-[10px] font-bold text-slate-500 uppercase w-12">Game #:</label>
-            <input type="text" id="input-gameNum-${idx}" value="${box.gameNum || ''}" placeholder="e.g. 1005" oninput="updateBoxFieldDirect(${idx}, 'gameNum', this.value)" class="flex-1 text-xs font-mono font-bold border border-slate-300 rounded px-2 py-1 lotto-input" />
+            <input type="text" id="input-gameNum-${idx}" value="${box.gameNum || ''}" ${gridGameNumReadonly} onclick="${isLocked ? `handleLockedGameNumClick(this, ${idx})` : ''}" title="${isLocked ? 'Locked after setup. Click to request unlock.' : 'Game Number'}" placeholder="e.g. 1005" oninput="updateBoxFieldDirect(${idx}, 'gameNum', this.value)" class="${gridGameNumClass}" />
           </div>
           <div id="box-unknown-wrap-${idx}" class="${box.needsNewGameEntry ? '' : 'hidden'} p-1.5 bg-red-50 border border-red-200 rounded text-[10px] text-red-700 flex items-center justify-between">
             <span>Unknown Game #</span>
@@ -541,7 +542,7 @@ function renderDispenserGrid() {
           <div class="grid grid-cols-2 gap-2 pt-1">
             <div>
               <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Start #</label>
-              <input type="number" id="input-startTicket-${idx}" value="${box.startTicket !== undefined ? box.startTicket : 0}" oninput="updateBoxFieldDirect(${idx}, 'startTicket', this.value)" placeholder="000" class="w-full text-center font-mono font-bold text-xs border border-slate-300 rounded p-1.5 lotto-input" />
+              <input type="number" id="input-startTicket-${idx}" value="${box.startTicket !== undefined ? box.startTicket : 0}" oninput="updateBoxFieldDirect(${idx}, 'startTicket', this.value)" onkeydown="handleStartKeydown(event, ${idx})" placeholder="000" class="w-full text-center font-mono font-bold text-xs border border-slate-300 rounded p-1.5 lotto-input" />
             </div>
             <div>
               <label class="block text-[10px] font-bold text-blue-700 uppercase mb-0.5">End #</label>
@@ -574,6 +575,10 @@ function updateHeaderTotalsUI() {
   if (tElem) tElem.textContent = totalTickets.toLocaleString();
   if (sElem) sElem.textContent = `$${totalSales.toFixed(2)}`;
 }
+/* ==========================================================================
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 4 OF 6)
+   ========================================================================== */
+
 function rollNewPackInBox(idx) {
   const box = boxes[idx];
   if (!box || !box.gameNum) {
@@ -839,6 +844,10 @@ function clearSignaturePad() {
   sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
   currentSignatureDataUrl = null;
 }
+/* ==========================================================================
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 5 OF 6)
+   ========================================================================== */
+
 function getLocationHistoricalReports(locId = activeLocationId) {
   try {
     const raw = localStorage.getItem(getStoreHistoryStorageKey(locId));
@@ -1133,6 +1142,9 @@ function setBoxLabelsSequential(mode) {
   renderAdminBoxLabelsGrid();
   renderDispenserGrid();
 }
+/* ==========================================================================
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 6 OF 6)
+   ========================================================================== */
 
 function switchMainView(viewName) {
   const views = ['grid', 'reconcile', 'reports', 'admin'];
@@ -1147,6 +1159,13 @@ function switchMainView(viewName) {
       btn.className = v === viewName ? 'bg-blue-600 text-white font-bold text-xs px-3 py-1.5 rounded shadow-sm transition' : 'bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3 py-1.5 rounded shadow-sm transition';
     }
   });
+
+  // If navigating out of setup / grid view, mark setup as locked so game numbers become read-only by default
+  if (viewName !== 'admin' && !isSetupLocked) {
+    isSetupLocked = true;
+    try { localStorage.setItem(getStoreSetupLockKey(activeLocationId), 'true'); } catch (e) {}
+  }
+
   if (viewName === 'grid') renderDispenserGrid();
   else if (viewName === 'reconcile') recalculateReconciliationTotals();
   else if (viewName === 'reports') executeReportLookup();
@@ -1309,7 +1328,7 @@ window.addEventListener('DOMContentLoaded', () => {
   const todayIso = new Date().toISOString().slice(0, 10);
   const monthIso = todayIso.slice(0, 7);
   if (document.getElementById('report-filter-date')) document.getElementById('report-filter-date').value = todayIso;
-  if (document.getElementById('report-filter-month')) document.getElementById('report-filter-month').value = monthIso;
+  if (document.getElementById('report-filter-month')) document.getElementById('report-filter-month'].value = monthIso;
 
   renderDispenserGrid();
   renderAdminGamesTable();
