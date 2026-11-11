@@ -411,15 +411,18 @@ function handleStartKeydown(event, currentIdx) {
   }
 }
 
-// Vertical Column Navigation: Jump down to the End input of the NEXT box
+// Vertical Column Navigation: Jump down to the End input of the NEXT box in sequence
 function handleGridEnter(event, currentIdx) {
   if (event.key === 'Enter') {
     event.preventDefault();
+    
+    // Find the next box index sequentially (moves down one box at a time)
     const nextIdx = currentIdx + 1;
-    const nextEndInp = document.getElementById(`input-endTicket-${nextIdx}`) || document.getElementById(`list-input-endTicket-${nextIdx}`);
-    if (nextEndInp) {
-      nextEndInp.focus();
-      nextEndInp.select();
+    
+    const nextInp = document.getElementById(`input-endTicket-${nextIdx}`);
+    if (nextInp) {
+      nextInp.focus();
+      nextInp.select();
     }
   }
 }
