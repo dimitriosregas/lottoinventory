@@ -123,7 +123,6 @@ function sanitizeMasterGamesList(arr) {
   });
   return Array.from(map.values()).sort((a, b) => Number(a.gameNum) - Number(b.gameNum));
 }
-
 function loadMasterGames() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_MASTER_GAMES);
@@ -1452,127 +1451,238 @@ function switchMainView(viewName) {
   else if (viewName === 'admin') { renderAdminGamesTable(); renderAdminBoxLabelsGrid(); }
 }
 
-function printThermalReceipt(isWorksheet = false) {
+// --------------------------------------------------------------------------
+// DUAL-FORMAT PDF GENERATOR: 80MM THERMAL (3-1/8") OR LEGAL (8.5" x 14")
+// --------------------------------------------------------------------------
+function printThermalReceipt(isWorksheet = false, formatChoice = null) {
+  const { jsPDF } = window.jspdf || {};
+  if (!jsPDF) {
+    alert("jsPDF library not loaded yet. Please verify index.html has the jsPDF script tag.");
+    return;
+  }
+
+  let targetFormat = formatChoice;
+  if (!targetFormat) {
+    const choice = confirm("Press [OK] to generate 80mm Thermal Receipt (3-1/8\")\nPress [Cancel] for Full Legal Size Document (8.5\" x 14\")");
+    targetFormat = choice ? 'thermal' : 'legal';
+  }
+
   const reportDate = document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10);
-  const shiftType = document.getElementById('header-shift-badge')?.textContent || document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
+  const shiftType = document.getElementById('header-shift-badge')?.textContent || document.getElementById('rec-shift-type')?.value || 'Shift 1';
   const cashierOut = document.getElementById('rec-cashier-out')?.value?.trim() || 'Unspecified';
   const cashierIn = document.getElementById('rec-cashier-in')?.value?.trim() || '-';
   const totals = recalculateReconciliationTotals();
 
+  const activeItems = [];
   let totalTix = 0;
   let totalScratchSales = 0;
 
-  const itemsHtml = boxes.map((box, idx) => {
+  boxes.forEach((box, idx) => {
     const m = calculateBoxMetrics(box);
-    if (!box.gameNum && m.ticketsSold === 0 && !isWorksheet) return '';
+    if (!box.gameNum && m.ticketsSold === 0 && !isWorksheet && targetFormat === 'thermal') return;
     totalTix += m.ticketsSold;
     totalScratchSales += m.dollarSales;
+    activeItems.push({ box, m, idx });
+  });
 
-    const gameLabel = box.gameNum ? `#${box.gameNum} ${box.gameName || ''}` : 'EMPTY';
-    const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
+  if (targetFormat === 'thermal') {
+    const calculatedHeight = Math.max(140, 120 + (activeItems.length * 11));
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [80, calculatedHeight] });
 
-    const rolloversHtml = rollovers.map(ro => `
-      <div style="font-size: 14px; font-weight: bold; padding: 2px 0 2px 8px; border-left: 3px solid #000; margin-top: 2px;">
-        Prev #${ro.gameNum} (${ro.gameName || ''}): ${ro.startTicket}→${ro.finishedTicket} | ${ro.ticketsSold} Sold ($${Number(ro.salesAmount || 0).toFixed(2)})
-      </div>
-    `).join('');
+    doc.setFont("courier", "bold");
+    let y = 8;
 
-    return `
-      <div style="border-bottom: 2px dashed #000; padding: 6px 0; page-break-inside: avoid;">
-        <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 16px;">
-          <span>BOX ${box.boxNumber || (idx + 1)}: ${gameLabel}</span>
-          <span>${box.price ? '$' + box.price : ''}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: bold; margin-top: 3px;">
-          <span>Start: ${box.startTicket ?? 0} | End: ${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '____'}</span>
-          <span>${isWorksheet && box.endTicket === '' ? 'Sold: ____' : `${m.ticketsSold} Sold ($${m.dollarSales.toFixed(2)})`}</span>
-        </div>
-        ${rolloversHtml}
-      </div>
-    `;
-  }).join('');
+    doc.setFontSize(13);
+    doc.text((storeProfile.name || "STORE").toUpperCase(), 40, y, { align: "center" });
+    y += 5;
+    doc.setFontSize(10);
+    doc.text(`STORE #${storeProfile.number || "101"}`, 40, y, { align: "center" });
+    y += 4;
+    doc.setFontSize(8.5);
+    doc.text(isWorksheet ? "*** LOTTO COUNT WORKSHEET ***" : "*** FINAL SHIFT LOTTO RECEIPT ***", 40, y, { align: "center" });
+    y += 3;
 
-  const sigImgHtml = currentSignatureDataUrl && !isWorksheet
-    ? `<img src="${currentSignatureDataUrl}" style="max-height: 60px; max-width: 90%; object-fit: contain; margin: 6px auto; display: block;" alt="Signature" />`
-    : `<div style="height: 40px; border-bottom: 2px solid #000; width: 90%; margin: 12px auto;"></div>`;
+    doc.setLineWidth(0.4);
+    doc.line(4, y, 76, y);
+    y += 4;
 
-  const receiptHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8" />
-      <title>${storeProfile.name} Thermal Receipt</title>
-      <style>
-        @page { margin: 0; }
-        * { box-sizing: border-box; color: #000 !important; font-family: 'Courier New', Courier, monospace !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        html, body { width: 100%; margin: 0; padding: 0; background: #fff; }
-        .receipt-wrap { width: 100%; padding: 4px 8px 16px 8px; }
-      </style>
-    </head>
-    <body>
-      <div class="receipt-wrap">
-        <div style="text-align: center; border-bottom: 3px solid #000; padding-bottom: 8px; margin-bottom: 8px;">
-          <div style="font-size: 22px; font-weight: 900; text-transform: uppercase;">${storeProfile.name}</div>
-          <div style="font-size: 16px; font-weight: bold;">STORE #${storeProfile.number}</div>
-          <div style="font-size: 15px; font-weight: 900; margin-top: 4px;">
-            ${isWorksheet ? '*** LOTTO COUNT WORKSHEET ***' : '*** FINAL SHIFT LOTTO RECEIPT ***'}
-          </div>
-        </div>
+    doc.setFontSize(8.5);
+    doc.setFont("courier", "normal");
+    doc.text(`DATE:  ${reportDate}`, 4, y); y += 3.8;
+    doc.text(`SHIFT: ${shiftType}`, 4, y); y += 3.8;
+    doc.text(`OUT:   ${cashierOut}`, 4, y); y += 3.8;
+    doc.text(`IN:    ${cashierIn}`, 4, y); y += 3.5;
 
-        <div style="font-size: 15px; font-weight: bold; margin-bottom: 8px; border-bottom: 2px solid #000; padding-bottom: 6px; line-height: 1.35;">
-          <div>DATE: ${reportDate}</div>
-          <div>SHIFT: ${shiftType}</div>
-          <div>OUTGOING: ${cashierOut}</div>
-          <div>INCOMING: ${cashierIn}</div>
-        </div>
+    doc.line(4, y, 76, y);
+    y += 4;
 
-        <div>${itemsHtml}</div>
+    activeItems.forEach(({ box, m, idx }) => {
+      doc.setFont("courier", "bold");
+      doc.setFontSize(9);
+      const boxLabel = `[BOX ${box.boxNumber || (idx + 1)}] #${box.gameNum || ''} ${box.gameName || 'EMPTY'}`.substring(0, 32);
+      doc.text(boxLabel, 4, y);
+      doc.text(box.price ? `$${box.price}` : '', 76, y, { align: "right" });
+      y += 3.8;
 
-        <div style="border-top: 3px solid #000; padding-top: 8px; margin-top: 8px; font-size: 16px; font-weight: bold; line-height: 1.4;">
-          <div style="display: flex; justify-content: space-between;"><span>TOTAL TICKETS SOLD:</span><span>${totalTix}</span></div>
-          <div style="display: flex; justify-content: space-between;"><span>SCRATCH SALES:</span><span>$${totalScratchSales.toFixed(2)}</span></div>
-          <div style="display: flex; justify-content: space-between;"><span>ONLINE SALES:</span><span>$${totals.onlineSales.toFixed(2)}</span></div>
-          <div style="display: flex; justify-content: space-between;"><span>SCRATCH CASHED:</span><span>-$${totals.scratchCashed.toFixed(2)}</span></div>
-          <div style="display: flex; justify-content: space-between;"><span>ONLINE CASHED:</span><span>-$${totals.onlineCashed.toFixed(2)}</span></div>
-          <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: 900; border-top: 2px dashed #000; margin-top: 4px; padding-top: 4px;">
-            <span>EXPECTED NET:</span><span>$${totals.expectedNet.toFixed(2)}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: 900;">
-            <span>POS ACTUAL:</span><span>$${totals.posActual.toFixed(2)}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between; font-size: 20px; font-weight: 900; border-top: 2px solid #000; margin-top: 4px; padding-top: 4px;">
-            <span>VARIANCE:</span><span>${totals.variance > 0 ? '+' : ''}$${totals.variance.toFixed(2)}</span>
-          </div>
-        </div>
+      doc.setFont("courier", "normal");
+      doc.setFontSize(8);
+      const countInfo = `Start:${box.startTicket ?? 0}  End:${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '____'}`;
+      const soldInfo = isWorksheet && box.endTicket === '' ? 'Sold: ____' : `${m.ticketsSold} Sold ($${m.dollarSales.toFixed(2)})`;
+      doc.text(countInfo, 4, y);
+      doc.text(soldInfo, 76, y, { align: "right" });
+      y += 3.5;
 
-        <div style="margin-top: 14px; text-align: center; page-break-inside: avoid;">
-          ${sigImgHtml}
-          <div style="font-size: 13px; font-weight: bold;">CASHIER SIGNATURE</div>
-        </div>
+      const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
+      rollovers.forEach(ro => {
+        doc.setFontSize(7.5);
+        doc.text(`* Prev #${ro.gameNum}: ${ro.startTicket}->${ro.finishedTicket} (${ro.ticketsSold} sold = $${Number(ro.salesAmount || 0).toFixed(2)})`, 6, y);
+        y += 3.2;
+      });
 
-        <div style="text-align: center; font-size: 13px; font-weight: bold; margin-top: 10px; border-top: 2px solid #000; padding-top: 6px;">
-          ${new Date().toLocaleString()}
-        </div>
-      </div>
-      <script>
-        window.onload = function() {
-          window.focus();
-          window.print();
-          setTimeout(function() { window.close(); }, 500);
-        };
-      </script>
-    </body>
-    </html>
-  `;
+      doc.setLineDashPattern([1, 1], 0);
+      doc.line(4, y, 76, y);
+      doc.setLineDashPattern([], 0);
+      y += 3.5;
+    });
 
-  const printWin = window.open('', '_blank', 'width=420,height=700');
-  if (printWin) {
-    printWin.document.open();
-    printWin.document.write(receiptHtml);
-    printWin.document.close();
-  } else {
-    alert('Please allow popups for this site so the thermal receipt can open and auto-fit.');
+    doc.line(4, y, 76, y);
+    y += 4;
+    doc.setFontSize(8.5);
+
+    const printRow = (label, val, isBold = false) => {
+      if (isBold) doc.setFont("courier", "bold");
+      else doc.setFont("courier", "normal");
+      doc.text(label, 4, y);
+      doc.text(val, 76, y, { align: "right" });
+      y += 4;
+    };
+
+    printRow("TOTAL TICKETS SOLD:", `${totalTix}`);
+    printRow("SCRATCH SALES:", `$${totalScratchSales.toFixed(2)}`);
+    printRow("ONLINE SALES:", `$${totals.onlineSales.toFixed(2)}`);
+    printRow("SCRATCH CASHED:", `-$${totals.scratchCashed.toFixed(2)}`);
+    printRow("ONLINE CASHED:", `-$${totals.onlineCashed.toFixed(2)}`);
+
+    doc.setLineDashPattern([1, 1], 0);
+    doc.line(4, y, 76, y);
+    doc.setLineDashPattern([], 0);
+    y += 4;
+
+    printRow("EXPECTED NET:", `$${totals.expectedNet.toFixed(2)}`, true);
+    printRow("POS ACTUAL:", `$${totals.posActual.toFixed(2)}`, true);
+
+    doc.line(4, y, 76, y);
+    y += 4;
+
+    const sign = totals.variance > 0 ? '+' : '';
+    doc.setFontSize(10);
+    printRow("VARIANCE:", `${sign}$${totals.variance.toFixed(2)}`, true);
+    y += 2;
+
+    if (currentSignatureDataUrl && !isWorksheet) {
+      try {
+        doc.addImage(currentSignatureDataUrl, 'PNG', 15, y, 50, 16);
+        y += 18;
+      } catch (e) { y += 10; }
+    } else {
+      y += 4;
+      doc.line(15, y + 8, 65, y + 8);
+      y += 12;
+    }
+
+    doc.setFontSize(7.5);
+    doc.setFont("courier", "bold");
+    doc.text("CASHIER SIGNATURE", 40, y, { align: "center" });
+    y += 5;
+    doc.setFontSize(7);
+    doc.setFont("courier", "normal");
+    doc.text(new Date().toLocaleString(), 40, y, { align: "center" });
+
+    const blobUrl = URL.createObjectURL(doc.output('blob'));
+    window.open(blobUrl, '_blank');
+    return;
   }
+
+  // Legal Document Format (8.5" x 14")
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'legal' });
+  let y = 14;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(14);
+  doc.text((storeProfile.name || "STORE").toUpperCase(), 14, y);
+  doc.setFontSize(10);
+  doc.text(`STORE #${storeProfile.number || "101"} — SHIFT LOTTERY AUDIT SHEET`, 14, y + 5);
+  doc.setFont("helvetica", "normal");
+  doc.text(`DATE: ${reportDate}  |  SHIFT: ${shiftType}`, 14, y + 10);
+  doc.text(`OUTGOING: ${cashierOut}  |  INCOMING: ${cashierIn}`, 14, y + 15);
+  y += 20;
+
+  doc.setLineWidth(0.3);
+  doc.line(14, y, 202, y);
+  y += 5;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8.5);
+  doc.text("BOX", 14, y);
+  doc.text("GAME #", 26, y);
+  doc.text("GAME NAME", 44, y);
+  doc.text("PRICE", 108, y, { align: "right" });
+  doc.text("START", 126, y, { align: "right" });
+  doc.text("END", 144, y, { align: "right" });
+  doc.text("SOLD", 164, y, { align: "right" });
+  doc.text("SALES ($)", 200, y, { align: "right" });
+  y += 2;
+  doc.line(14, y, 202, y);
+  y += 4;
+
+  doc.setFont("helvetica", "normal");
+  boxes.forEach((box, idx) => {
+    const m = calculateBoxMetrics(box);
+    const boxNum = box.boxNumber || (idx + 1);
+    doc.text(String(boxNum), 14, y);
+    doc.text(box.gameNum || '-', 26, y);
+    doc.text((box.gameName || 'Empty Slot').substring(0, 34), 44, y);
+    doc.text(box.price ? `$${box.price}` : '-', 108, y, { align: "right" });
+    doc.text(String(box.startTicket ?? 0), 126, y, { align: "right" });
+    doc.text(box.endTicket !== '' && box.endTicket !== undefined ? String(box.endTicket) : '-', 144, y, { align: "right" });
+    doc.text(String(m.ticketsSold), 164, y, { align: "right" });
+    doc.text(`$${m.dollarSales.toFixed(2)}`, 200, y, { align: "right" });
+    y += 5.4;
+  });
+
+  doc.line(14, y, 202, y);
+  y += 6;
+
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text(`TOTAL TICKETS: ${totalTix}`, 14, y);
+  doc.text(`SCRATCH SALES: $${totalScratchSales.toFixed(2)}`, 64, y);
+  doc.text(`ONLINE SALES: $${totals.onlineSales.toFixed(2)}`, 114, y);
+  doc.text(`EXPECTED NET: $${totals.expectedNet.toFixed(2)}`, 164, y);
+  y += 5;
+  doc.text(`SCRATCH CASHED: -$${totals.scratchCashed.toFixed(2)}`, 14, y);
+  doc.text(`ONLINE CASHED: -$${totals.onlineCashed.toFixed(2)}`, 64, y);
+  doc.text(`POS ACTUAL: $${totals.posActual.toFixed(2)}`, 114, y);
+
+  const sign = totals.variance > 0 ? '+' : '';
+  doc.text(`VARIANCE: ${sign}$${totals.variance.toFixed(2)}`, 164, y);
+  y += 10;
+
+  if (currentSignatureDataUrl && !isWorksheet) {
+    try {
+      doc.addImage(currentSignatureDataUrl, 'PNG', 14, y, 55, 16);
+      y += 18;
+    } catch (e) { y += 10; }
+  } else {
+    doc.line(14, y + 10, 80, y + 10);
+    y += 14;
+  }
+  doc.setFontSize(8);
+  doc.text("AUTHORIZED CASHIER SIGNATURE", 14, y);
+  doc.text(`GENERATED: ${new Date().toLocaleString()}`, 140, y);
+
+  const blobUrl = URL.createObjectURL(doc.output('blob'));
+  window.open(blobUrl, '_blank');
 }
 
 function printTwoColumnBackupSheet() { printThermalReceipt(true); }
