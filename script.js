@@ -1851,3 +1851,27 @@ window.addEventListener('DOMContentLoaded', () => {
   initSignaturePad();
   executeReportLookup();
 });
+/* ==========================================================================
+   PROJECT LOTTO — INITIALIZATION & RENDER HOOK (CRITICAL FOR BOXES)
+   ========================================================================== */
+
+window.addEventListener('DOMContentLoaded', () => {
+  loadMasterGames();
+  initActiveLocation();
+  
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const monthIso = todayIso.slice(0, 7);
+  
+  if (document.getElementById('report-filter-date')) document.getElementById('report-filter-date').value = todayIso;
+  if (document.getElementById('report-filter-month')) document.getElementById('report-filter-month').value = monthIso;
+
+  // Force render boxes and totals immediately on load
+  loadActiveStoreData();
+  renderDispenserGrid();
+  renderAdminGamesTable();
+  renderAdminBoxLabelsGrid();
+  loadReconciliationDraft();
+  recalculateReconciliationTotals();
+  initSignaturePad();
+  executeReportLookup();
+});
