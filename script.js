@@ -153,25 +153,6 @@ function loadMasterGames() {
   saveGamesState();
 }
 
-function saveGamesState() {
-  try { localStorage.setItem(STORAGE_KEY_MASTER_GAMES, JSON.stringify(masterGames)); } catch (e) {}
-}
-
-function loadLocationsRegistry() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_LOCATIONS);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        locations = parsed;
-        return;
-      }
-    }
-  } catch (e) {}
-  locations = [...DEFAULT_LOCATIONS];
-  saveLocationsRegistry();
-}
-
 function saveLocationsRegistry() {
   try { localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(locations)); } catch (e) {}
 }
