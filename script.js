@@ -1444,7 +1444,7 @@ function printThermalReceipt(isWorksheet = false) {
   }
 
   const reportDate = document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10);
-  const shiftType = document.getElementById('rec-shift-badge')?.textContent || document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
+  const shiftType = document.getElementById('header-shift-badge')?.textContent || document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
   const cashierOut = document.getElementById('rec-cashier-out')?.value?.trim() || 'Unspecified';
   const cashierIn = document.getElementById('rec-cashier-in')?.value?.trim() || '-';
   const totals = recalculateReconciliationTotals();
@@ -1454,7 +1454,7 @@ function printThermalReceipt(isWorksheet = false) {
 
   const itemsHtml = boxes.map((box, idx) => {
     const m = calculateBoxMetrics(box);
-    if (m.ticketsSold === 0 && !box.gameNum) return '';
+    if (m.ticketsSold === 0 && !box.gameNum && (box.endText === '' || box.endText === undefined)) return '';
     totalTix += m.ticketsSold;
     totalScratchSales += m.dollarSales;
 
@@ -1464,18 +1464,18 @@ function printThermalReceipt(isWorksheet = false) {
     let rolloversText = '';
     if (rollovers.length > 0) {
       rollovers.forEach(ro => {
-        rolloversText += `<div style="font-size: 10px; padding-left: 10px; color: #333;">↳ Rollover: Start ${ro.startTicket} -> End ${ro.finishedTicket} (${ro.ticketsSold} tix @ $${ro.price})</div>`;
+        rolloversText += `<div style="font-size: 10px; padding-left: 8px; color: #111;">↳ Rollover: Start ${ro.startTicket} -> End ${ro.finishedTicket} (${ro.ticketsSold} tix)</div>`;
       });
     }
 
     return `
-      <div style="border-bottom: 1px dashed #000; padding: 4px 0; font-family: monospace; font-size: 11px;">
+      <div style="border-bottom: 1px dotted #000; padding: 5px 0; font-family: 'Courier New', Courier, monospace; font-size: 11px; page-break-inside: avoid;">
         <div style="display: flex; justify-content: space-between; font-weight: bold;">
           <span>[Box ${box.boxNumber || (idx+1)}] ${gameLabel}</span>
-          <span>$${box.price || 0}/ea</span>
+          <span>$${box.price || 0}</span>
         </div>
-        <div style="display: flex; justify-content: space-between; font-size: 10.5px; color: #222;">
-          <span>Start: ${box.startTicket !== undefined ? box.startTicket : 0} | End: ${box.endTicket !== '' ? box.endTicket : '-'}</span>
+        <div style="display: flex; justify-content: space-between; font-size: 10.5px; margin-top: 2px;">
+          <span>Start:${box.startTicket !== undefined ? box.startTicket : 0} | End:${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '-'}</span>
           <span style="font-weight: bold;">${m.ticketsSold} Sold ($${m.dollarSales.toFixed(2)})</span>
         </div>
         ${rolloversText}
@@ -1484,26 +1484,26 @@ function printThermalReceipt(isWorksheet = false) {
   }).join('');
 
   const sigImgHtml = currentSignatureDataUrl && !isWorksheet 
-    ? `<img src="${currentSignatureDataUrl}" style="max-height: 35px; max-width: 180px; object-fit: contain; margin: 4px auto; display: block;" alt="Signature" />` 
-    : `<div style="height: 25px; border-bottom: 1px solid #000; width: 180px; margin: 5px auto;"></div>`;
+    ? `<img src="${currentSignatureDataUrl}" style="max-height: 40px; max-width: 200px; object-fit: contain; margin: 4px auto; display: block;" alt="Signature" />` 
+    : `<div style="height: 30px; border-bottom: 1px solid #000; width: 180px; margin: 8px auto;"></div>`;
 
   printContainer.innerHTML = `
     <style>
-      @page { size: 80mm auto; margin: 2mm; }
+      @page { size: 80mm auto; margin: 0mm; }
       @media print {
-        html, body { width: 76mm !important; margin: 0 !important; padding: 0 !important; background: #fff !important; color: #000 !important; font-family: 'Courier New', Courier, monospace !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        html, body { width: 76mm !important; margin: 0 !important; padding: 2mm !important; background: #fff !important; color: #000 !important; font-family: 'Courier New', Courier, monospace !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         body > header, body > main, body > div.fixed, #app-shell, .no-print { display: none !important; }
         #print-container { display: block !important; width: 76mm !important; }
       }
     </style>
-    <div style="width: 76mm; font-family: 'Courier New', Courier, monospace; color: #000; font-size: 11px; line-height: 1.2; padding: 2px;">
-      <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 6px;">
-        <div style="font-size: 15px; font-weight: 900; text-transform: uppercase;">${storeProfile.name}</div>
+    <div style="width: 74mm; font-family: 'Courier New', Courier, monospace; color: #000; font-size: 11px; line-height: 1.25; margin: 0 auto;">
+      <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 6px;">
+        <div style="font-size: 14px; font-weight: 900; text-transform: uppercase;">${storeProfile.name}</div>
         <div style="font-size: 11px; font-weight: bold;">STORE #${storeProfile.number}</div>
-        <div style="font-size: 10px; margin-top: 2px;">${isWorksheet ? '*** THERMAL COUNT WORKSHEET ***' : '*** FINAL LOTTERY SHIFT RECEIPT ***'}</div>
+        <div style="font-size: 10px; font-weight: bold; margin-top: 3px;">${isWorksheet ? '*** THERMAL COUNT WORKSHEET ***' : '*** FINAL LOTTERY SHIFT RECEIPT ***'}</div>
       </div>
       
-      <div style="font-size: 10.5px; margin-bottom: 6px; border-bottom: 1px solid #000; padding-bottom: 4px;">
+      <div style="font-size: 10px; margin-bottom: 6px; border-bottom: 1px solid #000; padding-bottom: 5px;">
         <div>Date: <strong>${reportDate}</strong></div>
         <div>Shift: <strong>${shiftType}</strong></div>
         <div>Outgoing Cashier: <strong>${cashierOut}</strong></div>
@@ -1511,28 +1511,28 @@ function printThermalReceipt(isWorksheet = false) {
       </div>
 
       <div style="margin-bottom: 6px;">
-        <div style="font-weight: bold; text-align: center; border-bottom: 1px solid #000; font-size: 11px; margin-bottom: 3px; text-transform: uppercase;">Box Inventory Breakdown</div>
+        <div style="font-weight: bold; text-align: center; border-bottom: 1px solid #000; font-size: 10.5px; margin-bottom: 4px; text-transform: uppercase;">Active Dispenser Inventory</div>
         ${itemsHtml}
       </div>
 
-      <div style="border-top: 2px solid #000; padding-top: 4px; margin-top: 6px; font-size: 11.5px;">
+      <div style="border-top: 2px solid #000; padding-top: 5px; margin-top: 6px; font-size: 11px;">
         <div style="display: flex; justify-content: space-between;"><span>Total Tickets Sold:</span><strong>${totalTix} tix</strong></div>
         <div style="display: flex; justify-content: space-between;"><span>Scratch Sales:</span><strong>$${totalScratchSales.toFixed(2)}</strong></div>
         <div style="display: flex; justify-content: space-between;"><span>Online Sales:</span><strong>$${totals.onlineSales.toFixed(2)}</strong></div>
         <div style="display: flex; justify-content: space-between;"><span>Scratch Cashed:</span><strong>-$${totals.scratchCashed.toFixed(2)}</strong></div>
         <div style="display: flex; justify-content: space-between;"><span>Online Cashed:</span><strong>-$${totals.onlineCashed.toFixed(2)}</strong></div>
-        <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px dashed #000; margin-top: 2px; padding-top: 2px; font-size: 12.5px;">
+        <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px dashed #000; margin-top: 3px; padding-top: 3px; font-size: 12px;">
           <span>Expected Net:</span><span>$${totals.expectedNet.toFixed(2)}</span>
         </div>
         <div style="display: flex; justify-content: space-between; font-weight: bold;">
           <span>POS Actual:</span><span>$${totals.posActual.toFixed(2)}</span>
         </div>
-        <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 13px; border-top: 1px solid #000; margin-top: 3px; padding-top: 3px;">
+        <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 13px; border-top: 1px solid #000; margin-top: 4px; padding-top: 4px;">
           <span>Variance:</span><span>${totals.variance > 0 ? '+' : ''}$${totals.variance.toFixed(2)}</span>
         </div>
       </div>
 
-      <div style="margin-top: 10px; border-top: 1px dashed #000; padding-top: 5px; text-align: center;">
+      <div style="margin-top: 12px; border-top: 1px dashed #000; padding-top: 6px; text-align: center; page-break-inside: avoid;">
         ${sigImgHtml}
         <div style="font-size: 9px; font-weight: bold; text-transform: uppercase;">Cashier Signature Verification</div>
       </div>
