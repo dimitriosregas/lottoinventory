@@ -1576,3 +1576,412 @@ function printThermalReceipt(isWorksheet = false) {
   `;
   window.print();
 }
+/* ==========================================================================
+   FINAL OVERRIDE PATCH:
+   1. Fixes mobile "Next" button & Enter key to jump strictly down the same column
+      (End# -> next box End#, Start# -> next box Start#, Game# -> next box Game#)
+   2. Fixes typing 2-digit numbers (e.g. Start 13, End 13 = 0 Sold, no popup while typing "1")
+   3. Shows both previous & current game on rollover in Grid & List views
+   4. Auto-fits 3-1/8" (80mm) Epson TM-m30II-H receipt 100% left-to-right in a clean print window
+   ========================================================================== */
+
+// Live typing only updates numbers if End >= Start; does NOT interrupt while typing the first digit
+function updateBoxEndTicketLive(idx, val) {
+  if (!boxes[idx]) return;
+  const box = boxes[idx];
+  const clean = String(val).trim();
+
+  if (clean === '') {
+    box.endTicket = '';
+    saveBoxesState();
+    updateBoxMetricsDisplay(idx);
+    updateHeaderTotalsUI();
+    recalculateReconciliationTotals();
+    return;
+  }
+
+  const endNum = Number(clean);
+  const startNum = Number(box.startTicket) || 0;
+  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(box.price);
+  const maxAllowed = Math.max(0, rollCount - 1);
+
+  if (endNum > maxAllowed) {
+    alert(`Invalid ticket number! Ticket cannot exceed the maximum roll limit (${maxAllowed}).`);
+    box.endTicket = maxAllowed;
+    const inp = document.getElementById(`input-endTicket-${idx}`) || document.getElementById(`list-input-endTicket-${idx}`);
+    if (inp) inp.value = maxAllowed;
+  } else {
+    box.endTicket = endNum;
+  }
+
+  // Only live-calculate if endNum >= startNum so typing "1" on the way to "13" doesn't trigger rollover
+  if (endNum >= startNum) {
+    saveBoxesState();
+    updateBoxMetricsDisplay(idx);
+    updateHeaderTotalsUI();
+    recalculateReconciliationTotals();
+  }
+}
+
+// Committed check: runs ONLY when user finishes typing (presses Next/Enter or leaves the field)
+function commitBoxEndTicket(idx, val) {
+  if (!boxes[idx]) return;
+  const box = boxes[idx];
+  const clean = String(val).trim();
+
+  if (clean === '') {
+    box.endTicket = '';
+    saveBoxesState();
+    updateBoxMetricsDisplay(idx);
+    updateHeaderTotalsUI();
+    recalculateReconciliationTotals();
+    return;
+  }
+
+  const endNum = Number(clean);
+  const startNum = Number(box.startTicket) || 0;
+  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(box.price);
+  const maxAllowed = Math.max(0, rollCount - 1);
+
+  if (endNum > maxAllowed) {
+    box.endTicket = maxAllowed;
+  } else if (endNum === startNum) {
+    // Same number as start (e.g. Start 13, End 13) -> 0 tickets sold, NO rollover prompt
+    box.endTicket = endNum;
+  } else if (endNum < startNum) {
+    // User finished typing and number is genuinely lower than start -> ask rollover
+    box.endTicket = endNum;
+    openRolloverDecisionModal(idx, endNum);
+    return;
+  } else {
+    box.endTicket = endNum;
+  }
+
+  saveBoxesState();
+  updateBoxMetricsDisplay(idx);
+  updateHeaderTotalsUI();
+  recalculateReconciliationTotals();
+}
+
+// Jumps strictly to the SAME field in the NEXT sequential box
+function jumpToNextBoxInput(currentIdx, inputType) {
+  const nextIdx = currentIdx + 1;
+  if (nextIdx >= boxes.length) return;
+
+  const targetId = currentDispenserView === 'list'
+    ? `list-input-${inputType}-${nextIdx}`
+    : `input-${inputType}-${nextIdx}`;
+
+  const nextInp = document.getElementById(targetId) || document.getElementById(`input-${inputType}-${nextIdx}`);
+  if (nextInp) {
+    nextInp.focus();
+    setTimeout(() => nextInp.select(), 10);
+  }
+}
+
+function handleGridEnter(event, currentIdx) {
+  if (event.key === 'Enter' || event.keyCode === 13) {
+    event.preventDefault();
+    commitBoxEndTicket(currentIdx, event.target.value);
+    jumpToNextBoxInput(currentIdx, 'endTicket');
+  }
+}
+
+function handleStartKeydown(event, currentIdx) {
+  if (event.key === 'Enter' || event.keyCode === 13) {
+    event.preventDefault();
+    jumpToNextBoxInput(currentIdx, 'startTicket');
+  }
+}
+
+function handleGameNumKeydown(event, currentIdx) {
+  if (event.key === 'Enter' || event.keyCode === 13) {
+    event.preventDefault();
+    jumpToNextBoxInput(currentIdx, 'gameNum');
+  }
+}
+
+// Renders Grid & List with column-locked tabindex so mobile "Next" goes down the same column,
+// and keeps both previous & new rollover games visible in the box
+function renderDispenserGrid() {
+  const container = document.getElementById('dispenser-grid-container');
+  if (!container) return;
+
+  if (currentDispenserView === 'list') {
+    const rowsHtml = boxes.map((box, idx) => {
+      const m = calculateBoxMetrics(box);
+      const hasGame = Boolean(box.gameNum);
+      const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
+      const tabGame = 1000 + idx + 1;
+      const tabStart = 2000 + idx + 1;
+      const tabEnd = 3000 + idx + 1;
+
+      const roHistoryHtml = rollovers.map(ro =>
+        `<div class="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">
+          Prev Game #${ro.gameNum} (${ro.gameName || 'Pack'}): #${ro.startTicket}→#${ro.finishedTicket} (${ro.ticketsSold} sold = $${Number(ro.salesAmount || 0).toFixed(2)})
+        </div>`
+      ).join('');
+
+      return `
+        <tr style="border-bottom: 1px solid #e2e8f0; background: #fff;" class="hover:bg-slate-50 transition">
+          <td style="padding: 6px 8px; text-align: center; background: #0f172a; font-family: monospace; font-weight: bold; color: #fff;">
+            ${box.boxNumber || (idx + 1)}
+          </td>
+          <td style="padding: 6px 8px; text-align: center; font-family: monospace; font-weight: bold;">
+            <input type="text" tabindex="${tabGame}" enterkeyhint="next" id="list-input-gameNum-${idx}" value="${box.gameNum || ''}" oninput="updateBoxFieldDirect(${idx}, 'gameNum', this.value)" onkeydown="handleGameNumKeydown(event, ${idx})" placeholder="Game#" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input font-bold" />
+          </td>
+          <td id="list-gamename-${idx}" style="padding: 6px 8px; font-weight: 600;">
+            <div>${hasGame ? `<strong>#${box.gameNum}</strong> ${box.gameName || ''}` + (box.needsNewGameEntry ? ` <button type="button" tabindex="-1" onclick="openQuickGameModal(${idx})" class="ml-1 text-[10px] font-extrabold underline text-blue-700">+ Register</button>` : '') : '<span class="text-slate-400 italic">Empty Box</span>'}</div>
+            ${roHistoryHtml}
+          </td>
+          <td id="list-price-${idx}" style="padding: 6px 8px; text-align: center; font-weight: bold; color: #047857;">${hasGame && box.price ? '$' + box.price : '-'}</td>
+          <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
+            <input type="number" tabindex="${tabStart}" enterkeyhint="next" id="list-input-startTicket-${idx}" value="${box.startTicket !== '' && box.startTicket !== undefined ? box.startTicket : 0}" oninput="updateBoxFieldDirect(${idx}, 'startTicket', this.value)" onkeydown="handleStartKeydown(event, ${idx})" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input" />
+          </td>
+          <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
+            <input type="number" tabindex="${tabEnd}" enterkeyhint="next" id="list-input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}" oninput="updateBoxEndTicketLive(${idx}, this.value)" onchange="commitBoxEndTicket(${idx}, this.value)" onkeydown="handleGridEnter(event, ${idx})" placeholder="End#" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono font-bold lotto-input" />
+          </td>
+          <td id="list-sold-${idx}" style="padding: 6px 8px; text-align: center; font-weight: bold;">${m.ticketsSold}${rollovers.length > 0 ? ' *' : ''}</td>
+          <td id="list-sales-${idx}" style="padding: 6px 8px; text-align: right; font-family: monospace; font-weight: 900; color: #047857;">$${m.dollarSales.toFixed(2)}</td>
+          <td style="padding: 6px 8px; text-align: center;">
+            <button type="button" tabindex="-1" onclick="rollNewPackInBox(${idx})" class="text-[10px] bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold px-2 py-1 rounded transition">Roll</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    container.innerHTML = `
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden col-span-full">
+        <table class="w-full text-xs text-left border-collapse">
+          <thead>
+            <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1; text-transform: uppercase; font-size: 10px;">
+              <th style="padding: 8px; text-align: center; width: 60px;">Box #</th>
+              <th style="padding: 8px; text-align: center; width: 80px;">Game #</th>
+              <th style="padding: 8px;">Game Name (Current & Rolled)</th>
+              <th style="padding: 8px; text-align: center; width: 50px;">Price</th>
+              <th style="padding: 8px; text-align: center; width: 80px;">Start</th>
+              <th style="padding: 8px; text-align: center; width: 80px;">End</th>
+              <th style="padding: 8px; text-align: center; width: 60px;">Sold</th>
+              <th style="padding: 8px; text-align: right; width: 90px;">Sales $</th>
+              <th style="padding: 8px; text-align: center; width: 60px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>
+    `;
+    updateHeaderTotalsUI();
+    return;
+  }
+
+  let html = '';
+  boxes.forEach((box, idx) => {
+    const metrics = calculateBoxMetrics(box);
+    const hasGame = Boolean(box.gameNum);
+    const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
+    let statusClass = 'status-pending';
+    if (metrics.status === 'complete') statusClass = 'status-complete';
+    else if (metrics.status === 'rollover') statusClass = 'status-rollover';
+
+    // Column-grouped tabindex so mobile keyboard "Next" button jumps strictly down the same field
+    const tabGame = 1000 + idx + 1;
+    const tabStart = 2000 + idx + 1;
+    const tabEnd = 3000 + idx + 1;
+
+    const roHistoryHtml = rollovers.map(ro =>
+      `<div class="text-[10px] font-bold text-amber-900 bg-amber-50 border border-amber-300 rounded px-2 py-1 mb-1.5">
+        <div>Prev: #${ro.gameNum} ${ro.gameName || ''} ($${ro.price})</div>
+        <div>Start #${ro.startTicket} → End #${ro.finishedTicket} • ${ro.ticketsSold} Sold ($${Number(ro.salesAmount || 0).toFixed(2)})</div>
+      </div>`
+    ).join('');
+
+    html += `
+      <div id="dispenser-card-${idx}" class="dispenser-card bg-white rounded-xl border border-slate-200 p-3 shadow-sm flex flex-col justify-between ${statusClass}">
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-900 text-white font-black text-xs font-mono" title="Slot / Box #">
+              ${box.boxNumber || (idx + 1)}
+            </div>
+            <div class="leading-tight">
+              <div id="box-title-${idx}" class="font-bold text-xs text-slate-800 truncate max-w-[140px]">${hasGame ? (box.gameName || 'Game #' + box.gameNum) : '<span class="text-slate-400 italic">Empty Box</span>'}</div>
+              <div id="box-sub-${idx}" class="text-[10px] text-slate-500 font-medium">${hasGame ? `$${box.price} • ${box.rollCount} tix/pk` : 'Assign game below'}</div>
+            </div>
+          </div>
+          <button type="button" tabindex="-1" onclick="rollNewPackInBox(${idx})" class="text-[11px] font-bold px-2 py-1 rounded transition border ${rollovers.length > 0 ? 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200' : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'}">
+            ${rollovers.length > 0 ? `★ ${rollovers.length} Rollover` : 'Roll'}
+          </button>
+        </div>
+        ${roHistoryHtml}
+        <div class="space-y-2 mb-2">
+          <div class="flex items-center gap-2">
+            <label class="text-[10px] font-bold text-slate-500 uppercase w-12">Game #:</label>
+            <input type="text" tabindex="${tabGame}" enterkeyhint="next" id="input-gameNum-${idx}" value="${box.gameNum || ''}" placeholder="e.g. 1005" oninput="updateBoxFieldDirect(${idx}, 'gameNum', this.value)" onkeydown="handleGameNumKeydown(event, ${idx})" class="flex-1 text-xs font-mono font-bold border border-slate-300 rounded px-2 py-1 lotto-input" />
+          </div>
+          <div id="box-unknown-wrap-${idx}" class="${box.needsNewGameEntry ? '' : 'hidden'} p-1.5 bg-red-50 border border-red-200 rounded text-[10px] text-red-700 flex items-center justify-between">
+            <span>Unknown Game #</span>
+            <button type="button" tabindex="-1" onclick="openQuickGameModal(${idx})" class="font-extrabold underline text-blue-700 hover:text-blue-900">+ Register</button>
+          </div>
+          <div class="grid grid-cols-2 gap-2 pt-1">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Start #</label>
+              <input type="number" tabindex="${tabStart}" enterkeyhint="next" id="input-startTicket-${idx}" value="${box.startTicket !== undefined ? box.startTicket : 0}" oninput="updateBoxFieldDirect(${idx}, 'startTicket', this.value)" onkeydown="handleStartKeydown(event, ${idx})" placeholder="000" class="w-full text-center font-mono font-bold text-xs border border-slate-300 rounded p-1.5 lotto-input" />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-blue-700 uppercase mb-0.5">End #</label>
+              <input type="number" tabindex="${tabEnd}" enterkeyhint="next" id="input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}" oninput="updateBoxEndTicketLive(${idx}, this.value)" onchange="commitBoxEndTicket(${idx}, this.value)" onkeydown="handleGridEnter(event, ${idx})" placeholder="000" class="w-full text-center font-mono font-bold text-xs border-2 border-blue-400 rounded p-1.5 lotto-input" />
+            </div>
+          </div>
+        </div>
+        <div class="bg-slate-50 rounded-lg p-2 border border-slate-200 flex items-center justify-between text-xs mt-1">
+          <span id="box-sold-badge-${idx}" class="font-mono font-bold text-slate-700">${metrics.ticketsSold} Sold</span>
+          <span id="box-sales-badge-${idx}" class="font-mono font-black text-emerald-700">$${metrics.dollarSales.toFixed(2)}</span>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+  updateHeaderTotalsUI();
+}
+
+// Dedicated 100% Full-Width Auto-Fit Thermal Receipt Printer for Epson TM-m30II-H (3-1/8")
+function printThermalReceipt(isWorksheet = false) {
+  const reportDate = document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10);
+  const shiftType = document.getElementById('header-shift-badge')?.textContent || document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
+  const cashierOut = document.getElementById('rec-cashier-out')?.value?.trim() || 'Unspecified';
+  const cashierIn = document.getElementById('rec-cashier-in')?.value?.trim() || '-';
+  const totals = recalculateReconciliationTotals();
+
+  let totalTix = 0;
+  let totalScratchSales = 0;
+
+  const itemsHtml = boxes.map((box, idx) => {
+    const m = calculateBoxMetrics(box);
+    if (!box.gameNum && m.ticketsSold === 0 && !isWorksheet) return '';
+    totalTix += m.ticketsSold;
+    totalScratchSales += m.dollarSales;
+
+    const gameLabel = box.gameNum ? `#${box.gameNum} ${box.gameName || ''}` : 'EMPTY';
+    const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
+
+    const rolloversHtml = rollovers.map(ro => `
+      <div style="font-size: 14px; font-weight: bold; padding: 2px 0 2px 8px; border-left: 3px solid #000; margin-top: 2px;">
+        Prev #${ro.gameNum} (${ro.gameName || ''}): ${ro.startTicket}→${ro.finishedTicket} | ${ro.ticketsSold} Sold ($${Number(ro.salesAmount || 0).toFixed(2)})
+      </div>
+    `).join('');
+
+    return `
+      <div style="border-bottom: 2px dashed #000; padding: 6px 0; page-break-inside: avoid;">
+        <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 16px;">
+          <span>BOX ${box.boxNumber || (idx + 1)}: ${gameLabel}</span>
+          <span>${box.price ? '$' + box.price : ''}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: bold; margin-top: 3px;">
+          <span>Start: ${box.startTicket ?? 0} | End: ${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '____'}</span>
+          <span>${isWorksheet && box.endTicket === '' ? 'Sold: ____' : `${m.ticketsSold} Sold ($${m.dollarSales.toFixed(2)})`}</span>
+        </div>
+        ${rolloversHtml}
+      </div>
+    `;
+  }).join('');
+
+  const sigImgHtml = currentSignatureDataUrl && !isWorksheet
+    ? `<img src="${currentSignatureDataUrl}" style="max-height: 60px; max-width: 90%; object-fit: contain; margin: 6px auto; display: block;" alt="Signature" />`
+    : `<div style="height: 40px; border-bottom: 2px solid #000; width: 90%; margin: 12px auto;"></div>`;
+
+  const receiptHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8" />
+      <title>${storeProfile.name} Thermal Receipt</title>
+      <style>
+        @page {
+          margin: 0;
+        }
+        * {
+          box-sizing: border-box;
+          color: #000 !important;
+          font-family: 'Courier New', Courier, monospace !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        html, body {
+          width: 100%;
+          margin: 0;
+          padding: 0;
+          background: #fff;
+        }
+        .receipt-wrap {
+          width: 100%;
+          padding: 4px 8px 16px 8px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="receipt-wrap">
+        <div style="text-align: center; border-bottom: 3px solid #000; padding-bottom: 8px; margin-bottom: 8px;">
+          <div style="font-size: 22px; font-weight: 900; text-transform: uppercase;">${storeProfile.name}</div>
+          <div style="font-size: 16px; font-weight: bold;">STORE #${storeProfile.number}</div>
+          <div style="font-size: 15px; font-weight: 900; margin-top: 4px;">
+            ${isWorksheet ? '*** LOTTO COUNT WORKSHEET ***' : '*** FINAL SHIFT LOTTO RECEIPT ***'}
+          </div>
+        </div>
+
+        <div style="font-size: 15px; font-weight: bold; margin-bottom: 8px; border-bottom: 2px solid #000; padding-bottom: 6px; line-height: 1.35;">
+          <div>DATE: ${reportDate}</div>
+          <div>SHIFT: ${shiftType}</div>
+          <div>OUTGOING: ${cashierOut}</div>
+          <div>INCOMING: ${cashierIn}</div>
+        </div>
+
+        <div>
+          ${itemsHtml}
+        </div>
+
+        <div style="border-top: 3px solid #000; padding-top: 8px; margin-top: 8px; font-size: 16px; font-weight: bold; line-height: 1.4;">
+          <div style="display: flex; justify-content: space-between;"><span>TOTAL TICKETS SOLD:</span><span>${totalTix}</span></div>
+          <div style="display: flex; justify-content: space-between;"><span>SCRATCH SALES:</span><span>$${totalScratchSales.toFixed(2)}</span></div>
+          <div style="display: flex; justify-content: space-between;"><span>ONLINE SALES:</span><span>$${totals.onlineSales.toFixed(2)}</span></div>
+          <div style="display: flex; justify-content: space-between;"><span>SCRATCH CASHED:</span><span>-$${totals.scratchCashed.toFixed(2)}</span></div>
+          <div style="display: flex; justify-content: space-between;"><span>ONLINE CASHED:</span><span>-$${totals.onlineCashed.toFixed(2)}</span></div>
+          <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: 900; border-top: 2px dashed #000; margin-top: 4px; padding-top: 4px;">
+            <span>EXPECTED NET:</span><span>$${totals.expectedNet.toFixed(2)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 18px; font-weight: 900;">
+            <span>POS ACTUAL:</span><span>$${totals.posActual.toFixed(2)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 20px; font-weight: 900; border-top: 2px solid #000; margin-top: 4px; padding-top: 4px;">
+            <span>VARIANCE:</span><span>${totals.variance > 0 ? '+' : ''}$${totals.variance.toFixed(2)}</span>
+          </div>
+        </div>
+
+        <div style="margin-top: 14px; text-align: center; page-break-inside: avoid;">
+          ${sigImgHtml}
+          <div style="font-size: 13px; font-weight: bold;">CASHIER SIGNATURE</div>
+        </div>
+
+        <div style="text-align: center; font-size: 13px; font-weight: bold; margin-top: 10px; border-top: 2px solid #000; padding-top: 6px;">
+          ${new Date().toLocaleString()}
+        </div>
+      </div>
+      <script>
+        window.onload = function() {
+          window.focus();
+          window.print();
+          setTimeout(function() { window.close(); }, 500);
+        };
+      </script>
+    </body>
+    </html>
+  `;
+
+  const printWin = window.open('', '_blank', 'width=420,height=700');
+  if (printWin) {
+    printWin.document.open();
+    printWin.document.write(receiptHtml);
+    printWin.document.close();
+  } else {
+    alert('Please allow popups for this site so the thermal receipt can open and auto-fit.');
+  }
+}
