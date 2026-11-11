@@ -1432,7 +1432,7 @@ function switchMainView(viewName) {
   else if (viewName === 'admin') { renderAdminGamesTable(); renderAdminBoxLabelsGrid(); }
 }
 // --------------------------------------------------------------------------
-// 80MM (3-1/8") THERMAL RECEIPT & WORKSHEET GENERATOR WITH AUTO-CUT
+// 80MM (3-1/8") PROFESSIONAL THERMAL RECEIPT & WORKSHEET GENERATOR
 // --------------------------------------------------------------------------
 function printThermalReceipt(isWorksheet = false) {
   let printContainer = document.getElementById('print-container');
@@ -1463,17 +1463,17 @@ function printThermalReceipt(isWorksheet = false) {
     let rolloversText = '';
     if (rollovers.length > 0) {
       rollovers.forEach(ro => {
-        rolloversText += `<div style="font-size: 9.5px; padding-left: 6px; color: #000;">↳ Rollover: Start ${ro.startTicket} -> End ${ro.finishedTicket} (${ro.ticketsSold} tix)</div>`;
+        rolloversText += `<div style="font-size: 9px; padding-left: 6px;">* Rollover: Start ${ro.startTicket} -> End ${ro.finishedTicket} (${ro.ticketsSold} tix)</div>`;
       });
     }
 
     return `
-      <div style="border-bottom: 1px dotted #000; padding: 4px 0; font-family: 'Courier New', Courier, monospace; font-size: 10.5px; page-break-inside: avoid;">
+      <div style="border-bottom: 1px dashed #000; padding: 3px 0; font-family: 'Courier New', Courier, monospace; font-size: 10px; page-break-inside: avoid;">
         <div style="display: flex; justify-content: space-between; font-weight: bold;">
           <span>[Box ${box.boxNumber || (idx+1)}] ${gameLabel}</span>
           <span>$${box.price || 0}</span>
         </div>
-        <div style="display: flex; justify-content: space-between; font-size: 10px; margin-top: 1px;">
+        <div style="display: flex; justify-content: space-between; font-size: 9.5px; margin-top: 1px;">
           <span>Start:${box.startTicket !== undefined ? box.startTicket : 0} | End:${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '-'}</span>
           <span style="font-weight: bold;">${m.ticketsSold} Sold ($${m.dollarSales.toFixed(2)})</span>
         </div>
@@ -1483,24 +1483,32 @@ function printThermalReceipt(isWorksheet = false) {
   }).join('');
 
   const sigImgHtml = currentSignatureDataUrl && !isWorksheet 
-    ? `<img src="${currentSignatureDataUrl}" style="max-height: 35px; max-width: 180px; object-fit: contain; margin: 3px auto; display: block;" alt="Signature" />` 
-    : `<div style="height: 25px; border-bottom: 1px solid #000; width: 160px; margin: 6px auto;"></div>`;
+    ? `<img src="${currentSignatureDataUrl}" style="max-height: 30px; max-width: 150px; object-fit: contain; margin: 2px auto; display: block;" alt="Signature" />` 
+    : `<div style="height: 20px; border-bottom: 1px solid #000; width: 140px; margin: 4px auto;"></div>`;
 
   printContainer.innerHTML = `
     <style>
       @page {
         size: 80mm auto;
-        margin: 0mm;
+        margin: 0;
       }
       @media print {
-        html, body {
-          width: 72mm !important;
-          max-width: 72mm !important;
-          margin: 0 auto !important;
-          padding: 1mm 2mm 8mm 2mm !important;
-          background: #fff !important;
+        *, *:before, *:after {
+          background: transparent !important;
           color: #000 !important;
+          box-shadow: none !important;
+          text-shadow: none !important;
+        }
+        html, body {
+          width: 80mm !important;
+          min-width: 80mm !important;
+          max-width: 80mm !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: #ffffff !important;
           font-family: 'Courier New', Courier, monospace !important;
+          font-size: 10px !important;
+          line-height: 1.15 !important;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
@@ -1509,56 +1517,65 @@ function printThermalReceipt(isWorksheet = false) {
         }
         #print-container {
           display: block !important;
+          width: 80mm !important;
+          margin: 0 !important;
+          padding: 0 4mm 10mm 4mm !important;
+        }
+        .thermal-receipt-sheet {
           width: 72mm !important;
+          max-width: 72mm !important;
+          margin: 0 auto !important;
+          page-break-after: avoid !important;
+          page-break-inside: avoid !important;
         }
       }
     </style>
-    <div style="width: 70mm; font-family: 'Courier New', Courier, monospace; color: #000; font-size: 10.5px; line-height: 1.2; margin: 0 auto;">
-      <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 5px;">
-        <div style="font-size: 13px; font-weight: 900; text-transform: uppercase;">${storeProfile.name}</div>
-        <div style="font-size: 10.5px; font-weight: bold;">STORE #${storeProfile.number}</div>
-        <div style="font-size: 9.5px; font-weight: bold; margin-top: 2px;">${isWorksheet ? '*** THERMAL COUNT WORKSHEET ***' : '*** FINAL LOTTERY SHIFT RECEIPT ***'}</div>
+    <div class="thermal-receipt-sheet" style="width: 72mm; font-family: 'Courier New', Courier, monospace; color: #000; font-size: 10px; line-height: 1.15;">
+      <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 4px;">
+        <div style="font-size: 12px; font-weight: 900; text-transform: uppercase;">${storeProfile.name}</div>
+        <div style="font-size: 10px; font-weight: bold;">STORE #${storeProfile.number}</div>
+        <div style="font-size: 9px; font-weight: bold; margin-top: 2px;">${isWorksheet ? '*** THERMAL COUNT WORKSHEET ***' : '*** FINAL LOTTERY SHIFT RECEIPT ***'}</div>
       </div>
       
-      <div style="font-size: 10px; margin-bottom: 5px; border-bottom: 1px solid #000; padding-bottom: 4px;">
+      <div style="font-size: 9.5px; margin-bottom: 4px; border-bottom: 1px solid #000; padding-bottom: 3px;">
         <div>Date: <strong>${reportDate}</strong></div>
         <div>Shift: <strong>${shiftType}</strong></div>
         <div>Outgoing: <strong>${cashierOut}</strong></div>
         <div>Incoming: <strong>${cashierIn}</strong></div>
       </div>
 
-      <div style="margin-bottom: 5px;">
-        <div style="font-weight: bold; text-align: center; border-bottom: 1px solid #000; font-size: 10px; margin-bottom: 3px; text-transform: uppercase;">Active Dispenser Inventory</div>
+      <div style="margin-bottom: 4px;">
+        <div style="font-weight: bold; text-align: center; border-bottom: 1px solid #000; font-size: 9.5px; margin-bottom: 2px; text-transform: uppercase;">Active Dispenser Inventory</div>
         ${itemsHtml}
       </div>
 
-      <div style="border-top: 2px solid #000; padding-top: 4px; margin-top: 5px; font-size: 10.5px;">
+      <div style="border-top: 2px solid #000; padding-top: 3px; margin-top: 4px; font-size: 10px;">
         <div style="display: flex; justify-content: space-between;"><span>Total Tickets Sold:</span><strong>${totalTix} tix</strong></div>
         <div style="display: flex; justify-content: space-between;"><span>Scratch Sales:</span><strong>$${totalScratchSales.toFixed(2)}</strong></div>
         <div style="display: flex; justify-content: space-between;"><span>Online Sales:</span><strong>$${totals.onlineSales.toFixed(2)}</strong></div>
         <div style="display: flex; justify-content: space-between;"><span>Scratch Cashed:</span><strong>-$${totals.scratchCashed.toFixed(2)}</strong></div>
         <div style="display: flex; justify-content: space-between;"><span>Online Cashed:</span><strong>-$${totals.onlineCashed.toFixed(2)}</strong></div>
-        <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px dashed #000; margin-top: 2px; padding-top: 2px; font-size: 11.5px;">
+        <div style="display: flex; justify-content: space-between; font-weight: bold; border-top: 1px dashed #000; margin-top: 2px; padding-top: 2px; font-size: 11px;">
           <span>Expected Net:</span><span>$${totals.expectedNet.toFixed(2)}</span>
         </div>
         <div style="display: flex; justify-content: space-between; font-weight: bold;">
           <span>POS Actual:</span><span>$${totals.posActual.toFixed(2)}</span>
         </div>
-        <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 12px; border-top: 1px solid #000; margin-top: 3px; padding-top: 3px;">
+        <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 11.5px; border-top: 1px solid #000; margin-top: 2px; padding-top: 2px;">
           <span>Variance:</span><span>${totals.variance > 0 ? '+' : ''}$${totals.variance.toFixed(2)}</span>
         </div>
       </div>
 
-      <div style="margin-top: 10px; border-top: 1px dashed #000; padding-top: 5px; text-align: center; page-break-inside: avoid;">
+      <div style="margin-top: 8px; border-top: 1px dashed #000; padding-top: 4px; text-align: center; page-break-inside: avoid;">
         ${sigImgHtml}
-        <div style="font-size: 8.5px; font-weight: bold; text-transform: uppercase;">Cashier Signature Verification</div>
+        <div style="font-size: 8px; font-weight: bold; text-transform: uppercase;">Cashier Signature Verification</div>
       </div>
 
-      <div style="text-align: center; font-size: 9px; margin-top: 8px; border-top: 1px solid #000; padding-top: 3px;">
+      <div style="text-align: center; font-size: 8.5px; margin-top: 6px; border-top: 1px solid #000; padding-top: 3px;">
         PROJECT LOTTO ENTERPRISE<br/>${new Date().toLocaleString()}
       </div>
       <!-- ESC/POS Automatic Paper Cut Feed Buffer for Epson TM Series -->
-      <div style="height: 25px; visibility: hidden;">\x1d\x56\x41\x00</div>
+      <div style="height: 20px; visibility: hidden;">\x1d\x56\x41\x00</div>
     </div>
   `;
   window.print();
