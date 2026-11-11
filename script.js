@@ -107,7 +107,7 @@ function getStoreProfileStorageKey(locId) { return `project_lotto_profile_${locI
 function getStoreHistoryStorageKey(locId) { return `project_lotto_history_${locId}`; }
 function getStoreSetupLockKey(locId) { return `project_lotto_setuplocked_${locId}`; }
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 2 OF 7)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PARTS 2 TO 7)
    ========================================================================== */
 
 function sanitizeMasterGamesList(arr) {
@@ -308,18 +308,14 @@ function populateLocationSwitcherDropdown() {
 }
 
 function handleLocationSwitch(newLocId) {
-  if (!newLocId || !newLocId === activeLocationId) {
-    saveBoxesState();
-    activeLocationId = newLocId;
-    localStorage.setItem(STORAGE_KEY_ACTIVE_LOC, activeLocationId);
-    loadActiveStoreData();
-    renderDispenserGrid();
-    recalculateReconciliationTotals();
-  }
+  if (!newLocId || newLocId === activeLocationId) return;
+  saveBoxesState();
+  activeLocationId = newLocId;
+  localStorage.setItem(STORAGE_KEY_ACTIVE_LOC, activeLocationId);
+  loadActiveStoreData();
+  renderDispenserGrid();
+  recalculateReconciliationTotals();
 }
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 3 OF 7)
-   ========================================================================== */
 
 function calculateBoxMetrics(box) {
   if (!box || !box.gameNum) {
@@ -343,18 +339,11 @@ function calculateBoxMetrics(box) {
   let ticketsSold = 0;
 
   if (rollovers.length > 0) {
-    rollovers.forEach(ro => {
-      ticketsSold += Number(ro.ticketsSold) || 0;
-    });
-    if (end >= start) {
-      ticketsSold += (end - start);
-    }
+    rollovers.forEach(ro => { ticketsSold += Number(ro.ticketsSold) || 0; });
+    if (end >= start) { ticketsSold += (end - start); }
   } else {
-    if (end >= start) {
-      ticketsSold = end - start;
-    } else {
-      ticketsSold = 0;
-    }
+    if (end >= start) { ticketsSold = end - start; }
+    else { ticketsSold = 0; }
   }
 
   ticketsSold = Math.max(0, ticketsSold);
@@ -399,7 +388,6 @@ function updateBoxFieldDirect(idx, field, val) {
   recalculateReconciliationTotals();
 }
 
-// Live typing: does NOT trigger rollover while typing multi-digit numbers (e.g. typing "1" on the way to "13")
 function updateBoxEndTicketLive(idx, val) {
   if (!boxes[idx]) return;
   const box = boxes[idx];
@@ -436,7 +424,6 @@ function updateBoxEndTicketLive(idx, val) {
   }
 }
 
-// Runs ONLY when user finishes typing (Next/Enter or blur)
 function commitBoxEndTicket(idx, val) {
   if (!boxes[idx]) return;
   const box = boxes[idx];
@@ -459,7 +446,6 @@ function commitBoxEndTicket(idx, val) {
   if (endNum > maxAllowed) {
     box.endTicket = maxAllowed;
   } else if (endNum === startNum) {
-    // Same number (e.g. 13 and 13) -> 0 sold, NO rollover modal
     box.endTicket = endNum;
   } else if (endNum < startNum) {
     box.endTicket = endNum;
@@ -474,9 +460,6 @@ function commitBoxEndTicket(idx, val) {
   updateHeaderTotalsUI();
   recalculateReconciliationTotals();
 }
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 4 OF 7)
-   ========================================================================== */
 
 function jumpToNextBoxInput(currentIdx, inputType) {
   const nextIdx = currentIdx + 1;
@@ -627,9 +610,6 @@ function finalizeRolloverAction(idx, finalGameNum) {
 function cancelRolloverModal() {
   document.getElementById('modal-box-rollover').classList.add('hidden');
 }
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 5 OF 7)
-   ========================================================================== */
 
 function updateBoxMetricsDisplay(idx) {
   const box = boxes[idx];
@@ -882,9 +862,6 @@ function saveQuickRegisteredGame() {
   renderDispenserGrid();
   recalculateReconciliationTotals();
 }
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 6 OF 7)
-   ========================================================================== */
 
 function openMultiStoreManagerModal() {
   renderMultiStoreModalList();
@@ -1111,9 +1088,6 @@ function loadReconciliationDraft() {
   const dtInp = document.getElementById('rec-report-date');
   if (dtInp) dtInp.value = today;
 }
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 7 OF 7)
-   ========================================================================== */
 
 function initSignaturePad() {
   sigCanvas = document.getElementById('signature-pad');
@@ -1478,9 +1452,6 @@ function switchMainView(viewName) {
   else if (viewName === 'admin') { renderAdminGamesTable(); renderAdminBoxLabelsGrid(); }
 }
 
-// --------------------------------------------------------------------------
-// 100% FULL-WIDTH AUTO-FIT THERMAL RECEIPT PRINTER FOR EPSON TM-m30II-H
-// --------------------------------------------------------------------------
 function printThermalReceipt(isWorksheet = false) {
   const reportDate = document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10);
   const shiftType = document.getElementById('header-shift-badge')?.textContent || document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
