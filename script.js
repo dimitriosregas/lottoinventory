@@ -109,7 +109,7 @@ function getStoreProfileStorageKey(locId) { return `project_lotto_profile_${locI
 function getStoreHistoryStorageKey(locId) { return `project_lotto_history_${locId}`; }
 function getStoreSetupLockKey(locId) { return `project_lotto_setuplocked_${locId}`; }
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 2 OF 7)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PARTS 2 & 3)
    ========================================================================== */
 
 function sanitizeMasterGamesList(arr) {
@@ -187,7 +187,6 @@ function initActiveLocation() {
 function loadActiveStoreData() {
   const profKey = getStoreProfileStorageKey(activeLocationId);
   const lockKey = getStoreSetupLockKey(activeLocationId);
-  
   try {
     const lockedRaw = localStorage.getItem(lockKey);
     isSetupLocked = lockedRaw === 'true';
@@ -321,9 +320,6 @@ function handleLocationSwitch(newLocId) {
   recalculateReconciliationTotals();
   if (typeof executeReportLookup === 'function') executeReportLookup();
 }
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 3 OF 7)
-   ========================================================================== */
 
 function calculateBoxMetrics(box) {
   if (!box || !box.gameNum) {
