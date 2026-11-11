@@ -1451,13 +1451,13 @@ function printThermalReceipt(isWorksheetMode = false) {
       }
     </style>
     <div style="width: 72mm; font-family: 'Courier New', Courier, monospace; line-height: 1.15;">
-      <div style="text-align: center; font-weight: bold; font-size: 13px; margin-bottom: 2px;">
+      <div style="text-align: center; font-weight: bold; font-size: 13px; margin-bottom: 2px; text-transform: uppercase;">
         ${storeProfile.name}
       </div>
       <div style="text-align: center; font-size: 9px; margin-bottom: 4px;">
-        Store #${storeProfile.number}<br>
-        Date: ${dateStr} | ${shiftStr}<br>
-        <b>${isWorksheetMode ? '--- COUNT WORKSHEET ---' : '--- FINAL AUDIT RECEIPT ---'}</b>
+        RETAILER: #${storeProfile.number}<br>
+        DATE: ${dateStr} | ${shiftStr}<br>
+        <b>${isWorksheetMode ? '--- COUNT WORKSHEET ---' : '--- SUMMARY INVENTORY REPORT ---'}</b>
       </div>
 
       <table style="width: 100%; border-collapse: collapse; font-size: 9px; margin-top: 4px;">
@@ -1491,14 +1491,27 @@ function printThermalReceipt(isWorksheetMode = false) {
         </div>
       ` : ''}
 
-      <div style="margin-top: 8px; font-size: 9px;">
+      <div style="margin-top: 8px; font-size: 9px; border-top: 1px dashed #000; padding-top: 4px;">
         <div>Out: ${cashierOutStr}</div>
         <div style="margin-top: 2px;">In: ${cashierInStr}</div>
       </div>
 
+      <!-- BALANCE & CHECK SECTION -->
+      <div style="margin-top: 10px; border-top: 1px solid #000; padding-top: 6px; font-size: 9.5px;">
+        <div style="font-weight: bold; text-align: center; margin-bottom: 4px;">SIGNATURE & BALANCE CHECK</div>
+        <div>Starting Cash:   $__________</div>
+        <div>Payouts / Cash:  $__________</div>
+        <div>Net Expected:    $__________</div>
+        <div>Drawer Count:    $__________</div>
+        <div>Difference:      $__________</div>
+        <div style="margin-top: 4px; text-align: center; font-weight: bold;">
+          [ ${Math.abs(totals.variance) < 0.01 ? 'X' : ' '} ] IN BALANCE &nbsp;&nbsp; [ ${Math.abs(totals.variance) >= 0.01 ? 'X' : ' '} ] SHORT/OVER
+        </div>
+      </div>
+
       <div style="margin-top: 10px; text-align: center;">
         ${!isWorksheetMode && typeof currentSignatureDataUrl !== 'undefined' && currentSignatureDataUrl ? `<img src="${currentSignatureDataUrl}" style="max-height: 30px; max-width: 140px; display: block; margin: 0 auto;" />` : `<div style="height: 20px;"></div>`}
-        <div style="border-top: 1px solid #000; font-size: 8px; margin-top: 2px;">CASHIER SIGNATURE</div>
+        <div style="border-top: 1px solid #000; font-size: 8px; margin-top: 2px;">MANAGER / CASHIER SIGNATURE</div>
       </div>
       <div style="text-align: center; font-size: 8px; margin-top: 8px; color: #555;">*** END OF REPORT ***\n\x1D\x56\x41\x00</div>
     </div>
@@ -1506,6 +1519,7 @@ function printThermalReceipt(isWorksheetMode = false) {
 
   window.print();
 }
+
 /* ==========================================================================
    HISTORICAL SUMMARY PRINT MODULE
    ========================================================================== */
