@@ -1,5 +1,5 @@
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 1 OF 6)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 1 OF 7)
    ========================================================================== */
 
 const STORAGE_KEY_LOCATIONS = 'project_lotto_locations_v1';
@@ -71,10 +71,6 @@ let isDrawingSignature = false;
 let sigCanvas = null;
 let sigCtx = null;
 
-// Standard $300 / $600 / $900 Roll Pool Rules:
-// $1=300 ($300), $2=150 ($300), $3=100 ($300), $5=60 ($300),
-// $10=30 ($300) or 60 ($600), $20=15 ($300) or 30 ($600),
-// $25=24 ($600), $30=20 ($600), $50=18 ($900)
 function getDefaultRollCountForPrice(price) {
   const p = Number(price);
   if (!p || p <= 0) return 300;
@@ -113,7 +109,7 @@ function getStoreProfileStorageKey(locId) { return `project_lotto_profile_${locI
 function getStoreHistoryStorageKey(locId) { return `project_lotto_history_${locId}`; }
 function getStoreSetupLockKey(locId) { return `project_lotto_setuplocked_${locId}`; }
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 2 OF 6)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 2 OF 7)
    ========================================================================== */
 
 function sanitizeMasterGamesList(arr) {
@@ -151,6 +147,25 @@ function loadMasterGames() {
   } catch (e) {}
   masterGames = sanitizeMasterGamesList(DEFAULT_MASTER_GAMES);
   saveGamesState();
+}
+
+function saveGamesState() {
+  try { localStorage.setItem(STORAGE_KEY_MASTER_GAMES, JSON.stringify(masterGames)); } catch (e) {}
+}
+
+function loadLocationsRegistry() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_LOCATIONS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        locations = parsed;
+        return;
+      }
+    }
+  } catch (e) {}
+  locations = [...DEFAULT_LOCATIONS];
+  saveLocationsRegistry();
 }
 
 function saveLocationsRegistry() {
@@ -307,7 +322,7 @@ function handleLocationSwitch(newLocId) {
   if (typeof executeReportLookup === 'function') executeReportLookup();
 }
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 3 OF 6)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 3 OF 7)
    ========================================================================== */
 
 function calculateBoxMetrics(box) {
@@ -320,7 +335,6 @@ function calculateBoxMetrics(box) {
   const endVal = box.endTicket;
   const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
   
-  // Determine maximum ticket ceiling for the roll based on count ($300/$600/$900 pools starting from 0)
   const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(price);
   const maxTicketAllowed = Math.max(0, rollCount - 1);
 
@@ -345,7 +359,6 @@ function calculateBoxMetrics(box) {
     if (end >= start) {
       ticketsSold = end - start;
     } else {
-      // End ticket is lower than start -> Roll wrapped around (new pack started at 0)
       ticketsSold = (maxTicketAllowed - start) + end + 1;
     }
   }
@@ -407,13 +420,12 @@ function updateBoxEndTicketLive(idx, val) {
   const endNum = Number(val);
   const startNum = Number(box.startTicket) || 0;
   const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(box.price);
-  const maxAllowed = Math.max(0, rollCount - 1); // Enforces max roll ceiling starting at 0 (e.g., 59 on a 60 ticket pack)
+  const maxAllowed = Math.max(0, rollCount - 1);
 
   if (endNum > maxAllowed) {
     alert(`Invalid ticket number! Ticket cannot exceed the maximum roll limit (${maxAllowed}). Each roll has ${rollCount} tickets (numbered 0 to ${maxAllowed}).`);
     box.endTicket = maxAllowed;
   } else if (endNum < startNum) {
-    // End is lower than start -> Triggers rollover modal for new pack workflow
     box.endTicket = endNum;
     openRolloverDecisionModal(idx, endNum);
     return;
@@ -427,17 +439,29 @@ function updateBoxEndTicketLive(idx, val) {
   recalculateReconciliationTotals();
 }
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 4 OF 6)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 4 OF 7)
    ========================================================================== */
 
-// Universal Sequence Navigation Handler for Enter Key based on box sequence order
 function jumpToNextBoxInput(currentIdx, inputType) {
   const currentBox = boxes[currentIdx];
-  const currentIndexInArray = boxes.findIndex(b => b.boxNumber === currentBox?.boxNumber);
+  if (!currentBox) return;
+  
+  const currentIndexInArray = boxes.findIndex(b => b.boxNumber === currentBox.boxNumber);
   const nextBox = boxes[currentIndexInArray + 1];
-  const nextIdx = nextBox ? boxes.indexOf(nextBox) : -1;
+  if (!nextBox) return;
+  
+  const nextIdx = boxes.indexOf(nextBox);
+  if (nextIdx === -1) return;
 
-  const nextInp = document.getElementById(`input-${inputType}-${nextIdx}`) || document.getElementById(`list-input-${inputType}-${nextIdx}`);
+  let nextInp = null;
+  if (inputType === 'endTicket') {
+    nextInp = document.getElementById(`input-endTicket-${nextIdx}`) || document.getElementById(`list-input-endTicket-${nextIdx}`);
+  } else if (inputType === 'startTicket') {
+    nextInp = document.getElementById(`input-startTicket-${nextIdx}`) || document.getElementById(`list-input-startTicket-${nextIdx}`);
+  } else if (inputType === 'gameNum') {
+    nextInp = document.getElementById(`input-gameNum-${nextIdx}`) || document.getElementById(`list-input-gameNum-${nextIdx}`);
+  }
+
   if (nextInp) {
     nextInp.focus();
     nextInp.select();
@@ -532,7 +556,6 @@ function finalizeRolloverAction(idx, finalGameNum) {
   const maxTicket = Math.max(0, rollCount - 1);
   const start = Number(box.startTicket) || 0;
   
-  // Calculate tickets sold on old pack before wrap
   const oldPackSold = (maxTicket >= start) ? ((maxTicket - start) + 1) : 0;
   const oldPackSales = oldPackSold * price;
 
@@ -579,7 +602,7 @@ function cancelRolloverModal() {
   document.getElementById('modal-box-rollover').classList.add('hidden');
 }
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 5 OF 6)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 5 OF 7)
    ========================================================================== */
 
 function updateBoxMetricsDisplay(idx) {
@@ -643,7 +666,6 @@ function renderDispenserGrid() {
       const m = calculateBoxMetrics(box);
       const hasGame = Boolean(box.gameNum);
       const roCount = Array.isArray(box.rollovers) ? box.rollovers.length : 0;
-      
       return `
         <tr style="border-bottom: 1px solid #e2e8f0; background: #fff;" class="hover:bg-slate-50 transition">
           <td style="padding: 6px 8px; text-align: center; background: #0f172a; font-family: monospace; font-weight: bold; color: #fff;">
@@ -660,7 +682,7 @@ function renderDispenserGrid() {
             <input type="number" id="list-input-startTicket-${idx}" value="${box.startTicket !== '' && box.startTicket !== undefined ? box.startTicket : 0}" oninput="updateBoxFieldDirect(${idx}, 'startTicket', this.value)" onkeydown="handleStartKeydown(event, ${idx})" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input" />
           </td>
           <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
-            <input type="number" id="input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}" oninput="updateBoxEndTicketLive(event || window.event, ${idx}, this.value)" onkeydown="handleGridEnter(event, ${idx})" placeholder="End#" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono font-bold lotto-input" />
+            <input type="number" id="input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}" oninput="updateBoxEndTicketLive(${idx}, this.value)" onkeydown="handleGridEnter(event, ${idx})" placeholder="End#" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono font-bold lotto-input" />
           </td>
           <td id="list-sold-${idx}" style="padding: 6px 8px; text-align: center; font-weight: bold;">${m.ticketsSold}${roCount > 0 ? ' *' : ''}</td>
           <td id="list-sales-${idx}" style="padding: 6px 8px; text-align: right; font-family: monospace; font-weight: 900; color: #047857;">$${m.dollarSales.toFixed(2)}</td>
@@ -736,7 +758,7 @@ function renderDispenserGrid() {
             </div>
             <div>
               <label class="block text-[10px] font-bold text-blue-700 uppercase mb-0.5">End #</label>
-              <input type="number" id="input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}" oninput="updateBoxEndTicketLive(event || window.event, ${idx}, this.value)" onkeydown="handleGridEnter(event, ${idx})" placeholder="000" class="w-full text-center font-mono font-bold text-xs border-2 border-blue-400 rounded p-1.5 lotto-input" />
+              <input type="number" id="input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}" oninput="updateBoxEndTicketLive(${idx}, this.value)" onkeydown="handleGridEnter(event, ${idx})" placeholder="000" class="w-full text-center font-mono font-bold text-xs border-2 border-blue-400 rounded p-1.5 lotto-input" />
             </div>
           </div>
         </div>
@@ -781,18 +803,6 @@ function closeQuickGameModal() {
   document.getElementById('modal-quick-game').classList.add('hidden');
 }
 
-function autoFillQuickGameRollCount() {
-  const p = Number(document.getElementById('quick-game-price')?.value) || 5;
-  const countInp = document.getElementById('quick-game-count');
-  if (countInp) countInp.value = getDefaultRollCountForPrice(p);
-}
-
-function autoFillNewGameRollCount() {
-  const p = Number(document.getElementById('new-game-price')?.value) || 5;
-  const countInp = document.getElementById('new-game-count');
-  if (countInp) countInp.value = getDefaultRollCountForPrice(p);
-}
-
 function saveQuickRegisteredGame() {
   const idx = Number(document.getElementById('quick-game-box-idx').value);
   if (isNaN(idx) || !boxes[idx]) return;
@@ -821,7 +831,7 @@ function saveQuickRegisteredGame() {
   recalculateReconciliationTotals();
 }
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 6 OF 6)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 6 OF 7)
    ========================================================================== */
 
 function openMultiStoreManagerModal() {
@@ -1049,6 +1059,9 @@ function loadReconciliationDraft() {
   const dtInp = document.getElementById('rec-report-date');
   if (dtInp) dtInp.value = today;
 }
+/* ==========================================================================
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 7 OF 7)
+   ========================================================================== */
 
 function initSignaturePad() {
   sigCanvas = document.getElementById('signature-pad');
@@ -1412,6 +1425,7 @@ function switchMainView(viewName) {
   else if (viewName === 'reports') executeReportLookup();
   else if (viewName === 'admin') { renderAdminGamesTable(); renderAdminBoxLabelsGrid(); }
 }
+
 // --------------------------------------------------------------------------
 // 80MM (3-1/8") PROFESSIONAL THERMAL RECEIPT & WORKSHEET GENERATOR
 // --------------------------------------------------------------------------
@@ -1561,3 +1575,174 @@ function printThermalReceipt(isWorksheet = false) {
   `;
   window.print();
 }
+
+function printTwoColumnBackupSheet() {
+  printThermalReceipt(true);
+}
+
+function buildMatrixPrintHTML(repData, isFinalReport = false) {
+  const bList = Array.isArray(repData.boxesSnapshot) ? repData.boxesSnapshot : boxes;
+  const t = repData.totals || {};
+  const variance = Number(t.variance) || 0;
+  let gtTickets = 0;
+  let gtSales = 0;
+
+  const rowsHtml = bList.map(box => {
+    const m = calculateBoxMetrics(box);
+    gtTickets += m.ticketsSold;
+    gtSales += m.dollarSales;
+    const hasGame = Boolean(box.gameNum);
+    const roCount = Array.isArray(box.rollovers) ? box.rollovers.length : 0;
+    return `
+      <tr style="border-bottom: 1px solid #cbd5e1; font-size: 8px;">
+        <td style="padding: 2px 4px; text-align: center; font-weight: 900; background: #0f172a; color: #fff;">${box.boxNumber}</td>
+        <td style="padding: 2px 4px; text-align: center; font-family: monospace; font-weight: bold;">${box.gameNum || '-'}</td>
+        <td style="padding: 2px 4px; font-weight: 600;">${hasGame ? (box.gameName || 'Game #' + box.gameNum) : '<span style="color:#94a3b8;">Empty</span>'}</td>
+        <td style="padding: 2px 4px; text-align: center; font-weight: bold; color: #047857;">${hasGame && box.price ? '$' + box.price : '-'}</td>
+        <td style="padding: 2px 4px; text-align: center; font-family: monospace;">${box.startTicket !== '' ? box.startTicket : '-'}</td>
+        <td style="padding: 2px 4px; text-align: center; font-family: monospace; font-weight: bold;">${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '-'}</td>
+        <td style="padding: 2px 4px; text-align: center; font-weight: bold;">${m.ticketsSold}${roCount > 0 ? ' *' : ''}</td>
+        <td style="padding: 2px 4px; text-align: right; font-family: monospace; font-weight: 900; color: #047857;">$${m.dollarSales.toFixed(2)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const sigImgHtml = repData.signatureDataUrl ? `<img src="${repData.signatureDataUrl}" style="max-height: 22px; max-width: 130px; object-fit: contain;" alt="Signature" />` : `<span style="color: #94a3b8; font-size: 7.5px;">______________________________</span>`;
+
+  return `
+    <style>
+      @page { size: letter portrait; margin: 0.18in 0.22in; }
+      @media print {
+        html, body { margin: 0 !important; padding: 0 !important; height: 100% !important; background: #fff !important; color: #000 !important; overflow: hidden !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        body > header, body > main, body > div.fixed, #app-shell, .no-print { display: none !important; }
+        #print-container { display: block !important; width: 100% !important; }
+        .one-page-print-sheet { width: 100%; max-height: 10.45in; page-break-inside: avoid !important; }
+      }
+    </style>
+    <div class="one-page-print-sheet" style="font-family: Arial, sans-serif; color: #000; font-size: 8px; line-height: 1.1;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; padding-bottom: 2px; margin-bottom: 3px;">
+        <div>
+          <div style="font-size: 12px; font-weight: 900; text-transform: uppercase;">
+            ${repData.storeName || storeProfile.name} (#${repData.storeNumber || storeProfile.number}) — ${isFinalReport ? 'Shift Lottery Audit' : 'Shift Count Worksheet'}
+          </div>
+          <div style="font-size: 8px; color: #334155; margin-top: 1px;">Date: <strong>${repData.date}</strong> &nbsp;|&nbsp; Shift: <strong>${repData.shiftType}</strong></div>
+        </div>
+        <div style="text-align: right; font-size: 7.5px; font-weight: bold;">AUDIT REPORT</div>
+      </div>
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 4px;">
+        <thead>
+          <tr style="background: #e2e8f0; border-bottom: 1.5px solid #000; font-size: 7.5px; text-transform: uppercase;">
+            <th style="padding: 3px; text-align: center; width: 32px;">Box</th>
+            <th style="padding: 3px; text-align: center; width: 55px;">Game #</th>
+            <th style="padding: 3px; text-align: left;">Game Name</th>
+            <th style="padding: 3px; text-align: center; width: 35px;">Price</th>
+            <th style="padding: 3px; text-align: center; width: 50px;">Start</th>
+            <th style="padding: 3px; text-align: center; width: 50px;">End</th>
+            <th style="padding: 3px; text-align: center; width: 35px;">Sold</th>
+            <th style="padding: 3px; text-align: right; width: 65px;">Sales $</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
+      <div style="border: 1.5px solid #000; padding: 3px 5px; background: #f8fafc;">
+        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; border-bottom: 1px solid #94a3b8; padding-bottom: 2px; margin-bottom: 2px; text-align: center; font-size: 7.5px;">
+          <div><span>Total Sold:</span><div style="font-family:monospace; font-weight:900; font-size:9px;">${gtTickets} tix</div></div>
+          <div><span>Scratch Sales:</span><div style="font-family:monospace; font-weight:900; font-size:9px; color:#047857;">$${gtSales.toFixed(2)}</div></div>
+          <div><span>Online Sales:</span><div style="font-family:monospace; font-weight:900; font-size:9px;">$${(Number(t.onlineSales) || 0).toFixed(2)}</div></div>
+          <div><span>Expected Net:</span><div style="font-family:monospace; font-weight:900; font-size:9px;">$${(Number(t.expectedNet) || 0).toFixed(2)}</div></div>
+          <div><span>POS Actual:</span><div style="font-family:monospace; font-weight:900; font-size:9px;">$${(Number(t.posActual) || 0).toFixed(2)}</div></div>
+          <div><span>Variance:</span><div style="font-family:monospace; font-weight:900; font-size:9px;">${variance > 0 ? '+' : ''}$${variance.toFixed(2)}</div></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+          <div style="flex: 1.2;">
+            <div style="display: flex; gap: 10px; font-size: 7.5px;">
+              <div><strong>Outgoing:</strong> ${repData.cashierOut || '&nbsp;'}</div>
+              <div><strong>Incoming:</strong> ${repData.cashierIn || '&nbsp;'}</div>
+            </div>
+          </div>
+          <div style="width: 140px; text-align: center; border-left: 1px solid #94a3b8; padding-left: 4px;">
+            <div style="height: 24px; display: flex; align-items: center; justify-content: center;">${sigImgHtml}</div>
+            <div style="font-size: 6.5px; font-weight: bold; text-transform: uppercase; border-top: 1px solid #000;">Cashier Signature</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function printWorksheet() {
+  let printContainer = document.getElementById('print-container');
+  if (!printContainer) {
+    printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    document.body.appendChild(printContainer);
+  }
+  printContainer.innerHTML = buildMatrixPrintHTML({
+    storeName: storeProfile.name,
+    storeNumber: storeProfile.number,
+    date: document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10),
+    shiftType: document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)',
+    cashierOut: document.getElementById('rec-cashier-out')?.value?.trim() || '____________________',
+    cashierIn: '____________________',
+    totals: recalculateReconciliationTotals(),
+    signatureDataUrl: null,
+    boxesSnapshot: boxes
+  }, false);
+  window.print();
+}
+
+function printFinalReport() {
+  let printContainer = document.getElementById('print-container');
+  if (!printContainer) {
+    printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    document.body.appendChild(printContainer);
+  }
+  printContainer.innerHTML = buildMatrixPrintHTML({
+    storeName: storeProfile.name,
+    storeNumber: storeProfile.number,
+    date: document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10),
+    shiftType: document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)',
+    cashierOut: document.getElementById('rec-cashier-out')?.value?.trim() || '____________________',
+    cashierIn: document.getElementById('rec-cashier-in')?.value?.trim() || '____________________',
+    totals: recalculateReconciliationTotals(),
+    signatureDataUrl: currentSignatureDataUrl,
+    boxesSnapshot: boxes
+  }, true);
+  window.print();
+}
+
+function printArchivedSingleReport(reportId) {
+  const history = getLocationHistoricalReports(activeLocationId);
+  const found = history.find(r => r.reportId === reportId);
+  if (!found) return;
+  let printContainer = document.getElementById('print-container');
+  if (!printContainer) {
+    printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    document.body.appendChild(printContainer);
+  }
+  printContainer.innerHTML = buildMatrixPrintHTML(found, true);
+  window.print();
+}
+
+function printFilteredReportSummary() {
+  window.print();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  loadMasterGames();
+  initActiveLocation();
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const monthIso = todayIso.slice(0, 7);
+  if (document.getElementById('report-filter-date')) document.getElementById('report-filter-date').value = todayIso;
+  if (document.getElementById('report-filter-month')) document.getElementById('report-filter-month').value = monthIso;
+
+  renderDispenserGrid();
+  renderAdminGamesTable();
+  renderAdminBoxLabelsGrid();
+  loadReconciliationDraft();
+  recalculateReconciliationTotals();
+  initSignaturePad();
+  executeReportLookup();
+});
