@@ -71,6 +71,7 @@ let currentSignatureDataUrl = null;
 let isDrawingSignature = false;
 let sigCanvas = null;
 let sigCtx = null;
+let lastActiveViewName = 'grid';
 
 function getDefaultRollCountForPrice(price) {
   const p = Number(price);
@@ -379,7 +380,7 @@ function addNewCashierManual() {
 
 function deleteSavedCashier(idx) {
   if (savedCashiers.length <= 1) { alert('You must keep at least one saved cashier.'); return; }
-  const removed = savedCashiers.splice(idx, 1);
+  savedCashiers.splice(idx, 1);
   saveCashiersState();
   renderAdminCashiersTable();
 }
@@ -546,7 +547,6 @@ function finalizeRolloverAction(idx, finalGameNum) {
   recalculateReconciliationTotals();
 }
 
-// ISSUE #3 FIX: Undo/Edit Rollover so mistaken rollovers can be corrected
 function undoLastRolloverInBox(idx) {
   const box = boxes[idx];
   if (!box || !Array.isArray(box.rollovers) || box.rollovers.length === 0) {
@@ -938,15 +938,14 @@ function updateHeaderTotalsUI() {
 
 function openWorksheetPrintChoiceModal() {
   const modal = document.getElementById('modal-print-worksheet-choice') || createPrintChoiceModalDOM();
-  // Populate cashier select / autocomplete datalist
   handleCashierInputAutocomplete('print-modal-cashier-input', 'cashier-datalist-print');
-  const activeShift = document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
   const activeCashier = document.getElementById('rec-cashier-out')?.value || document.getElementById('grid-cashier-input')?.value || '';
   
   const cashierInp = document.getElementById('print-modal-cashier-input');
   if (cashierInp && !cashierInp.value) cashierInp.value = activeCashier;
 
   modal.classList.remove('hidden');
+  setTimeout(() => initPrintModalSignaturePad(), 100);
 }
 
 function createPrintChoiceModalDOM() {
@@ -957,9 +956,9 @@ function createPrintChoiceModalDOM() {
   div.id = 'modal-print-worksheet-choice';
   div.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden';
   div.innerHTML = `
-    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden p-6 space-y-4">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden p-6 space-y-4 max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-        <h3 class="font-black text-slate-900 text-base">🖨 Print Worksheet & Attestation</h3>
+        <h3 class="font-black text-slate-900 text-base">🖨 Print Shift Worksheet & Attestation</h3>
         <button type="button" onclick="document.getElementById('modal-print-worksheet-choice').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
       </div>
       
@@ -976,17 +975,26 @@ function createPrintChoiceModalDOM() {
             <option value="Shift 3 (Night)">Shift 3 (Night)</option>
           </select>
         </div>
+
+        <!-- Signature Canvas ABOVE Attestation -->
+        <div class="space-y-1 pt-1">
+          <div class="flex items-center justify-between">
+            <label class="block font-bold text-slate-700">Cashier Signature (Sign below):</label>
+            <button type="button" onclick="clearPrintModalSignature()" class="text-xs text-red-600 hover:underline font-bold">Clear Sign</button>
+          </div>
+          <div class="border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 p-1 flex justify-center">
+            <canvas id="print-modal-sig-pad" width="400" height="100" class="w-full h-24 touch-none bg-white rounded-lg cursor-crosshair"></canvas>
+          </div>
+        </div>
+
         <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-700 leading-relaxed font-medium">
-          ⚖ <strong>Attestation:</strong> "I hereby certify that the ticket counts, game numbers, and shift totals recorded are true, complete, and accurate to the best of my knowledge."
+          ⚖ <strong>Legal Attestation:</strong> "I hereby certify that the ticket counts, game numbers, and shift totals recorded are true, complete, and accurate to the best of my knowledge."
         </div>
       </div>
 
-      <div class="space-y-2 pt-2">
-        <button type="button" onclick="executePrintWithFormat('thermal')" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-2.5 rounded-xl text-xs transition shadow-md">
-          📜 Print 80mm Thermal Receipt
-        </button>
-        <button type="button" onclick="executePrintWithFormat('legal')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 rounded-xl text-xs transition shadow-md">
-          📄 Print Full Legal Paper (8.5" x 14")
+      <div class="pt-2">
+        <button type="button" onclick="executeUnifiedPrint()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl text-xs transition shadow-md">
+          🖨 Print Worksheet & Auto-Backup
         </button>
       </div>
     </div>
@@ -995,23 +1003,77 @@ function createPrintChoiceModalDOM() {
   return div;
 }
 
-function executePrintWithFormat(formatChoice) {
+let printModalSigCanvas = null;
+let printModalSigCtx = null;
+let isDrawingPrintSig = false;
+let printModalSigDataUrl = null;
+
+function initPrintModalSignaturePad() {
+  printModalSigCanvas = document.getElementById('print-modal-sig-pad');
+  if (!printModalSigCanvas) return;
+  printModalSigCtx = printModalSigCanvas.getContext('2d');
+  printModalSigCtx.strokeStyle = '#0f172a';
+  printModalSigCtx.lineWidth = 2.2;
+  printModalSigCtx.lineCap = 'round';
+
+  const getPos = (e) => {
+    const rect = printModalSigCanvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * (printModalSigCanvas.width / rect.width),
+      y: (clientY - rect.top) * (printModalSigCanvas.height / rect.height)
+    };
+  };
+
+  const startDraw = (e) => { e.preventDefault(); isDrawingPrintSig = true; const pos = getPos(e); printModalSigCtx.beginPath(); printModalSigCtx.moveTo(pos.x, pos.y); };
+  const moveDraw = (e) => { if (!isDrawingPrintSig) return; e.preventDefault(); const pos = getPos(e); printModalSigCtx.lineTo(pos.x, pos.y); printModalSigCtx.stroke(); };
+  const endDraw = () => { if (!isDrawingPrintSig) return; isDrawingPrintSig = false; printModalSigDataUrl = printModalSigCanvas.toDataURL('image/png'); };
+
+  printModalSigCanvas.addEventListener('mousedown', startDraw);
+  printModalSigCanvas.addEventListener('mousemove', moveDraw);
+  window.addEventListener('mouseup', endDraw);
+  printModalSigCanvas.addEventListener('touchstart', startDraw, { passive: false });
+  printModalSigCanvas.addEventListener('touchmove', moveDraw, { passive: false });
+  window.addEventListener('touchend', endDraw);
+}
+
+function clearPrintModalSignature() {
+  if (!printModalSigCanvas || !printModalSigCtx) return;
+  printModalSigCtx.clearRect(0, 0, printModalSigCanvas.width, printModalSigCanvas.height);
+  printModalSigDataUrl = null;
+}
+
+function executeUnifiedPrint() {
   const cashierVal = document.getElementById('print-modal-cashier-input')?.value?.trim() || 'Unspecified';
   const shiftVal = document.getElementById('print-modal-shift-select')?.value || 'Shift 1 (Morning)';
 
-  // Sync to main reconciliation fields
   const recCashier = document.getElementById('rec-cashier-out');
   if (recCashier) recCashier.value = cashierVal;
   const gridCashier = document.getElementById('grid-cashier-input');
   if (gridCashier) gridCashier.value = cashierVal;
   const recShift = document.getElementById('rec-shift-type');
   if (recShift) recShift.value = shiftVal;
+  if (printModalSigDataUrl) currentSignatureDataUrl = printModalSigDataUrl;
 
   document.getElementById('modal-print-worksheet-choice').classList.add('hidden');
-  printThermalReceipt(true, formatChoice);
+  
+  // 1. Print Worksheet
+  printWorksheetDirect();
+
+  // 2. Auto-backup full tablet state immediately after printing
+  downloadFullTabletBackup(true);
+
+  // 3. Prompt user if they want to end shift
+  setTimeout(() => {
+    if (confirm('Worksheet printed and system backed up successfully!\n\nWould you like to end the shift and start a new shift now?')) {
+      advanceEndToStartForNewShift();
+    } else {
+      switchMainView(lastActiveViewName || 'grid');
+    }
+  }, 600);
 }
 
-// ISSUE #6: Quick Cashier & Shift Bar injection above Main Grid
 function renderMainGridCashierShiftBar() {
   let bar = document.getElementById('main-grid-cashier-shift-bar');
   if (!bar) {
@@ -1063,9 +1125,6 @@ function syncMainGridShift(val) {
     handleShiftTypeChange(val);
   }
 }
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 6 OF 7)
-   ========================================================================== */
 
 function openQuickGameModal(idx) {
   const box = boxes[idx];
@@ -1182,10 +1241,10 @@ function deleteStoreLocation(locId) {
   renderMultiStoreModalList();
   populateLocationSwitcherDropdown();
 }
+/* ==========================================================================
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 6 OF 7)
+   ========================================================================== */
 
-// ==========================================================================
-// ISSUE #4 & #5: FULL TABLET BACKUP, RESTORE & 11:00 PM EMAIL DISPATCHER
-// ==========================================================================
 function buildFullTabletBackupPayload() {
   saveBoxesState();
   saveReconciliationDraft();
@@ -1302,7 +1361,6 @@ function importLocationBackupFile(event) {
         saveCashiersState();
       }
 
-      // Full Tablet Restore (v3.0)
       if (data.storesData && typeof data.storesData === 'object') {
         if (Array.isArray(data.locations) && data.locations.length > 0) {
           locations = data.locations;
@@ -1320,7 +1378,6 @@ function importLocationBackupFile(event) {
           localStorage.setItem(STORAGE_KEY_ACTIVE_LOC, activeLocationId);
         }
       } else {
-        // Legacy / Single-Store Backup Restore
         if (Array.isArray(data.boxes)) {
           boxes = data.boxes;
           saveBoxesState();
@@ -1378,15 +1435,13 @@ function sendNightlyEmailBackupToOwner(isScheduled11PM = false) {
   const body = encodeURIComponent(summaryLines.join('\n'));
 
   localStorage.setItem('project_lotto_last_nightly_email_date', todayStr);
-
-  // Open pre-addressed email draft to dimitriosregas@gmail.com
   window.open(`mailto:${targetEmail}?subject=${subject}&body=${body}`, '_blank');
 }
 
 function startNightly11PMBackupScheduler() {
   setInterval(() => {
     const now = new Date();
-    const hour = now.getHours(); // 23 = 11:00 PM
+    const hour = now.getHours();
     const minute = now.getMinutes();
     const todayStr = now.toISOString().slice(0, 10);
     const lastSentDate = localStorage.getItem('project_lotto_last_nightly_email_date');
@@ -1394,14 +1449,13 @@ function startNightly11PMBackupScheduler() {
     if (hour === 23 && minute >= 0 && lastSentDate !== todayStr) {
       sendNightlyEmailBackupToOwner(true);
     }
-  }, 30000); // Check every 30 seconds
+  }, 30000);
 }
 /* ==========================================================================
    PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 7 OF 7)
    ========================================================================== */
 
 function advanceEndToStartForNewShift() {
-  if (!confirm('Move all current End Ticket numbers into Start Ticket numbers for the new shift?')) return;
   boxes.forEach(b => {
     if (b.endTicket !== '' && b.endTicket !== undefined && b.endTicket !== null) {
       b.startTicket = Number(b.endTicket);
@@ -1412,6 +1466,8 @@ function advanceEndToStartForNewShift() {
   saveBoxesState();
   renderDispenserGrid();
   recalculateReconciliationTotals();
+  alert('Shift ended successfully! Start tickets updated to previous end tickets for the new shift.');
+  switchMainView('grid');
 }
 
 function handleShiftTypeChange(val) {
@@ -1575,10 +1631,6 @@ function finalizeAndSaveShiftReport() {
   history.unshift(reportRecord);
   saveLocationHistoricalReports(history, activeLocationId);
 
-  const ind = document.getElementById('last-archived-indicator');
-  if (ind) ind.textContent = `✔ Archived ${reportDate} (${shiftType}) at ${new Date().toLocaleTimeString()}`;
-
-  // ISSUE #4: Auto-backup full tablet state when sheet is finalized
   downloadFullTabletBackup(true);
   alert(`Shift Report for ${storeProfile.name} archived and full tablet backup downloaded successfully!`);
 }
@@ -1829,6 +1881,7 @@ function setBoxLabelsSequential(mode) {
 }
 
 function switchMainView(viewName) {
+  lastActiveViewName = viewName;
   const views = ['grid', 'reconcile', 'reports', 'admin'];
   views.forEach(v => {
     const sec = document.getElementById(`view-${v}`);
@@ -1858,256 +1911,8 @@ function switchMainView(viewName) {
 }
 
 // --------------------------------------------------------------------------
-// DUAL-FORMAT PDF GENERATOR & PRINT FUNCTIONS (WITH STORE ADDRESS #7)
+// UNIFIED 1-PAGE PRINT WORKSHEET (WITH STORE ADDRESS & SIGNATURE ABOVE ATTESTATION)
 // --------------------------------------------------------------------------
-function printThermalReceipt(isWorksheet = false, formatChoice = null) {
-  const { jsPDF } = window.jspdf || {};
-  if (!jsPDF) {
-    alert("jsPDF library not loaded yet. Please verify index.html has the jsPDF script tag.");
-    return;
-  }
-
-  let targetFormat = formatChoice;
-  if (!targetFormat) {
-    const choice = confirm("Press [OK] to generate 80mm Thermal Receipt (3-1/8\")\nPress [Cancel] for Full Legal Size Document (8.5\" x 14\")");
-    targetFormat = choice ? 'thermal' : 'legal';
-  }
-
-  const reportDate = document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10);
-  const shiftType = document.getElementById('header-shift-badge')?.textContent || document.getElementById('rec-shift-type')?.value || 'Shift 1';
-  const cashierOut = document.getElementById('rec-cashier-out')?.value?.trim() || document.getElementById('grid-cashier-input')?.value?.trim() || 'Unspecified';
-  const cashierIn = document.getElementById('rec-cashier-in')?.value?.trim() || '-';
-  const totals = recalculateReconciliationTotals();
-
-  const activeItems = [];
-  let totalTix = 0;
-  let totalScratchSales = 0;
-
-  boxes.forEach((box, idx) => {
-    const m = calculateBoxMetrics(box);
-    if (!box.gameNum && m.ticketsSold === 0 && !isWorksheet && targetFormat === 'thermal') return;
-    totalTix += m.ticketsSold;
-    totalScratchSales += m.dollarSales;
-    activeItems.push({ box, m, idx });
-  });
-
-  if (targetFormat === 'thermal') {
-    const calculatedHeight = Math.max(150, 130 + (activeItems.length * 12));
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [80, calculatedHeight] });
-
-    doc.setFont("courier", "bold");
-    let y = 8;
-
-    doc.setFontSize(12);
-    doc.text((storeProfile.name || "STORE").toUpperCase(), 40, y, { align: "center" });
-    y += 4.5;
-    doc.setFontSize(9);
-    doc.text(`STORE #${storeProfile.number || "101"}`, 40, y, { align: "center" });
-    y += 4;
-    
-    // ISSUE #7: Add store address on thermal receipt
-    if (storeProfile.address) {
-      doc.setFontSize(7.5);
-      doc.setFont("courier", "normal");
-      doc.text(storeProfile.address, 40, y, { align: "center" });
-      y += 4;
-    }
-
-    doc.setFontSize(8.5);
-    doc.setFont("courier", "bold");
-    doc.text(isWorksheet ? "*** LOTTO COUNT WORKSHEET ***" : "*** FINAL SHIFT LOTTO RECEIPT ***", 40, y, { align: "center" });
-    y += 3;
-
-    doc.setLineWidth(0.4);
-    doc.line(4, y, 76, y);
-    y += 4;
-
-    doc.setFontSize(8.5);
-    doc.setFont("courier", "normal");
-    doc.text(`DATE:  ${reportDate}`, 4, y); y += 3.8;
-    doc.text(`SHIFT: ${shiftType}`, 4, y); y += 3.8;
-    doc.text(`OUT:   ${cashierOut}`, 4, y); y += 3.8;
-    doc.text(`IN:    ${cashierIn}`, 4, y); y += 3.5;
-
-    doc.line(4, y, 76, y);
-    y += 4;
-
-    activeItems.forEach(({ box, m, idx }) => {
-      doc.setFont("courier", "bold");
-      doc.setFontSize(9);
-      const boxLabel = `[BOX ${box.boxNumber || (idx + 1)}] #${box.gameNum || ''} ${box.gameName || 'EMPTY'}`.substring(0, 32);
-      doc.text(boxLabel, 4, y);
-      doc.text(box.price ? `$${box.price}` : '', 76, y, { align: "right" });
-      y += 3.8;
-
-      doc.setFont("courier", "normal");
-      doc.setFontSize(8);
-      const countInfo = `Start:${box.startTicket ?? 0}  End:${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '____'}`;
-      const soldInfo = isWorksheet && box.endTicket === '' ? 'Sold: ____' : `${m.ticketsSold} Sold ($${m.dollarSales.toFixed(2)})`;
-      doc.text(countInfo, 4, y);
-      doc.text(soldInfo, 76, y, { align: "right" });
-      y += 3.5;
-
-      const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
-      rollovers.forEach(ro => {
-        doc.setFontSize(7.5);
-        doc.text(`* Prev #${ro.gameNum}: ${ro.startTicket}->${ro.finishedTicket} (${ro.ticketsSold} sold = $${Number(ro.salesAmount || 0).toFixed(2)})`, 6, y);
-        y += 3.2;
-      });
-
-      doc.setLineDashPattern([1, 1], 0);
-      doc.line(4, y, 76, y);
-      doc.setLineDashPattern([], 0);
-      y += 3.5;
-    });
-
-    doc.line(4, y, 76, y);
-    y += 4;
-    doc.setFontSize(8.5);
-
-    const printRow = (label, val, isBold = false) => {
-      if (isBold) doc.setFont("courier", "bold");
-      else doc.setFont("courier", "normal");
-      doc.text(label, 4, y);
-      doc.text(val, 76, y, { align: "right" });
-      y += 4;
-    };
-
-    printRow("TOTAL TICKETS SOLD:", `${totalTix}`);
-    printRow("SCRATCH SALES:", `$${totalScratchSales.toFixed(2)}`);
-    printRow("ONLINE SALES:", `$${totals.onlineSales.toFixed(2)}`);
-    printRow("SCRATCH CASHED:", `-$${totals.scratchCashed.toFixed(2)}`);
-    printRow("ONLINE CASHED:", `-$${totals.onlineCashed.toFixed(2)}`);
-
-    doc.setLineDashPattern([1, 1], 0);
-    doc.line(4, y, 76, y);
-    doc.setLineDashPattern([], 0);
-    y += 4;
-
-    printRow("EXPECTED NET:", `$${totals.expectedNet.toFixed(2)}`, true);
-    printRow("POS ACTUAL:", `$${totals.posActual.toFixed(2)}`, true);
-
-    doc.line(4, y, 76, y);
-    y += 4;
-
-    const sign = totals.variance > 0 ? '+' : '';
-    doc.setFontSize(10);
-    printRow("VARIANCE:", `${sign}$${totals.variance.toFixed(2)}`, true);
-    y += 2;
-
-    if (currentSignatureDataUrl && !isWorksheet) {
-      try {
-        doc.addImage(currentSignatureDataUrl, 'PNG', 15, y, 50, 16);
-        y += 18;
-      } catch (e) { y += 10; }
-    } else {
-      y += 4;
-      doc.line(15, y + 8, 65, y + 8);
-      y += 12;
-    }
-
-    doc.setFontSize(7.5);
-    doc.setFont("courier", "bold");
-    doc.text("CASHIER SIGNATURE", 40, y, { align: "center" });
-    y += 5;
-    doc.setFontSize(7);
-    doc.setFont("courier", "normal");
-    doc.text(new Date().toLocaleString(), 40, y, { align: "center" });
-
-    const blobUrl = URL.createObjectURL(doc.output('blob'));
-    window.open(blobUrl, '_blank');
-    return;
-  }
-
-  // Legal Document Format (8.5" x 14")
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'legal' });
-  let y = 14;
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.text((storeProfile.name || "STORE").toUpperCase(), 14, y);
-  doc.setFontSize(10);
-  doc.text(`STORE #${storeProfile.number || "101"} — SHIFT LOTTERY AUDIT SHEET`, 14, y + 5);
-  doc.setFont("helvetica", "normal");
-  if (storeProfile.address) {
-    doc.setFontSize(8.5);
-    doc.text(storeProfile.address, 14, y + 10);
-    y += 5;
-  }
-  doc.text(`DATE: ${reportDate}  |  SHIFT: ${shiftType}`, 14, y + 10);
-  doc.text(`OUTGOING: ${cashierOut}  |  INCOMING: ${cashierIn}`, 14, y + 15);
-  y += 22;
-
-  doc.setLineWidth(0.3);
-  doc.line(14, y, 202, y);
-  y += 5;
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(8.5);
-  doc.text("BOX", 14, y);
-  doc.text("GAME #", 26, y);
-  doc.text("GAME NAME", 44, y);
-  doc.text("PRICE", 108, y, { align: "right" });
-  doc.text("START", 126, y, { align: "right" });
-  doc.text("END", 144, y, { align: "right" });
-  doc.text("SOLD", 164, y, { align: "right" });
-  doc.text("SALES ($)", 200, y, { align: "right" });
-  y += 2;
-  doc.line(14, y, 202, y);
-  y += 4;
-
-  doc.setFont("helvetica", "normal");
-  boxes.forEach((box, idx) => {
-    const m = calculateBoxMetrics(box);
-    const boxNum = box.boxNumber || (idx + 1);
-    doc.text(String(boxNum), 14, y);
-    doc.text(box.gameNum || '-', 26, y);
-    doc.text((box.gameName || 'Empty Slot').substring(0, 34), 44, y);
-    doc.text(box.price ? `$${box.price}` : '-', 108, y, { align: "right" });
-    doc.text(String(box.startTicket ?? 0), 126, y, { align: "right" });
-    doc.text(box.endTicket !== '' && box.endTicket !== undefined ? String(box.endTicket) : '-', 144, y, { align: "right" });
-    doc.text(String(m.ticketsSold), 164, y, { align: "right" });
-    doc.text(`$${m.dollarSales.toFixed(2)}`, 200, y, { align: "right" });
-    y += 5.4;
-  });
-
-  doc.line(14, y, 202, y);
-  y += 6;
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(9);
-  doc.text(`TOTAL TICKETS: ${totalTix}`, 14, y);
-  doc.text(`SCRATCH SALES: $${totalScratchSales.toFixed(2)}`, 64, y);
-  doc.text(`ONLINE SALES: $${totals.onlineSales.toFixed(2)}`, 114, y);
-  doc.text(`EXPECTED NET: $${totals.expectedNet.toFixed(2)}`, 164, y);
-  y += 5;
-  doc.text(`SCRATCH CASHED: -$${totals.scratchCashed.toFixed(2)}`, 14, y);
-  doc.text(`ONLINE CASHED: -$${totals.onlineCashed.toFixed(2)}`, 64, y);
-  doc.text(`POS ACTUAL: $${totals.posActual.toFixed(2)}`, 114, y);
-
-  const sign = totals.variance > 0 ? '+' : '';
-  doc.text(`VARIANCE: ${sign}$${totals.variance.toFixed(2)}`, 164, y);
-  y += 10;
-
-  if (currentSignatureDataUrl && !isWorksheet) {
-    try {
-      doc.addImage(currentSignatureDataUrl, 'PNG', 14, y, 55, 16);
-      y += 18;
-    } catch (e) { y += 10; }
-  } else {
-    doc.line(14, y + 10, 80, y + 10);
-    y += 14;
-  }
-  doc.setFontSize(8);
-  doc.text("AUTHORIZED CASHIER SIGNATURE", 14, y);
-  doc.text(`GENERATED: ${new Date().toLocaleString()}`, 140, y);
-
-  const blobUrl = URL.createObjectURL(doc.output('blob'));
-  window.open(blobUrl, '_blank');
-}
-
-function printTwoColumnBackupSheet() { printThermalReceipt(true, 'thermal'); }
-
 function buildMatrixPrintHTML(repData, isFinalReport = false) {
   const bList = Array.isArray(repData.boxesSnapshot) ? repData.boxesSnapshot : boxes;
   const t = repData.totals || {};
@@ -2135,7 +1940,7 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
     `;
   }).join('');
 
-  const sigImgHtml = repData.signatureDataUrl ? `<img src="${repData.signatureDataUrl}" style="max-height: 22px; max-width: 130px; object-fit: contain;" alt="Signature" />` : `<span style="color: #94a3b8; font-size: 7.5px;">______________________________</span>`;
+  const sigImgHtml = repData.signatureDataUrl ? `<img src="${repData.signatureDataUrl}" style="max-height: 26px; max-width: 150px; object-fit: contain;" alt="Signature" />` : `<span style="color: #94a3b8; font-size: 7.5px;">______________________________</span>`;
 
   return `
     <style>
@@ -2151,12 +1956,12 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
       <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; padding-bottom: 2px; margin-bottom: 3px;">
         <div>
           <div style="font-size: 12px; font-weight: 900; text-transform: uppercase;">
-            ${repData.storeName || storeProfile.name} (#${repData.storeNumber || storeProfile.number}) — ${isFinalReport ? 'Shift Lottery Audit' : 'Shift Count Worksheet'}
+            ${repData.storeName || storeProfile.name} (#${repData.storeNumber || storeProfile.number}) — Shift Lotto Count Worksheet
           </div>
           ${storeProfile.address ? `<div style="font-size: 7.5px; color: #334155;">${storeProfile.address}</div>` : ''}
           <div style="font-size: 8px; color: #334155; margin-top: 1px;">Date: <strong>${repData.date}</strong> &nbsp;|&nbsp; Shift: <strong>${repData.shiftType}</strong></div>
         </div>
-        <div style="text-align: right; font-size: 7.5px; font-weight: bold;">AUDIT REPORT</div>
+        <div style="text-align: right; font-size: 7.5px; font-weight: bold;">WORKSHEET</div>
       </div>
       <table style="width: 100%; border-collapse: collapse; margin-bottom: 4px;">
         <thead>
@@ -2173,8 +1978,8 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
         </thead>
         <tbody>${rowsHtml}</tbody>
       </table>
-      <div style="border: 1.5px solid #000; padding: 3px 5px; background: #f8fafc;">
-        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; border-bottom: 1px solid #94a3b8; padding-bottom: 2px; margin-bottom: 2px; text-align: center; font-size: 7.5px;">
+      <div style="border: 1.5px solid #000; padding: 4px 6px; background: #f8fafc;">
+        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; border-bottom: 1px solid #94a3b8; padding-bottom: 2px; margin-bottom: 3px; text-align: center; font-size: 7.5px;">
           <div><span>Total Sold:</span><div style="font-family:monospace; font-weight:900; font-size:9px;">${gtTickets} tix</div></div>
           <div><span>Scratch Sales:</span><div style="font-family:monospace; font-weight:900; font-size:9px; color:#047857;">$${gtSales.toFixed(2)}</div></div>
           <div><span>Online Sales:</span><div style="font-family:monospace; font-weight:900; font-size:9px;">$${(Number(t.onlineSales) || 0).toFixed(2)}</div></div>
@@ -2182,19 +1987,20 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
           <div><span>POS Actual:</span><div style="font-family:monospace; font-weight:900; font-size:9px;">$${(Number(t.posActual) || 0).toFixed(2)}</div></div>
           <div><span>Variance:</span><div style="font-family:monospace; font-weight:900; font-size:9px;">${variance > 0 ? '+' : ''}$${variance.toFixed(2)}</div></div>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 8px;">
           <div style="flex: 1.2;">
-            <div style="display: flex; gap: 10px; font-size: 7.5px;">
-              <div><strong>Outgoing:</strong> ${repData.cashierOut || '&nbsp;'}</div>
-              <div><strong>Incoming:</strong> ${repData.cashierIn || '&nbsp;'}</div>
+            <div style="display: flex; gap: 10px; font-size: 7.5px; margin-bottom: 3px;">
+              <div><strong>Outgoing Cashier:</strong> ${repData.cashierOut || '&nbsp;'}</div>
+              <div><strong>Incoming Cashier:</strong> ${repData.cashierIn || '&nbsp;'}</div>
             </div>
-            <div style="font-size: 7px; color: #334155; margin-top: 2px;">
-              ⚖ <em>"I hereby certify that the ticket counts and shift totals are accurate to the best of my knowledge."</em>
+            <!-- Signature ABOVE Attestation -->
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+              <div style="height: 26px; min-width: 130px; display: flex; align-items: center; border-bottom: 1px solid #000;">${sigImgHtml}</div>
+              <span style="font-size: 6.5px; font-weight: bold; text-transform: uppercase;">Cashier Signature</span>
             </div>
-          </div>
-          <div style="width: 140px; text-align: center; border-left: 1px solid #94a3b8; padding-left: 4px;">
-            <div style="height: 24px; display: flex; align-items: center; justify-content: center;">${sigImgHtml}</div>
-            <div style="font-size: 6.5px; font-weight: bold; text-transform: uppercase; border-top: 1px solid #000;">Cashier Signature</div>
+            <div style="font-size: 7px; color: #1e293b; font-style: italic; line-height: 1.1;">
+              "I hereby certify that the ticket counts, game numbers, and shift totals recorded above are true, complete, and accurate to the best of my knowledge."
+            </div>
           </div>
         </div>
       </div>
@@ -2206,7 +2012,7 @@ function printWorksheet() {
   openWorksheetPrintChoiceModal();
 }
 
-function printFinalReport() {
+function printWorksheetDirect() {
   let printContainer = document.getElementById('print-container');
   if (!printContainer) {
     printContainer = document.createElement('div');
@@ -2218,13 +2024,17 @@ function printFinalReport() {
     storeNumber: storeProfile.number,
     date: document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10),
     shiftType: document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)',
-    cashierOut: document.getElementById('rec-cashier-out')?.value?.trim() === '' ? '____________________' : document.getElementById('rec-cashier-out')?.value?.trim(),
-    cashierIn: document.getElementById('rec-cashier-in')?.value?.trim() === '' ? '____________________' : document.getElementById('rec-cashier-in')?.value?.trim(),
+    cashierOut: document.getElementById('rec-cashier-out')?.value?.trim() || document.getElementById('grid-cashier-input')?.value?.trim() || 'Unspecified',
+    cashierIn: document.getElementById('rec-cashier-in')?.value?.trim() || '-',
     totals: recalculateReconciliationTotals(),
     signatureDataUrl: currentSignatureDataUrl,
     boxesSnapshot: boxes
-  }, true);
+  }, false);
   window.print();
+}
+
+function printFinalReport() {
+  printWorksheet();
 }
 
 function printArchivedSingleReport(reportId) {
