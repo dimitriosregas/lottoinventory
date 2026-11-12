@@ -899,11 +899,11 @@ function renderDispenserGrid() {
           <div class="grid grid-cols-2 gap-2 pt-1">
             <div>
               <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Start #</label>
-              <input type="number" tabindex="${tabStart}" enterkeyhint="next" id="input-startTicket-${idx}" value="${box.startTicket !== undefined ? box.startTicket : 0}" oninput="updateBoxFieldDirect(${idx}, 'startTicket', this.value)" onkeydown="handleStartKeydown(event, ${idx})" placeholder="000" class="w-full text-center font-mono font-bold text-xs border border-slate-300 rounded p-1.5 lotto-input" />
+              <input type="number" tabindex="${tabStart}" enterkeyhint="next" id="input-startTicket-${idx}" value="${box.startTicket !== undefined ? box.startTicket : 0}" oninput="updateBoxFieldDirect(${idx}, 'startTicket', this.value)" onkeydown="handleStartKeydown(event, this.value)" placeholder="000" class="w-full text-center font-mono font-bold text-xs border border-slate-300 rounded p-1.5 lotto-input" />
             </div>
             <div>
               <label class="block text-[10px] font-bold text-blue-700 uppercase mb-0.5">End #</label>
-              <input type="number" tabindex="${tabEnd}" enterkeyhint="next" id="input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}" oninput="updateBoxEndTicketLive(${idx}, this.value)" onchange="commitBoxEndTicket(${idx}, this.value)" onkeydown="handleGridEnter(event, ${idx})" placeholder="000" class="w-full text-center font-mono font-bold text-xs border-2 border-blue-400 rounded p-1.5 lotto-input" />
+              <input type="number" tabindex="${tabEnd}" enterkeyhint="next" id="input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}" oninput="updateBoxEndTicketLive(${idx}, this.value)" onchange="commitBoxEndTicket(${idx}, this.value)" onkeydown="handleGridEnter(event, this.value)" placeholder="000" class="w-full text-center font-mono font-bold text-xs border-2 border-blue-400 rounded p-1.5 lotto-input" />
             </div>
           </div>
         </div>
@@ -992,9 +992,12 @@ function createPrintChoiceModalDOM() {
         </div>
       </div>
 
-      <div class="pt-2">
-        <button type="button" onclick="executeUnifiedPrint()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl text-xs transition shadow-md">
-          🖨 Print Worksheet & Auto-Backup
+      <div class="space-y-2 pt-2">
+        <button type="button" onclick="executeUnifiedPrint('thermal')" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-2.5 rounded-xl text-xs transition shadow-md">
+          📜 Print 80mm Thermal Receipt
+        </button>
+        <button type="button" onclick="executeUnifiedPrint('legal')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 rounded-xl text-xs transition shadow-md">
+          📄 Print Full Legal Paper (8.5" x 14")
         </button>
       </div>
     </div>
@@ -1044,7 +1047,7 @@ function clearPrintModalSignature() {
   printModalSigDataUrl = null;
 }
 
-function executeUnifiedPrint() {
+function executeUnifiedPrint(formatChoice) {
   const cashierVal = document.getElementById('print-modal-cashier-input')?.value?.trim() || 'Unspecified';
   const shiftVal = document.getElementById('print-modal-shift-select')?.value || 'Shift 1 (Morning)';
 
@@ -1058,15 +1061,19 @@ function executeUnifiedPrint() {
 
   document.getElementById('modal-print-worksheet-choice').classList.add('hidden');
   
-  // 1. Print Worksheet
-  printWorksheetDirect();
+  // 1. Generate Print based on chosen format (Thermal vs Legal)
+  if (formatChoice === 'thermal') {
+    printThermalReceipt(true, 'thermal');
+  } else {
+    printWorksheetDirect();
+  }
 
-  // 2. Auto-backup full tablet state immediately after printing
+  // 2. Silent Background Auto-Backup
   downloadFullTabletBackup(true);
 
-  // 3. Prompt user if they want to end shift
+  // 3. End-shift prompt
   setTimeout(() => {
-    if (confirm('Worksheet printed and system backed up successfully!\n\nWould you like to end the shift and start a new shift now?')) {
+    if (confirm('Worksheet printed and system backed up successfully in the background!\n\nWould you like to end the shift and start a new shift now?')) {
       advanceEndToStartForNewShift();
     } else {
       switchMainView(lastActiveViewName || 'grid');
@@ -1292,26 +1299,36 @@ function buildFullTabletBackupPayload() {
   };
 }
 
-function downloadFullTabletBackup(silent = false) {
+// Completely silent background backup (no popups, alerts, or save-as prompts)
+function executeSilentBackgroundBackup(slotLabel = 'MANUAL') {
   const payload = buildFullTabletBackupPayload();
+  try {
+    // Store latest rolling snapshot inside localStorage as an immediate internal safeguard
+    localStorage.setItem('project_lotto_latest_silent_snapshot', JSON.stringify(payload));
+    localStorage.setItem('project_lotto_last_backup_timestamp', `${new Date().toLocaleString()} (${slotLabel})`);
+  } catch (e) {}
+
+  // Trigger silent background file download without any UI dialogs
   const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16);
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
+  a.style.display = 'none';
   a.href = url;
-  a.download = `ProjectLotto_FULL_TABLET_BACKUP_${stamp}.json`;
+  a.download = `ProjectLotto_Backup_${slotLabel}_${stamp}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 2000);
-  if (!silent) {
-    console.log('Full tablet backup downloaded:', a.download);
-  }
   return payload;
 }
 
+function downloadFullTabletBackup(silent = true) {
+  return executeSilentBackgroundBackup(silent ? 'AUTO' : 'MANUAL');
+}
+
 function exportCurrentLocationBackup() {
-  downloadFullTabletBackup(false);
+  executeSilentBackgroundBackup('MANUAL');
 }
 
 function exportSpecificLocationBackup(locId) {
@@ -1336,6 +1353,7 @@ function exportSpecificLocationBackup(locId) {
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
+  a.style.display = 'none';
   a.href = url;
   a.download = `LottoBackup_${safeName}_${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(a);
@@ -1407,7 +1425,7 @@ function importLocationBackupFile(event) {
 }
 
 function sendNightlyEmailBackupToOwner(isScheduled11PM = false) {
-  const payload = downloadFullTabletBackup(true);
+  const payload = executeSilentBackgroundBackup(isScheduled11PM ? '11PM' : 'EMAIL');
   const todayStr = new Date().toISOString().slice(0, 10);
   const targetEmail = 'dimitriosregas@gmail.com';
 
@@ -1429,7 +1447,7 @@ function sendNightlyEmailBackupToOwner(isScheduled11PM = false) {
     summaryLines.push(`• ${loc.name} (#${loc.number}): ${activeBoxes} active games | ${repCount} archived reports`);
   });
 
-  summaryLines.push(``, `NOTE: Your full restore JSON file (ProjectLotto_FULL_TABLET_BACKUP_*.json) has been saved to this tablet's Downloads folder. Attach that file to this email so you can restore all stores, boxes, game numbers, and reports onto any tablet at any time.`);
+  summaryLines.push(``, `NOTE: Your full restore JSON file (ProjectLotto_Backup_*.json) has been saved silently to this tablet's Downloads folder. Attach that file to this email to restore onto any tablet.`);
 
   const subject = encodeURIComponent(`Project Lotto Daily Backup - ${todayStr} (${storeProfile.name})`);
   const body = encodeURIComponent(summaryLines.join('\n'));
@@ -1438,18 +1456,27 @@ function sendNightlyEmailBackupToOwner(isScheduled11PM = false) {
   window.open(`mailto:${targetEmail}?subject=${subject}&body=${body}`, '_blank');
 }
 
-function startNightly11PMBackupScheduler() {
+// Twice-daily silent background backup scheduler (2:00 PM & 11:00 PM)
+function startTwiceDailyBackupScheduler() {
   setInterval(() => {
     const now = new Date();
-    const hour = now.getHours();
-    const minute = now.getMinutes();
+    const hour = now.getHours(); // 14 = 2:00 PM, 23 = 11:00 PM
     const todayStr = now.toISOString().slice(0, 10);
-    const lastSentDate = localStorage.getItem('project_lotto_last_nightly_email_date');
 
-    if (hour === 23 && minute >= 0 && lastSentDate !== todayStr) {
+    // 1. Silent 2:00 PM Backup
+    const last2PM = localStorage.getItem('project_lotto_last_2pm_backup_date');
+    if (hour === 14 && last2PM !== todayStr) {
+      localStorage.setItem('project_lotto_last_2pm_backup_date', todayStr);
+      executeSilentBackgroundBackup('2PM');
+    }
+
+    // 2. Silent 11:00 PM Backup + Nightly Email Dispatch
+    const last11PM = localStorage.getItem('project_lotto_last_11pm_backup_date');
+    if (hour === 23 && last11PM !== todayStr) {
+      localStorage.setItem('project_lotto_last_11pm_backup_date', todayStr);
       sendNightlyEmailBackupToOwner(true);
     }
-  }, 30000);
+  }, 30000); // Checks every 30 seconds silently in the background
 }
 /* ==========================================================================
    PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 7 OF 7)
@@ -1631,8 +1658,11 @@ function finalizeAndSaveShiftReport() {
   history.unshift(reportRecord);
   saveLocationHistoricalReports(history, activeLocationId);
 
-  downloadFullTabletBackup(true);
-  alert(`Shift Report for ${storeProfile.name} archived and full tablet backup downloaded successfully!`);
+  const ind = document.getElementById('last-archived-indicator');
+  if (ind) ind.textContent = `✔ Archived ${reportDate} (${shiftType}) at ${new Date().toLocaleTimeString()}`;
+
+  executeSilentBackgroundBackup('REPORT');
+  alert(`Shift Report for ${storeProfile.name} archived and full tablet backup downloaded successfully in the background!`);
 }
 
 function handleReportFilterModeChange(mode) {
@@ -2073,5 +2103,5 @@ window.addEventListener('DOMContentLoaded', () => {
   recalculateReconciliationTotals();
   initSignaturePad();
   executeReportLookup();
-  startNightly11PMBackupScheduler();
+  startTwiceDailyBackupScheduler();
 });
