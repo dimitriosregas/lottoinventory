@@ -997,7 +997,7 @@ function createPrintChoiceModalDOM() {
           📜 Print 80mm Thermal Receipt
         </button>
         <button type="button" onclick="executeUnifiedPrint('legal')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 rounded-xl text-xs transition shadow-md">
-          📄 Print Full Legal Paper (8.5" x 14")
+          📄 Print Full Legal Paper (8.5" x 11")
         </button>
       </div>
     </div>
@@ -2321,9 +2321,8 @@ function switchMainView(viewName) {
     renderAdminCashiersTable();
   }
 }
-
 // --------------------------------------------------------------------------
-// DIRECT CSS PRINT ENGINE (LETTER SIZE 8.5" x 11")
+// DIRECT CSS PRINT ENGINE (LETTER SIZE 8.5" x 11" — STRICT 1-PAGE FIT)
 // --------------------------------------------------------------------------
 function buildMatrixPrintHTML(repData, isFinalReport = false) {
   const bList = Array.isArray(repData.boxesSnapshot) ? repData.boxesSnapshot : boxes;
@@ -2339,78 +2338,106 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
     const hasGame = Boolean(box.gameNum);
     const roCount = Array.isArray(box.rollovers) ? box.rollovers.length : 0;
     return `
-      <tr style="border-bottom: 1px solid #cbd5e1; font-size: 8px;">
-        <td style="padding: 2px 4px; text-align: center; font-weight: 900; background: #0f172a; color: #fff;">${box.boxNumber}</td>
-        <td style="padding: 2px 4px; text-align: center; font-family: monospace; font-weight: bold;">${box.gameNum || '-'}</td>
-        <td style="padding: 2px 4px; font-weight: 600;">${hasGame ? (box.gameName || 'Game #' + box.gameNum) : '<span style="color:#94a3b8;">Empty</span>'}</td>
-        <td style="padding: 2px 4px; text-align: center; font-weight: bold; color: #047857;">${hasGame && box.price ? '$' + box.price : '-'}</td>
-        <td style="padding: 2px 4px; text-align: center; font-family: monospace;">${box.startTicket !== '' ? box.startTicket : '-'}</td>
-        <td style="padding: 2px 4px; text-align: center; font-family: monospace; font-weight: bold;">${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '-'}</td>
-        <td style="padding: 2px 4px; text-align: center; font-weight: bold;">${m.ticketsSold}${roCount > 0 ? ' *' : ''}</td>
-        <td style="padding: 2px 4px; text-align: right; font-family: monospace; font-weight: 900; color: #047857;">$${m.dollarSales.toFixed(2)}</td>
+      <tr style="border-bottom: 1px solid #cbd5e1; font-size: 7.5px;">
+        <td style="padding: 1.5px 3px; text-align: center; font-weight: 900; background: #0f172a; color: #fff;">${box.boxNumber}</td>
+        <td style="padding: 1.5px 3px; text-align: center; font-family: monospace; font-weight: bold;">${box.gameNum || '-'}</td>
+        <td style="padding: 1.5px 3px; font-weight: 600;">${hasGame ? (box.gameName || 'Game #' + box.gameNum) : '<span style="color:#94a3b8;">Empty</span>'}</td>
+        <td style="padding: 1.5px 3px; text-align: center; font-weight: bold; color: #047857;">${hasGame && box.price ? '$' + box.price : '-'}</td>
+        <td style="padding: 1.5px 3px; text-align: center; font-family: monospace;">${box.startTicket !== '' ? box.startTicket : '-'}</td>
+        <td style="padding: 1.5px 3px; text-align: center; font-family: monospace; font-weight: bold;">${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '-'}</td>
+        <td style="padding: 1.5px 3px; text-align: center; font-weight: bold;">${m.ticketsSold}${roCount > 0 ? ' *' : ''}</td>
+        <td style="padding: 1.5px 3px; text-align: right; font-family: monospace; font-weight: 900; color: #047857;">$${m.dollarSales.toFixed(2)}</td>
       </tr>
     `;
   }).join('');
 
-  const sigImgHtml = repData.signatureDataUrl ? `<img src="${repData.signatureDataUrl}" style="max-height: 26px; max-width: 150px; object-fit: contain;" alt="Signature" />` : `<span style="color: #94a3b8; font-size: 7.5px;">______________________________</span>`;
+  const sigImgHtml = repData.signatureDataUrl ? `<img src="${repData.signatureDataUrl}" style="max-height: 24px; max-width: 140px; object-fit: contain;" alt="Signature" />` : `<span style="color: #94a3b8; font-size: 7.5px;">______________________________</span>`;
 
   return `
     <style>
-      @page { size: letter portrait; margin: 0.2in 0.25in; }
+      @page {
+        size: letter portrait;
+        margin: 0.15in 0.2in;
+      }
       @media print {
-        html, body { margin: 0 !important; padding: 0 !important; height: 100% !important; background: #fff !important; color: #000 !important; overflow: hidden !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        body > header, body > main, body > div.fixed, #app-shell, .no-print { display: none !important; }
-        #print-container { display: block !important; width: 100% !important; }
-        .one-page-print-sheet { width: 100%; max-height: 10.4in; page-break-inside: avoid !important; }
+        html, body {
+          margin: 0 !important;
+          padding: 0 !important;
+          height: 100% !important;
+          background: #fff !important;
+          color: #000 !important;
+          overflow: hidden !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        body > header, body > main, body > div.fixed, #app-shell, .no-print {
+          display: none !important;
+        }
+        #print-container {
+          display: block !important;
+          width: 100% !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        .one-page-print-sheet {
+          width: 100% !important;
+          max-height: 10.4in !important;
+          overflow: hidden !important;
+          page-break-inside: avoid !important;
+          page-break-after: avoid !important;
+          page-break-before: avoid !important;
+          transform: scale(0.97);
+          transform-origin: top left;
+        }
       }
     </style>
-    <div class="one-page-print-sheet" style="font-family: Arial, sans-serif; color: #000; font-size: 8px; line-height: 1.1;">
-      <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; padding-bottom: 2px; margin-bottom: 3px;">
+    <div class="one-page-print-sheet" style="font-family: Arial, sans-serif; color: #000; font-size: 7.5px; line-height: 1.05;">
+      <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; padding-bottom: 2px; margin-bottom: 2px;">
         <div>
-          <div style="font-size: 12px; font-weight: 900; text-transform: uppercase;">
+          <div style="font-size: 11px; font-weight: 900; text-transform: uppercase;">
             ${repData.storeName || storeProfile.name} (#${repData.storeNumber || storeProfile.number}) — Shift Lotto Count Worksheet
           </div>
-          ${storeProfile.address ? `<div style="font-size: 7.5px; color: #334155;">${storeProfile.address}</div>` : ''}
-          <div style="font-size: 8px; color: #334155; margin-top: 1px;">Date: <strong>${repData.date}</strong> &nbsp;|&nbsp; Shift: <strong>${repData.shiftType}</strong></div>
+          ${storeProfile.address ? `<div style="font-size: 7px; color: #334155;">${storeProfile.address}</div>` : ''}
+          <div style="font-size: 7.5px; color: #334155; margin-top: 1px;">Date: <strong>${repData.date}</strong> &nbsp;|&nbsp; Shift: <strong>${repData.shiftType}</strong></div>
         </div>
-        <div style="text-align: right; font-size: 7.5px; font-weight: bold;">WORKSHEET</div>
+        <div style="text-align: right; font-size: 7px; font-weight: bold;">WORKSHEET</div>
       </div>
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 4px;">
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 3px;">
         <thead>
-          <tr style="background: #e2e8f0; border-bottom: 1.5px solid #000; font-size: 7.5px; text-transform: uppercase;">
-            <th style="padding: 3px; text-align: center; width: 32px;">Box</th>
-            <th style="padding: 3px; text-align: center; width: 55px;">Game #</th>
-            <th style="padding: 3px; text-align: left;">Game Name</th>
-            <th style="padding: 3px; text-align: center; width: 35px;">Price</th>
-            <th style="padding: 3px; text-align: center; width: 50px;">Start</th>
-            <th style="padding: 3px; text-align: center; width: 50px;">End</th>
-            <th style="padding: 3px; text-align: center; width: 35px;">Sold</th>
-            <th style="padding: 3px; text-align: right; width: 65px;">Sales $</th>
+          <tr style="background: #e2e8f0; border-bottom: 1.5px solid #000; font-size: 7px; text-transform: uppercase;">
+            <th style="padding: 2.5px; text-align: center; width: 30px;">Box</th>
+            <th style="padding: 2.5px; text-align: center; width: 50px;">Game #</th>
+            <th style="padding: 2.5px; text-align: left;">Game Name</th>
+            <th style="padding: 2.5px; text-align: center; width: 32px;">Price</th>
+            <th style="padding: 2.5px; text-align: center; width: 45px;">Start</th>
+            <th style="padding: 2.5px; text-align: center; width: 45px;">End</th>
+            <th style="padding: 2.5px; text-align: center; width: 32px;">Sold</th>
+            <th style="padding: 2.5px; text-align: right; width: 60px;">Sales $</th>
           </tr>
         </thead>
         <tbody>${rowsHtml}</tbody>
       </table>
-      <div style="border: 1.5px solid #000; padding: 4px 6px; background: #f8fafc;">
-        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; border-bottom: 1px solid #94a3b8; padding-bottom: 2px; margin-bottom: 3px; text-align: center; font-size: 7.5px;">
-          <div><span>Total Sold:</span><div style="font-family:monospace; font-weight:900; font-size:9px;">${gtTickets} tix</div></div>
-          <div><span>Scratch Sales:</span><div style="font-family:monospace; font-weight:900; font-size:9px; color:#047857;">$${gtSales.toFixed(2)}</div></div>
-          <div><span>Online Sales:</span><div style="font-family:monospace; font-weight:900; font-size:9px;">$${(Number(t.onlineSales) || 0).toFixed(2)}</div></div>
-          <div><span>Expected Net:</span><div style="font-family:monospace; font-weight:900; font-size:9px;">$${(Number(t.expectedNet) || 0).toFixed(2)}</div></div>
-          <div><span>POS Actual:</span><div style="font-family:monospace; font-weight:900; font-size:9px;">$${(Number(t.posActual) || 0).toFixed(2)}</div></div>
-          <div><span>Variance:</span><div style="font-family:monospace; font-weight:900; font-size:9px;">${variance > 0 ? '+' : ''}$${variance.toFixed(2)}</div></div>
+      <div style="border: 1.5px solid #000; padding: 3px 5px; background: #f8fafc;">
+        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; border-bottom: 1px solid #94a3b8; padding-bottom: 2px; margin-bottom: 2px; text-align: center; font-size: 7px;">
+          <div><span>Total Sold:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">${gtTickets} tix</div></div>
+          <div><span>Scratch Sales:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px; color:#047857;">$${gtSales.toFixed(2)}</div></div>
+          <div><span>Online Sales:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">$${(Number(t.onlineSales) || 0).toFixed(2)}</div></div>
+          <div><span>Expected Net:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">$${(Number(t.expectedNet) || 0).toFixed(2)}</div></div>
+          <div><span>POS Actual:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">$${(Number(t.posActual) || 0).toFixed(2)}</div></div>
+          <div><span>Variance:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">${variance > 0 ? '+' : ''}$${variance.toFixed(2)}</div></div>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 6px;">
           <div style="flex: 1.2;">
-            <div style="display: flex; gap: 10px; font-size: 7.5px; margin-bottom: 3px;">
+            <div style="display: flex; gap: 8px; font-size: 7px; margin-bottom: 2px;">
               <div><strong>Outgoing Cashier:</strong> ${repData.cashierOut || '&nbsp;'}</div>
               <div><strong>Incoming Cashier:</strong> ${repData.cashierIn || '&nbsp;'}</div>
             </div>
             <!-- Signature ABOVE Attestation -->
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
-              <div style="height: 26px; min-width: 130px; display: flex; align-items: center; border-bottom: 1px solid #000;">${sigImgHtml}</div>
-              <span style="font-size: 6.5px; font-weight: bold; text-transform: uppercase;">Cashier Signature</span>
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 1px;">
+              <div style="height: 22px; min-width: 120px; display: flex; align-items: center; border-bottom: 1px solid #000;">${sigImgHtml}</div>
+              <span style="font-size: 6px; font-weight: bold; text-transform: uppercase;">Cashier Signature</span>
             </div>
-            <div style="font-size: 7px; color: #1e293b; font-style: italic; line-height: 1.1;">
+            <div style="font-size: 6.5px; color: #1e293b; font-style: italic; line-height: 1.05;">
               "I hereby certify that the ticket counts, game numbers, and shift totals recorded above are true, complete, and accurate to the best of my knowledge."
             </div>
           </div>
