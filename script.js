@@ -2028,13 +2028,13 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
   const sigImgHtml = repData.signatureDataUrl ? `<img src="${repData.signatureDataUrl}" style="max-height: 26px; max-width: 150px; object-fit: contain;" alt="Signature" />` : `<span style="color: #94a3b8; font-size: 7.5px;">______________________________</span>`;
 
   return `
-    <style>
-      @page { size: letter portrait; margin: 0.18in 0.22in; }
+   <style>
+      @page { size: letter portrait; margin: 0.2in 0.25in; }
       @media print {
         html, body { margin: 0 !important; padding: 0 !important; height: 100% !important; background: #fff !important; color: #000 !important; overflow: hidden !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         body > header, body > main, body > div.fixed, #app-shell, .no-print { display: none !important; }
         #print-container { display: block !important; width: 100% !important; }
-        .one-page-print-sheet { width: 100%; max-height: 10.45in; page-break-inside: avoid !important; }
+        .one-page-print-sheet { width: 100%; max-height: 10.5in; page-break-inside: avoid !important; }
       }
     </style>
     <div class="one-page-print-sheet" style="font-family: Arial, sans-serif; color: #000; font-size: 8px; line-height: 1.1;">
