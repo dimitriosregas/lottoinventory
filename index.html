@@ -18,7 +18,6 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <!-- jsPDF CDN for physical 80mm & Legal PDF Generation -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-</head>
   <style>
     :root {
       --brand-primary: #1e3a8a;
@@ -259,6 +258,7 @@
         </div>
       </div>
     </header>
+
     <!-- MAIN APP VIEWS -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-3 py-4">
 
@@ -269,16 +269,9 @@
             <button
               type="button"
               onclick="printWorksheet()"
-              class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-sm"
             >
-              <span>🖨 Print 1-Page Worksheet</span>
-            </button>
-            <button
-              type="button"
-              onclick="printThermalReceipt(true)"
-              class="bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm"
-            >
-              <span>🧾 Print 80mm Thermal Worksheet</span>
+              <span>🖨 Print</span>
             </button>
             <button
               type="button"
@@ -344,16 +337,9 @@
               <button
                 type="button"
                 onclick="printFinalReport()"
-                class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-lg shadow-md transition"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-lg shadow-md transition"
               >
-                🖨 Print 1-Page Final Report
-              </button>
-              <button
-                type="button"
-                onclick="printThermalReceipt(false)"
-                class="bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-lg shadow-md transition"
-              >
-                🧾 Print 80mm Final Receipt
+                🖨 Print
               </button>
             </div>
           </div>
@@ -367,7 +353,8 @@
               <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Shift Type</label>
               <select id="rec-shift-type" onchange="handleShiftTypeChange(this.value)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold bg-slate-50 lotto-input">
                 <option value="Shift 1 (Morning)">Shift 1 (Morning)</option>
-                <option value="Shift 2 (Night)">Shift 2 (Night)</option>
+                <option value="Shift 2 (Evening)">Shift 2 (Evening)</option>
+                <option value="Shift 3 (Night)">Shift 3 (Night)</option>
                 <option value="Mid-Shift Audit">Mid-Shift Audit</option>
                 <option value="Full Day Close">Full Day Close</option>
               </select>
@@ -443,7 +430,7 @@
           </div>
         </div>
       </section>
-     <!-- VIEW 3: REPORTS -->
+      <!-- VIEW 3: REPORTS -->
       <section id="view-reports" class="hidden space-y-4">
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
           <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-5">
@@ -452,7 +439,7 @@
               <p class="text-xs text-slate-500">Filter and review historical shift records.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              <button type="button" onclick="triggerMonthlyEmailDispatchManually()" class="bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm">✉ Email Month Archive</button>
+              <button type="button" onclick="triggerMonthlyEmailDispatchManually()" class="bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm">✉ Email Full Backup</button>
               <button type="button" onclick="exportHistoricalReportsJSON()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm">💾 Export Reports JSON</button>
             </div>
           </div>
@@ -480,7 +467,8 @@
                 <select id="report-filter-shift-type" onchange="executeReportLookup()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold bg-white lotto-input">
                   <option value="ALL">All Shifts</option>
                   <option value="Shift 1 (Morning)">Shift 1 (Morning)</option>
-                  <option value="Shift 2 (Night)">Shift 2 (Night)</option>
+                  <option value="Shift 2 (Evening)">Shift 2 (Evening)</option>
+                  <option value="Shift 3 (Night)">Shift 3 (Night)</option>
                   <option value="Mid-Shift Audit">Mid-Shift Audit</option>
                   <option value="Full Day Close">Full Day Close</option>
                 </select>
@@ -515,9 +503,6 @@
               <h3 class="text-xs font-extrabold uppercase text-slate-800">Shift Records Breakdown</h3>
               <div class="flex flex-wrap items-center gap-1.5">
                 <button type="button" onclick="printFilteredReportSummary()" class="text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded">🖨 Print Historical Summary</button>
-                <button type="button" onclick="printThermalReceipt(true)" class="text-xs font-bold bg-teal-700 hover:bg-teal-800 text-white px-2.5 py-1 rounded">🧾 Print Thermal Worksheet</button>
-                <button type="button" onclick="printThermalReceipt(false)" class="text-xs font-bold bg-indigo-700 hover:bg-indigo-800 text-white px-2.5 py-1 rounded">🧾 Print Final Thermal Receipt</button>
-                <button type="button" onclick="printTwoColumnBackupSheet()" class="text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white px-2.5 py-1 rounded">🖨 Print Backup Sheet</button>
               </div>
             </div>
             <div class="overflow-x-auto">
@@ -551,8 +536,8 @@
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 space-y-6">
           <div class="border-b border-slate-200 pb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 class="text-lg font-extrabold text-slate-900">Store Profile, Master Games &amp; System Configuration</h2>
-              <p class="text-xs text-slate-500">Manage master games, active store profile, and custom slot/box numbers.</p>
+              <h2 class="text-lg font-extrabold text-slate-900">Store Profile, Cashiers, Master Games &amp; System Configuration</h2>
+              <p class="text-xs text-slate-500">Manage master games, saved cashiers, active store profile, and custom slot/box numbers.</p>
             </div>
           </div>
 
@@ -591,6 +576,28 @@
                 <button type="button" onclick="removeBoxSlot()" class="bg-red-100 text-red-700 font-bold text-xs px-3 py-1.5 rounded">− Remove Box</button>
                 <button type="button" onclick="addBoxSlot()" class="bg-emerald-600 text-white font-bold text-xs px-3.5 py-1.5 rounded">+ Add Box</button>
               </div>
+            </div>
+          </div>
+
+          <!-- SAVED CASHIERS MANAGEMENT -->
+          <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
+              <h3 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Saved Cashiers List (<span id="admin-cashiers-count">0</span>)</h3>
+            </div>
+            <div class="flex gap-2">
+              <input type="text" id="new-cashier-name-input" placeholder="Enter cashier full name..." class="flex-1 border rounded-lg px-3 py-1.5 text-xs font-bold lotto-input" />
+              <button type="button" onclick="addNewCashierManual()" class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs px-4 py-1.5 rounded-lg">+ Add Cashier</button>
+            </div>
+            <div class="max-h-48 overflow-y-auto border border-slate-200 rounded-lg">
+              <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px]">
+                    <th class="p-2.5">Cashier Name</th>
+                    <th class="p-2.5 text-center w-24">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-cashiers-tbody" class="divide-y divide-slate-200 font-medium"></tbody>
+              </table>
             </div>
           </div>
 
@@ -657,6 +664,7 @@
         </div>
       </section>
     </main>
+
     <!-- FOOTER -->
     <footer class="bg-slate-900 text-slate-400 text-[11px] py-3 px-4 border-t border-slate-800 mt-auto">
       <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
