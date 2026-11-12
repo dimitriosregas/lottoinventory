@@ -1,10 +1,11 @@
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 1 OF 2)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 1 OF 7)
    ========================================================================== */
 
 const STORAGE_KEY_LOCATIONS = 'project_lotto_locations_v1';
 const STORAGE_KEY_ACTIVE_LOC = 'project_lotto_active_loc_id_v1';
 const STORAGE_KEY_MASTER_GAMES = 'project_lotto_master_games_v1';
+const STORAGE_KEY_CASHIERS = 'project_lotto_cashiers_v1';
 
 const DEFAULT_LOCATIONS = [
   { id: 'loc-regas-shell', name: 'Regas Shell', number: '101' },
@@ -12,6 +13,8 @@ const DEFAULT_LOCATIONS = [
   { id: 'loc-regas-amaco', name: 'Regas Amaco', number: '103' },
   { id: 'loc-regas-xpress', name: 'Regas Xpress', number: '104' }
 ];
+
+const DEFAULT_CASHIERS = ['Manager', 'John Doe', 'Jane Smith', 'Shift Lead'];
 
 const DEFAULT_MASTER_GAMES = [
   { gameNum: '854', name: 'BINGO JUMBO', price: 3, count: 100 },
@@ -58,9 +61,10 @@ const DEFAULT_MASTER_GAMES = [
 
 let activeLocationId = 'loc-regas-shell';
 let locations = [];
-let storeProfile = { name: 'Regas Shell', number: '101' };
+let storeProfile = { name: 'Regas Shell', number: '101', address: '', email: 'dimitriosregas@gmail.com', password: '' };
 let boxes = [];
 let masterGames = [];
+let savedCashiers = [];
 let isSetupLocked = false;
 let currentDispenserView = 'grid';
 let currentSignatureDataUrl = null;
@@ -147,6 +151,25 @@ function saveGamesState() {
   try { localStorage.setItem(STORAGE_KEY_MASTER_GAMES, JSON.stringify(masterGames)); } catch (e) {}
 }
 
+function loadCashiersList() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_CASHIERS);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        savedCashiers = parsed;
+        return;
+      }
+    }
+  } catch (e) {}
+  savedCashiers = [...DEFAULT_CASHIERS];
+  saveCashiersState();
+}
+
+function saveCashiersState() {
+  try { localStorage.setItem(STORAGE_KEY_CASHIERS, JSON.stringify(savedCashiers)); } catch (e) {}
+}
+
 function loadLocationsRegistry() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_LOCATIONS);
@@ -168,6 +191,7 @@ function saveLocationsRegistry() {
 
 function initActiveLocation() {
   loadLocationsRegistry();
+  loadCashiersList();
   const savedActive = localStorage.getItem(STORAGE_KEY_ACTIVE_LOC);
   if (savedActive && locations.some(l => l.id === savedActive)) {
     activeLocationId = savedActive;
@@ -177,6 +201,9 @@ function initActiveLocation() {
   loadActiveStoreData();
   populateLocationSwitcherDropdown();
 }
+/* ==========================================================================
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 2 OF 7)
+   ========================================================================== */
 
 function loadActiveStoreData() {
   const profKey = getStoreProfileStorageKey(activeLocationId);
@@ -193,12 +220,12 @@ function loadActiveStoreData() {
     if (pRaw) {
       storeProfile = JSON.parse(pRaw);
     } else if (activeLocObj) {
-      storeProfile = { name: activeLocObj.name, number: activeLocObj.number, address: activeLocObj.address || '', email: activeLocObj.email || '', password: activeLocObj.password || '' };
+      storeProfile = { name: activeLocObj.name, number: activeLocObj.number, address: activeLocObj.address || '', email: 'dimitriosregas@gmail.com', password: '' };
     } else {
-      storeProfile = { name: 'Regas Shell', number: '101', address: '', email: '', password: '' };
+      storeProfile = { name: 'Regas Shell', number: '101', address: '', email: 'dimitriosregas@gmail.com', password: '' };
     }
   } catch (e) {
-    storeProfile = { name: activeLocObj?.name || 'Regas Shell', number: activeLocObj?.number || '101', address: '', email: '', password: '' };
+    storeProfile = { name: activeLocObj?.name || 'Regas Shell', number: activeLocObj?.number || '101', address: '', email: 'dimitriosregas@gmail.com', password: '' };
   }
 
   const adminName = document.getElementById('admin-store-name');
@@ -210,7 +237,7 @@ function loadActiveStoreData() {
   if (adminName) adminName.value = storeProfile.name || '';
   if (adminNum) adminNum.value = storeProfile.number || '';
   if (adminAddr) adminAddr.value = storeProfile.address || '';
-  if (adminEmail) adminEmail.value = storeProfile.email || '';
+  if (adminEmail) adminEmail.value = storeProfile.email || 'dimitriosregas@gmail.com';
   if (adminPass) adminPass.value = storeProfile.password || '';
 
   const boxKey = getStoreBoxesStorageKey(activeLocationId);
@@ -252,6 +279,7 @@ function loadActiveStoreData() {
 
   if (typeof renderDispenserGrid === 'function') renderDispenserGrid();
   if (typeof renderAdminBoxLabelsGrid === 'function') renderAdminBoxLabelsGrid();
+  if (typeof renderAdminCashiersTable === 'function') renderAdminCashiersTable();
 }
 
 function saveBoxesState() {
@@ -262,7 +290,7 @@ function saveActiveStoreProfile() {
   const nameInp = document.getElementById('admin-store-name')?.value?.trim();
   const numInp = document.getElementById('admin-store-number')?.value?.trim();
   const addrInp = document.getElementById('admin-store-address')?.value?.trim() || '';
-  const emailInp = document.getElementById('admin-store-email')?.value?.trim() || '';
+  const emailInp = document.getElementById('admin-store-email')?.value?.trim() || 'dimitriosregas@gmail.com';
   const passInp = document.getElementById('admin-store-pass')?.value?.trim() || '';
 
   if (!nameInp) {
@@ -284,7 +312,6 @@ function saveActiveStoreProfile() {
     locations[locIdx].number = storeProfile.number;
     locations[locIdx].address = storeProfile.address;
     locations[locIdx].email = storeProfile.email;
-    locations[locIdx].password = storeProfile.password;
     saveLocationsRegistry();
   }
 
@@ -313,151 +340,64 @@ function handleLocationSwitch(newLocId) {
   recalculateReconciliationTotals();
 }
 
-function calculateBoxMetrics(box) {
-  if (!box || !box.gameNum) {
-    return { ticketsSold: 0, dollarSales: 0, status: 'empty', hasRollover: false, activeTicket: '-' };
-  }
+// ==========================================================================
+// CASHIER MANAGEMENT & AUTO-COMPLETE FUNCTIONS
+// ==========================================================================
+function renderAdminCashiersTable() {
+  const tbody = document.getElementById('admin-cashiers-tbody');
+  const countEl = document.getElementById('admin-cashiers-count');
+  if (countEl) countEl.textContent = String(savedCashiers.length);
+  if (!tbody) return;
 
-  const price = Number(box.price) || 0;
-  const start = Number(box.startTicket) || 0;
-  const endVal = box.endTicket;
-  const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
-  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(price);
-  const maxTicketAllowed = Math.max(0, rollCount - 1);
-
-  if (endVal === '' || endVal === undefined || endVal === null) {
-    let roSoldOnly = 0;
-    rollovers.forEach(ro => { roSoldOnly += Number(ro.ticketsSold) || 0; });
-    return { ticketsSold: roSoldOnly, dollarSales: roSoldOnly * price, status: 'pending', hasRollover: rollovers.length > 0, activeTicket: start };
-  }
-
-  const end = Number(endVal);
-  let ticketsSold = 0;
-
-  if (rollovers.length > 0) {
-    rollovers.forEach(ro => { ticketsSold += Number(ro.ticketsSold) || 0; });
-    if (end >= start) { ticketsSold += (end - start); }
-  } else {
-    if (end >= start) { ticketsSold = end - start; }
-    else { ticketsSold = 0; }
-  }
-
-  ticketsSold = Math.max(0, ticketsSold);
-  const dollarSales = ticketsSold * price;
-
-  let status = 'complete';
-  if (rollovers.length > 0) status = 'rollover';
-  else if (ticketsSold === 0 && end === start) status = 'pending';
-
-  return { ticketsSold, dollarSales, status, hasRollover: rollovers.length > 0, activeTicket: end };
-}
-
-function updateBoxFieldDirect(idx, field, val) {
-  if (!boxes[idx]) return;
-  const cleanVal = String(val).trim();
-  boxes[idx][field] = cleanVal === '' ? '' : (field === 'gameNum' ? cleanVal : val);
-
-  if (field === 'gameNum') {
-    const found = masterGames.find(g => String(g.gameNum).trim() === cleanVal || (cleanVal !== '' && Number(g.gameNum) === Number(cleanVal)));
-    if (found) {
-      boxes[idx].gameName = found.name;
-      boxes[idx].price = Number(found.price) || 0;
-      boxes[idx].rollCount = Number(found.count) || getDefaultRollCountForPrice(boxes[idx].price);
-      boxes[idx].needsNewGameEntry = false;
-    } else if (cleanVal !== '') {
-      boxes[idx].gameName = '';
-      boxes[idx].price = 0;
-      boxes[idx].needsNewGameEntry = true;
-    } else {
-      boxes[idx].gameName = '';
-      boxes[idx].price = 0;
-      boxes[idx].rollCount = 60;
-      boxes[idx].needsNewGameEntry = false;
-    }
-  } else if (field === 'startTicket') {
-    boxes[idx].startTicket = cleanVal === '' ? 0 : Number(cleanVal);
-  }
-
-  saveBoxesState();
-  updateBoxMetricsDisplay(idx);
-  updateHeaderTotalsUI();
-  recalculateReconciliationTotals();
-}
-
-function updateBoxEndTicketLive(idx, val) {
-  if (!boxes[idx]) return;
-  const box = boxes[idx];
-  const clean = String(val).trim();
-
-  if (clean === '') {
-    box.endTicket = '';
-    saveBoxesState();
-    updateBoxMetricsDisplay(idx);
-    updateHeaderTotalsUI();
-    recalculateReconciliationTotals();
+  if (savedCashiers.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-slate-400">No saved cashiers.</td></tr>`;
     return;
   }
 
-  const endNum = Number(clean);
-  const startNum = Number(box.startTicket) || 0;
-  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(box.price);
-  const maxAllowed = Math.max(0, rollCount - 1);
-
-  if (endNum > maxAllowed) {
-    alert(`Invalid ticket number! Ticket cannot exceed the maximum roll limit (${maxAllowed}).`);
-    box.endTicket = maxAllowed;
-    const inp = document.getElementById(`input-endTicket-${idx}`) || document.getElementById(`list-input-endTicket-${idx}`);
-    if (inp) inp.value = maxAllowed;
-  } else {
-    box.endTicket = endNum;
-  }
-
-  if (endNum >= startNum) {
-    saveBoxesState();
-    updateBoxMetricsDisplay(idx);
-    updateHeaderTotalsUI();
-    recalculateReconciliationTotals();
-  }
+  tbody.innerHTML = savedCashiers.map((name, idx) => `
+    <tr class="hover:bg-slate-50 border-b border-slate-100">
+      <td class="p-2.5 font-bold text-slate-800">${name}</td>
+      <td class="p-2.5 text-center">
+        <button type="button" onclick="deleteSavedCashier(${idx})" class="text-red-600 hover:text-red-800 font-bold text-[11px] px-2.5 py-1 rounded bg-red-50">Delete</button>
+      </td>
+    </tr>
+  `).join('');
 }
 
-function commitBoxEndTicket(idx, val) {
-  if (!boxes[idx]) return;
-  const box = boxes[idx];
-  const clean = String(val).trim();
+function addNewCashierManual() {
+  const inp = document.getElementById('new-cashier-name-input');
+  const name = inp?.value?.trim();
+  if (!name) { alert('Please enter a cashier name.'); return; }
+  if (savedCashiers.includes(name)) { alert('This cashier is already in the saved list.'); return; }
 
-  if (clean === '') {
-    box.endTicket = '';
-    saveBoxesState();
-    updateBoxMetricsDisplay(idx);
-    updateHeaderTotalsUI();
-    recalculateReconciliationTotals();
-    return;
+  savedCashiers.push(name);
+  saveCashiersState();
+  if (inp) inp.value = '';
+  renderAdminCashiersTable();
+  alert(`Cashier "${name}" added successfully!`);
+}
+
+function deleteSavedCashier(idx) {
+  if (savedCashiers.length <= 1) { alert('You must keep at least one saved cashier.'); return; }
+  const removed = savedCashiers.splice(idx, 1);
+  saveCashiersState();
+  renderAdminCashiersTable();
+}
+
+function handleCashierInputAutocomplete(inputId, datalistId) {
+  const inp = document.getElementById(inputId);
+  if (!inp) return;
+  let datalist = document.getElementById(datalistId);
+  if (!datalist) {
+    datalist = document.createElement('datalist');
+    datalist.id = datalistId;
+    document.body.appendChild(datalist);
+    inp.setAttribute('list', datalistId);
   }
-
-  const endNum = Number(clean);
-  const startNum = Number(box.startTicket) || 0;
-  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(box.price);
-  const maxAllowed = Math.max(0, rollCount - 1);
-
-  if (endNum > maxAllowed) {
-    box.endTicket = maxAllowed;
-  } else if (endNum === startNum) {
-    box.endTicket = endNum;
-  } else if (endNum < startNum) {
-    box.endTicket = endNum;
-    openRolloverDecisionModal(idx, endNum);
-    return;
-  } else {
-    box.endTicket = endNum;
-  }
-
-  saveBoxesState();
-  updateBoxMetricsDisplay(idx);
-  updateHeaderTotalsUI();
-  recalculateReconciliationTotals();
+  datalist.innerHTML = savedCashiers.map(c => `<option value="${c}">`).join('');
 }
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 2 OF 2)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 3 OF 7)
    ========================================================================== */
 
 function jumpToNextBoxInput(currentIdx, inputType) {
@@ -606,8 +546,177 @@ function finalizeRolloverAction(idx, finalGameNum) {
   recalculateReconciliationTotals();
 }
 
+// ISSUE #3 FIX: Undo/Edit Rollover so mistaken rollovers can be corrected
+function undoLastRolloverInBox(idx) {
+  const box = boxes[idx];
+  if (!box || !Array.isArray(box.rollovers) || box.rollovers.length === 0) {
+    alert('No rollovers to undo for this box.');
+    return;
+  }
+  if (!confirm(`Are you sure you want to undo the last rollover for Box ${box.boxNumber}? This will restore the previous roll state.`)) return;
+
+  const lastRo = box.rollovers.pop();
+  box.gameNum = lastRo.gameNum;
+  box.gameName = lastRo.gameName;
+  box.price = lastRo.price;
+  box.startTicket = lastRo.startTicket;
+  box.endTicket = lastRo.finishedTicket;
+
+  saveBoxesState();
+  renderDispenserGrid();
+  recalculateReconciliationTotals();
+  alert('Rollover successfully undone and restored!');
+}
+
 function cancelRolloverModal() {
   document.getElementById('modal-box-rollover').classList.add('hidden');
+}
+
+function calculateBoxMetrics(box) {
+  if (!box || !box.gameNum) {
+    return { ticketsSold: 0, dollarSales: 0, status: 'empty', hasRollover: false, activeTicket: '-' };
+  }
+
+  const price = Number(box.price) || 0;
+  const start = Number(box.startTicket) || 0;
+  const endVal = box.endTicket;
+  const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
+  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(price);
+  const maxTicketAllowed = Math.max(0, rollCount - 1);
+
+  if (endVal === '' || endVal === undefined || endVal === null) {
+    let roSoldOnly = 0;
+    rollovers.forEach(ro => { roSoldOnly += Number(ro.ticketsSold) || 0; });
+    return { ticketsSold: roSoldOnly, dollarSales: roSoldOnly * price, status: 'pending', hasRollover: rollovers.length > 0, activeTicket: start };
+  }
+
+  const end = Number(endVal);
+  let ticketsSold = 0;
+
+  if (rollovers.length > 0) {
+    rollovers.forEach(ro => { ticketsSold += Number(ro.ticketsSold) || 0; });
+    if (end >= start) { ticketsSold += (end - start); }
+  } else {
+    if (end >= start) { ticketsSold = end - start; }
+    else { ticketsSold = 0; }
+  }
+
+  ticketsSold = Math.max(0, ticketsSold);
+  const dollarSales = ticketsSold * price;
+
+  let status = 'complete';
+  if (rollovers.length > 0) status = 'rollover';
+  else if (ticketsSold === 0 && end === start) status = 'pending';
+
+  return { ticketsSold, dollarSales, status, hasRollover: rollovers.length > 0, activeTicket: end };
+}
+/* ==========================================================================
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 4 OF 7)
+   ========================================================================== */
+
+function updateBoxFieldDirect(idx, field, val) {
+  if (!boxes[idx]) return;
+  const cleanVal = String(val).trim();
+  boxes[idx][field] = cleanVal === '' ? '' : (field === 'gameNum' ? cleanVal : val);
+
+  if (field === 'gameNum') {
+    const found = masterGames.find(g => String(g.gameNum).trim() === cleanVal || (cleanVal !== '' && Number(g.gameNum) === Number(cleanVal)));
+    if (found) {
+      boxes[idx].gameName = found.name;
+      boxes[idx].price = Number(found.price) || 0;
+      boxes[idx].rollCount = Number(found.count) || getDefaultRollCountForPrice(boxes[idx].price);
+      boxes[idx].needsNewGameEntry = false;
+    } else if (cleanVal !== '') {
+      boxes[idx].gameName = '';
+      boxes[idx].price = 0;
+      boxes[idx].needsNewGameEntry = true;
+    } else {
+      boxes[idx].gameName = '';
+      boxes[idx].price = 0;
+      boxes[idx].rollCount = 60;
+      boxes[idx].needsNewGameEntry = false;
+    }
+  } else if (field === 'startTicket') {
+    boxes[idx].startTicket = cleanVal === '' ? 0 : Number(cleanVal);
+  }
+
+  saveBoxesState();
+  updateBoxMetricsDisplay(idx);
+  updateHeaderTotalsUI();
+  recalculateReconciliationTotals();
+}
+
+function updateBoxEndTicketLive(idx, val) {
+  if (!boxes[idx]) return;
+  const box = boxes[idx];
+  const clean = String(val).trim();
+
+  if (clean === '') {
+    box.endTicket = '';
+    saveBoxesState();
+    updateBoxMetricsDisplay(idx);
+    updateHeaderTotalsUI();
+    recalculateReconciliationTotals();
+    return;
+  }
+
+  const endNum = Number(clean);
+  const startNum = Number(box.startTicket) || 0;
+  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(box.price);
+  const maxAllowed = Math.max(0, rollCount - 1);
+
+  if (endNum > maxAllowed) {
+    alert(`Invalid ticket number! Ticket cannot exceed the maximum roll limit (${maxAllowed}).`);
+    box.endTicket = maxAllowed;
+    const inp = document.getElementById(`input-endTicket-${idx}`) || document.getElementById(`list-input-endTicket-${idx}`);
+    if (inp) inp.value = maxAllowed;
+  } else {
+    box.endTicket = endNum;
+  }
+
+  if (endNum >= startNum) {
+    saveBoxesState();
+    updateBoxMetricsDisplay(idx);
+    updateHeaderTotalsUI();
+    recalculateReconciliationTotals();
+  }
+}
+
+function commitBoxEndTicket(idx, val) {
+  if (!boxes[idx]) return;
+  const box = boxes[idx];
+  const clean = String(val).trim();
+
+  if (clean === '') {
+    box.endTicket = '';
+    saveBoxesState();
+    updateBoxMetricsDisplay(idx);
+    updateHeaderTotalsUI();
+    recalculateReconciliationTotals();
+    return;
+  }
+
+  const endNum = Number(clean);
+  const startNum = Number(box.startTicket) || 0;
+  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(box.price);
+  const maxAllowed = Math.max(0, rollCount - 1);
+
+  if (endNum > maxAllowed) {
+    box.endTicket = maxAllowed;
+  } else if (endNum === startNum) {
+    box.endTicket = endNum;
+  } else if (endNum < startNum) {
+    box.endTicket = endNum;
+    openRolloverDecisionModal(idx, endNum);
+    return;
+  } else {
+    box.endTicket = endNum;
+  }
+
+  saveBoxesState();
+  updateBoxMetricsDisplay(idx);
+  updateHeaderTotalsUI();
+  recalculateReconciliationTotals();
 }
 
 function updateBoxMetricsDisplay(idx) {
@@ -646,9 +755,10 @@ function updateBoxMetricsDisplay(idx) {
   const listSales = document.getElementById(`list-sales-${idx}`);
 
   if (listName) {
-    const roHistoryHtml = rollovers.map(ro =>
-      `<div class="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">
-        Prev #${ro.gameNum} (${ro.gameName || 'Pack'}): #${ro.startTicket}→#${ro.finishedTicket} (${ro.ticketsSold} sold = $${Number(ro.salesAmount || 0).toFixed(2)})
+    const roHistoryHtml = rollovers.map((ro, roIdx) =>
+      `<div class="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1 flex items-center justify-between">
+        <span>Prev #${ro.gameNum} (${ro.gameName || 'Pack'}): #${ro.startTicket}→#${ro.finishedTicket} (${ro.ticketsSold} sold = $${Number(ro.salesAmount || 0).toFixed(2)})</span>
+        <button type="button" onclick="undoLastRolloverInBox(${idx})" class="text-red-700 underline ml-2 hover:text-red-900">Undo Rollover</button>
       </div>`
     ).join('');
     listName.innerHTML = (hasGame ? `<strong>#${box.gameNum}</strong> ${box.gameName || ''}` : '<span class="text-slate-400 italic">Empty Box</span>') + roHistoryHtml;
@@ -679,8 +789,9 @@ function renderDispenserGrid() {
       const tabEnd = 3000 + idx + 1;
 
       const roHistoryHtml = rollovers.map(ro =>
-        `<div class="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1">
-          Prev #${ro.gameNum} (${ro.gameName || 'Pack'}): #${ro.startTicket}→#${ro.finishedTicket} (${ro.ticketsSold} sold = $${Number(ro.salesAmount || 0).toFixed(2)})
+        `<div class="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1 flex items-center justify-between">
+          <span>Prev #${ro.gameNum} (${ro.gameName || 'Pack'}): #${ro.startTicket}→#${ro.finishedTicket} (${ro.ticketsSold} sold = $${Number(ro.salesAmount || 0).toFixed(2)})</span>
+          <button type="button" onclick="undoLastRolloverInBox(${idx})" class="text-red-700 underline ml-2 hover:text-red-900">Undo Rollover</button>
         </div>`
       ).join('');
 
@@ -750,9 +861,12 @@ function renderDispenserGrid() {
     const tabEnd = 3000 + idx + 1;
 
     const roHistoryHtml = rollovers.map(ro =>
-      `<div class="text-[10px] font-bold text-amber-900 bg-amber-50 border border-amber-300 rounded px-2 py-1 mb-1.5">
-        <div>Prev: #${ro.gameNum} ${ro.gameName || ''} ($${ro.price})</div>
-        <div>Start #${ro.startTicket} → End #${ro.finishedTicket} • ${ro.ticketsSold} Sold ($${Number(ro.salesAmount || 0).toFixed(2)})</div>
+      `<div class="text-[10px] font-bold text-amber-900 bg-amber-50 border border-amber-300 rounded px-2 py-1 mb-1.5 flex items-center justify-between">
+        <div>
+          <div>Prev: #${ro.gameNum} ${ro.gameName || ''} ($${ro.price})</div>
+          <div>Start #${ro.startTicket} → End #${ro.finishedTicket} • ${ro.ticketsSold} Sold ($${Number(ro.salesAmount || 0).toFixed(2)})</div>
+        </div>
+        <button type="button" onclick="undoLastRolloverInBox(${idx})" class="text-red-700 underline font-extrabold text-[10px] ml-2 hover:text-red-900">Undo</button>
       </div>`
     ).join('');
 
@@ -776,7 +890,7 @@ function renderDispenserGrid() {
         <div class="space-y-2 mb-2">
           <div class="flex items-center gap-2">
             <label class="text-[10px] font-bold text-slate-500 uppercase w-12">Game #:</label>
-            <input type="text" tabindex="${tabGame}" enterkeyhint="next" id="input-gameNum-${idx}" value="${box.gameNum || ''}" placeholder="e.g. 1005" oninput="updateBoxFieldDirect(${idx}, 'gameNum', this.value)" onkeydown="handleGameNumKeydown(event, ${idx})" class="flex-1 text-xs font-mono font-bold border border-slate-300 rounded px-2 py-1 lotto-input" />
+            <input type="text" tabindex="${tabGame}" enterkeyhint="next" id="input-gameNum-${idx}" value="${box.gameNum || ''}" placeholder="e.g. 1005" oninput="updateBoxFieldDirect(${idx}, 'gameNum', this.value)" onkeydown="handleGameNumKeydown(event, this.value)" class="flex-1 text-xs font-mono font-bold border border-slate-300 rounded px-2 py-1 lotto-input" />
           </div>
           <div id="box-unknown-wrap-${idx}" class="${box.needsNewGameEntry ? '' : 'hidden'} p-1.5 bg-red-50 border border-red-200 rounded text-[10px] text-red-700 flex items-center justify-between">
             <span>Unknown Game #</span>
@@ -818,6 +932,140 @@ function updateHeaderTotalsUI() {
   if (tElem) tElem.textContent = totalTickets.toLocaleString();
   if (sElem) sElem.textContent = `$${totalSales.toFixed(2)}`;
 }
+/* ==========================================================================
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 5 OF 7)
+   ========================================================================== */
+
+function openWorksheetPrintChoiceModal() {
+  const modal = document.getElementById('modal-print-worksheet-choice') || createPrintChoiceModalDOM();
+  // Populate cashier select / autocomplete datalist
+  handleCashierInputAutocomplete('print-modal-cashier-input', 'cashier-datalist-print');
+  const activeShift = document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
+  const activeCashier = document.getElementById('rec-cashier-out')?.value || document.getElementById('grid-cashier-input')?.value || '';
+  
+  const cashierInp = document.getElementById('print-modal-cashier-input');
+  if (cashierInp && !cashierInp.value) cashierInp.value = activeCashier;
+
+  modal.classList.remove('hidden');
+}
+
+function createPrintChoiceModalDOM() {
+  let existing = document.getElementById('modal-print-worksheet-choice');
+  if (existing) return existing;
+
+  const div = document.createElement('div');
+  div.id = 'modal-print-worksheet-choice';
+  div.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden';
+  div.innerHTML = `
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-md overflow-hidden p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="font-black text-slate-900 text-base">🖨 Print Worksheet & Attestation</h3>
+        <button type="button" onclick="document.getElementById('modal-print-worksheet-choice').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      </div>
+      
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Cashier Name:</label>
+          <input type="text" id="print-modal-cashier-input" placeholder="Enter cashier name..." class="w-full border border-slate-300 rounded-lg p-2 font-bold text-xs" />
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Shift:</label>
+          <select id="print-modal-shift-select" class="w-full border border-slate-300 rounded-lg p-2 font-bold text-xs bg-white">
+            <option value="Shift 1 (Morning)">Shift 1 (Morning)</option>
+            <option value="Shift 2 (Evening)">Shift 2 (Evening)</option>
+            <option value="Shift 3 (Night)">Shift 3 (Night)</option>
+          </select>
+        </div>
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-700 leading-relaxed font-medium">
+          ⚖ <strong>Attestation:</strong> "I hereby certify that the ticket counts, game numbers, and shift totals recorded are true, complete, and accurate to the best of my knowledge."
+        </div>
+      </div>
+
+      <div class="space-y-2 pt-2">
+        <button type="button" onclick="executePrintWithFormat('thermal')" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-2.5 rounded-xl text-xs transition shadow-md">
+          📜 Print 80mm Thermal Receipt
+        </button>
+        <button type="button" onclick="executePrintWithFormat('legal')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 rounded-xl text-xs transition shadow-md">
+          📄 Print Full Legal Paper (8.5" x 14")
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(div);
+  return div;
+}
+
+function executePrintWithFormat(formatChoice) {
+  const cashierVal = document.getElementById('print-modal-cashier-input')?.value?.trim() || 'Unspecified';
+  const shiftVal = document.getElementById('print-modal-shift-select')?.value || 'Shift 1 (Morning)';
+
+  // Sync to main reconciliation fields
+  const recCashier = document.getElementById('rec-cashier-out');
+  if (recCashier) recCashier.value = cashierVal;
+  const gridCashier = document.getElementById('grid-cashier-input');
+  if (gridCashier) gridCashier.value = cashierVal;
+  const recShift = document.getElementById('rec-shift-type');
+  if (recShift) recShift.value = shiftVal;
+
+  document.getElementById('modal-print-worksheet-choice').classList.add('hidden');
+  printThermalReceipt(true, formatChoice);
+}
+
+// ISSUE #6: Quick Cashier & Shift Bar injection above Main Grid
+function renderMainGridCashierShiftBar() {
+  let bar = document.getElementById('main-grid-cashier-shift-bar');
+  if (!bar) {
+    const container = document.getElementById('view-grid');
+    if (!container) return;
+    bar = document.createElement('div');
+    bar.id = 'main-grid-cashier-shift-bar';
+    bar.className = 'bg-white rounded-xl shadow-sm border border-slate-200 p-3 mb-4 flex flex-wrap items-center justify-between gap-3 text-xs';
+    container.insertBefore(bar, container.firstChild);
+  }
+
+  const currentCashier = document.getElementById('rec-cashier-out')?.value || '';
+  const currentShift = document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
+
+  bar.innerHTML = `
+    <div class="flex items-center gap-3 flex-1 min-w-[280px]">
+      <div class="flex items-center gap-1.5 flex-1">
+        <label class="font-bold text-slate-600 uppercase text-[10px]">Cashier:</label>
+        <input type="text" id="grid-cashier-input" value="${currentCashier}" placeholder="Select or type cashier..." oninput="syncMainGridCashier(this.value)" class="flex-1 border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-xs bg-slate-50 focus:bg-white" />
+      </div>
+      <div class="flex items-center gap-1.5">
+        <label class="font-bold text-slate-600 uppercase text-[10px]">Shift:</label>
+        <select id="grid-shift-select" onchange="syncMainGridShift(this.value)" class="border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-xs bg-white">
+          <option value="Shift 1 (Morning)" ${currentShift.includes('Morning') || currentShift.includes('1') ? 'selected' : ''}>Shift 1 (Morning)</option>
+          <option value="Shift 2 (Evening)" ${currentShift.includes('Evening') || currentShift.includes('2') ? 'selected' : ''}>Shift 2 (Evening)</option>
+          <option value="Shift 3 (Night)" ${currentShift.includes('Night') || currentShift.includes('3') ? 'selected' : ''}>Shift 3 (Night)</option>
+        </select>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button type="button" onclick="openWorksheetPrintChoiceModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-3 py-1.5 rounded-lg shadow-sm transition">
+        🖨 Print Worksheet...
+      </button>
+    </div>
+  `;
+  handleCashierInputAutocomplete('grid-cashier-input', 'cashier-datalist-grid');
+}
+
+function syncMainGridCashier(val) {
+  const rec = document.getElementById('rec-cashier-out');
+  if (rec) rec.value = val;
+  saveReconciliationDraft();
+}
+
+function syncMainGridShift(val) {
+  const rec = document.getElementById('rec-shift-type');
+  if (rec) {
+    rec.value = val;
+    handleShiftTypeChange(val);
+  }
+}
+/* ==========================================================================
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 6 OF 7)
+   ========================================================================== */
 
 function openQuickGameModal(idx) {
   const box = boxes[idx];
@@ -887,7 +1135,7 @@ function renderMultiStoreModalList() {
         </td>
         <td class="p-2.5 text-right space-x-1">
           ${!isCurrent ? `<button type="button" onclick="switchStoreFromModal('${loc.id}')" class="bg-blue-600 text-white text-[11px] px-2.5 py-1 rounded">Switch</button>` : ''}
-          <button type="button" onclick="exportSpecificLocationBackup('${loc.id}')" class="bg-slate-700 text-white text-[11px] px-2.5 py-1 rounded">⬇ Export</button>
+          <button type="button" onclick="exportSpecificLocationBackup('${loc.id}')" class="bg-slate-700 text-white text-[11px] px-2.5 py-1 rounded">⬇ Store</button>
           <button type="button" onclick="deleteStoreLocation('${loc.id}')" class="bg-red-100 text-red-700 text-[11px] px-2 py-1 rounded">Delete</button>
         </td>
       </tr>
@@ -909,10 +1157,10 @@ function createNewStoreLocation() {
   if (!name) { alert('Please enter a store name.'); return; }
   const cleanSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const newId = `loc-${cleanSlug}-${Date.now().toString().slice(-4)}`;
-  locations.push({ id: newId, name, number, address });
+  locations.push({ id: newId, name, number, address, email: 'dimitriosregas@gmail.com' });
   saveLocationsRegistry();
 
-  localStorage.setItem(getStoreProfileStorageKey(newId), JSON.stringify({ name, number, address }));
+  localStorage.setItem(getStoreProfileStorageKey(newId), JSON.stringify({ name, number, address, email: 'dimitriosregas@gmail.com' }));
   localStorage.setItem(getStoreBoxesStorageKey(newId), JSON.stringify(createDefault40Boxes()));
   localStorage.setItem(getStoreHistoryStorageKey(newId), JSON.stringify([]));
 
@@ -935,7 +1183,77 @@ function deleteStoreLocation(locId) {
   populateLocationSwitcherDropdown();
 }
 
-function exportCurrentLocationBackup() { exportSpecificLocationBackup(activeLocationId); }
+// ==========================================================================
+// ISSUE #4 & #5: FULL TABLET BACKUP, RESTORE & 11:00 PM EMAIL DISPATCHER
+// ==========================================================================
+function buildFullTabletBackupPayload() {
+  saveBoxesState();
+  saveReconciliationDraft();
+
+  const allStoresData = {};
+  locations.forEach(loc => {
+    let locProfile = { name: loc.name, number: loc.number, address: loc.address || '', email: loc.email || 'dimitriosregas@gmail.com' };
+    let locBoxes = [];
+    let locHistory = [];
+    let locDraft = null;
+    try {
+      const pRaw = localStorage.getItem(getStoreProfileStorageKey(loc.id));
+      if (pRaw) locProfile = JSON.parse(pRaw);
+    } catch (e) {}
+    try {
+      const bRaw = localStorage.getItem(getStoreBoxesStorageKey(loc.id));
+      if (bRaw) locBoxes = JSON.parse(bRaw);
+    } catch (e) {}
+    try {
+      const hRaw = localStorage.getItem(getStoreHistoryStorageKey(loc.id));
+      if (hRaw) locHistory = JSON.parse(hRaw);
+    } catch (e) {}
+    try {
+      const dRaw = localStorage.getItem(`project_lotto_recdraft_${loc.id}`);
+      if (dRaw) locDraft = JSON.parse(dRaw);
+    } catch (e) {}
+
+    allStoresData[loc.id] = {
+      profile: locProfile,
+      boxes: locBoxes.length > 0 ? locBoxes : (loc.id === activeLocationId ? boxes : createDefault40Boxes()),
+      historicalReports: locHistory,
+      reconciliationDraft: locDraft
+    };
+  });
+
+  return {
+    backupVersion: '3.0-FULL-TABLET',
+    exportedAt: new Date().toISOString(),
+    targetEmail: 'dimitriosregas@gmail.com',
+    activeLocationId,
+    locations,
+    masterGames: sanitizeMasterGamesList(masterGames),
+    savedCashiers,
+    storesData: allStoresData
+  };
+}
+
+function downloadFullTabletBackup(silent = false) {
+  const payload = buildFullTabletBackupPayload();
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16);
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ProjectLotto_FULL_TABLET_BACKUP_${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  if (!silent) {
+    console.log('Full tablet backup downloaded:', a.download);
+  }
+  return payload;
+}
+
+function exportCurrentLocationBackup() {
+  downloadFullTabletBackup(false);
+}
 
 function exportSpecificLocationBackup(locId) {
   const locObj = locations.find(l => l.id === locId) || { name: storeProfile.name, number: storeProfile.number };
@@ -945,23 +1263,26 @@ function exportSpecificLocationBackup(locId) {
   try { locHistory = JSON.parse(localStorage.getItem(getStoreHistoryStorageKey(locId)) || '[]'); } catch (e) {}
 
   const payload = {
-    backupVersion: '2.0',
+    backupVersion: '3.0-SINGLE-STORE',
     exportedAt: new Date().toISOString(),
     locationId: locId,
     storeProfile: { name: locObj.name, number: locObj.number, address: locObj.address || '' },
     boxes: locBoxes.length > 0 ? locBoxes : boxes,
     masterGames: sanitizeMasterGamesList(masterGames),
+    savedCashiers,
     historicalReports: locHistory
   };
 
   const safeName = (locObj.name || 'store').replace(/[^a-zA-Z0-9_-]/g, '_');
-  const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(payload, null, 2));
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.setAttribute('href', dataStr);
-  a.setAttribute('download', `LottoBackup_${safeName}_${new Date().toISOString().slice(0, 10)}.json`);
+  a.href = url;
+  a.download = `LottoBackup_${safeName}_${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
 function importLocationBackupFile(event) {
@@ -971,27 +1292,113 @@ function importLocationBackupFile(event) {
   reader.onload = function(e) {
     try {
       const data = JSON.parse(e.target.result);
+
       if (Array.isArray(data.masterGames) && data.masterGames.length > 0) {
         masterGames = sanitizeMasterGamesList([...masterGames, ...data.masterGames]);
         saveGamesState();
       }
-      if (Array.isArray(data.boxes)) {
-        boxes = data.boxes;
-        saveBoxesState();
+      if (Array.isArray(data.savedCashiers) && data.savedCashiers.length > 0) {
+        savedCashiers = Array.from(new Set([...savedCashiers, ...data.savedCashiers]));
+        saveCashiersState();
       }
-      if (data.storeProfile) {
-        storeProfile = data.storeProfile;
-        localStorage.setItem(getStoreProfileStorageKey(activeLocationId), JSON.stringify(storeProfile));
+
+      // Full Tablet Restore (v3.0)
+      if (data.storesData && typeof data.storesData === 'object') {
+        if (Array.isArray(data.locations) && data.locations.length > 0) {
+          locations = data.locations;
+          saveLocationsRegistry();
+        }
+        Object.keys(data.storesData).forEach(locId => {
+          const st = data.storesData[locId];
+          if (st.profile) localStorage.setItem(getStoreProfileStorageKey(locId), JSON.stringify(st.profile));
+          if (Array.isArray(st.boxes)) localStorage.setItem(getStoreBoxesStorageKey(locId), JSON.stringify(st.boxes));
+          if (Array.isArray(st.historicalReports)) localStorage.setItem(getStoreHistoryStorageKey(locId), JSON.stringify(st.historicalReports));
+          if (st.reconciliationDraft) localStorage.setItem(`project_lotto_recdraft_${locId}`, JSON.stringify(st.reconciliationDraft));
+        });
+        if (data.activeLocationId && locations.some(l => l.id === data.activeLocationId)) {
+          activeLocationId = data.activeLocationId;
+          localStorage.setItem(STORAGE_KEY_ACTIVE_LOC, activeLocationId);
+        }
+      } else {
+        // Legacy / Single-Store Backup Restore
+        if (Array.isArray(data.boxes)) {
+          boxes = data.boxes;
+          saveBoxesState();
+        }
+        if (data.storeProfile) {
+          storeProfile = data.storeProfile;
+          localStorage.setItem(getStoreProfileStorageKey(activeLocationId), JSON.stringify(storeProfile));
+        }
+        if (Array.isArray(data.historicalReports)) {
+          saveLocationHistoricalReports(data.historicalReports, activeLocationId);
+        }
       }
+
+      populateLocationSwitcherDropdown();
       loadActiveStoreData();
+      loadReconciliationDraft();
       renderDispenserGrid();
-      alert('Backup restored successfully!');
+      renderAdminGamesTable();
+      renderAdminCashiersTable();
+      recalculateReconciliationTotals();
+      alert('Full tablet backup restored successfully! All stores, boxes, games, cashiers, and reports are now loaded.');
     } catch (err) {
-      alert('Failed to parse backup JSON file.');
+      alert('Failed to parse backup JSON file. Please verify it is a valid Project Lotto backup.');
     }
   };
   reader.readAsText(file);
 }
+
+function sendNightlyEmailBackupToOwner(isScheduled11PM = false) {
+  const payload = downloadFullTabletBackup(true);
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const targetEmail = 'dimitriosregas@gmail.com';
+
+  let summaryLines = [
+    `Project Lotto — Daily Full Tablet Backup (${todayStr})`,
+    `Generated: ${new Date().toLocaleString()}`,
+    `Active Store: ${storeProfile.name} (#${storeProfile.number})`,
+    `Total Stores Included: ${locations.length}`,
+    `Master Games Count: ${masterGames.length}`,
+    `Saved Cashiers: ${savedCashiers.join(', ')}`,
+    ``,
+    `--- STORE SUMMARY ---`
+  ];
+
+  locations.forEach(loc => {
+    const st = payload.storesData[loc.id];
+    const repCount = st?.historicalReports?.length || 0;
+    const activeBoxes = (st?.boxes || []).filter(b => b.gameNum).length;
+    summaryLines.push(`• ${loc.name} (#${loc.number}): ${activeBoxes} active games | ${repCount} archived reports`);
+  });
+
+  summaryLines.push(``, `NOTE: Your full restore JSON file (ProjectLotto_FULL_TABLET_BACKUP_*.json) has been saved to this tablet's Downloads folder. Attach that file to this email so you can restore all stores, boxes, game numbers, and reports onto any tablet at any time.`);
+
+  const subject = encodeURIComponent(`Project Lotto Daily Backup - ${todayStr} (${storeProfile.name})`);
+  const body = encodeURIComponent(summaryLines.join('\n'));
+
+  localStorage.setItem('project_lotto_last_nightly_email_date', todayStr);
+
+  // Open pre-addressed email draft to dimitriosregas@gmail.com
+  window.open(`mailto:${targetEmail}?subject=${subject}&body=${body}`, '_blank');
+}
+
+function startNightly11PMBackupScheduler() {
+  setInterval(() => {
+    const now = new Date();
+    const hour = now.getHours(); // 23 = 11:00 PM
+    const minute = now.getMinutes();
+    const todayStr = now.toISOString().slice(0, 10);
+    const lastSentDate = localStorage.getItem('project_lotto_last_nightly_email_date');
+
+    if (hour === 23 && minute >= 0 && lastSentDate !== todayStr) {
+      sendNightlyEmailBackupToOwner(true);
+    }
+  }, 30000); // Check every 30 seconds
+}
+/* ==========================================================================
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 7 OF 7)
+   ========================================================================== */
 
 function advanceEndToStartForNewShift() {
   if (!confirm('Move all current End Ticket numbers into Start Ticket numbers for the new shift?')) return;
@@ -1171,8 +1578,9 @@ function finalizeAndSaveShiftReport() {
   const ind = document.getElementById('last-archived-indicator');
   if (ind) ind.textContent = `✔ Archived ${reportDate} (${shiftType}) at ${new Date().toLocaleTimeString()}`;
 
-  exportCurrentLocationBackup();
-  alert(`Shift Report for ${storeProfile.name} archived successfully!`);
+  // ISSUE #4: Auto-backup full tablet state when sheet is finalized
+  downloadFullTabletBackup(true);
+  alert(`Shift Report for ${storeProfile.name} archived and full tablet backup downloaded successfully!`);
 }
 
 function handleReportFilterModeChange(mode) {
@@ -1277,19 +1685,7 @@ function exportHistoricalReportsJSON() {
 }
 
 function triggerMonthlyEmailDispatchManually() {
-  const now = new Date();
-  const targetMonth = document.getElementById('report-filter-month')?.value || now.toISOString().slice(0, 7);
-  const allStoresArchive = locations.map(loc => ({
-    location: loc,
-    reports: getLocationHistoricalReports(loc.id).filter(r => (r.monthKey || r.date?.slice(0, 7)) === targetMonth)
-  }));
-  const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(allStoresArchive, null, 2));
-  const a = document.createElement('a');
-  a.setAttribute('href', dataStr);
-  a.setAttribute('download', `MonthlyLottoArchive_${targetMonth}.json`);
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  sendNightlyEmailBackupToOwner(false);
 }
 
 function saveNewMasterGameManual() {
@@ -1445,14 +1841,24 @@ function switchMainView(viewName) {
       btn.className = v === viewName ? 'bg-blue-600 text-white font-bold text-xs px-3 py-1.5 rounded shadow-sm transition' : 'bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3 py-1.5 rounded shadow-sm transition';
     }
   });
-  if (viewName === 'grid') renderDispenserGrid();
-  else if (viewName === 'reconcile') recalculateReconciliationTotals();
-  else if (viewName === 'reports') executeReportLookup();
-  else if (viewName === 'admin') { renderAdminGamesTable(); renderAdminBoxLabelsGrid(); }
+  if (viewName === 'grid') {
+    renderDispenserGrid();
+    renderMainGridCashierShiftBar();
+  } else if (viewName === 'reconcile') {
+    recalculateReconciliationTotals();
+    handleCashierInputAutocomplete('rec-cashier-out', 'cashier-datalist-rec-out');
+    handleCashierInputAutocomplete('rec-cashier-in', 'cashier-datalist-rec-in');
+  } else if (viewName === 'reports') {
+    executeReportLookup();
+  } else if (viewName === 'admin') {
+    renderAdminGamesTable();
+    renderAdminBoxLabelsGrid();
+    renderAdminCashiersTable();
+  }
 }
 
 // --------------------------------------------------------------------------
-// DUAL-FORMAT PDF GENERATOR (PREVIEW MODE)
+// DUAL-FORMAT PDF GENERATOR & PRINT FUNCTIONS (WITH STORE ADDRESS #7)
 // --------------------------------------------------------------------------
 function printThermalReceipt(isWorksheet = false, formatChoice = null) {
   const { jsPDF } = window.jspdf || {};
@@ -1469,7 +1875,7 @@ function printThermalReceipt(isWorksheet = false, formatChoice = null) {
 
   const reportDate = document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10);
   const shiftType = document.getElementById('header-shift-badge')?.textContent || document.getElementById('rec-shift-type')?.value || 'Shift 1';
-  const cashierOut = document.getElementById('rec-cashier-out')?.value?.trim() || 'Unspecified';
+  const cashierOut = document.getElementById('rec-cashier-out')?.value?.trim() || document.getElementById('grid-cashier-input')?.value?.trim() || 'Unspecified';
   const cashierIn = document.getElementById('rec-cashier-in')?.value?.trim() || '-';
   const totals = recalculateReconciliationTotals();
 
@@ -1486,19 +1892,29 @@ function printThermalReceipt(isWorksheet = false, formatChoice = null) {
   });
 
   if (targetFormat === 'thermal') {
-    const calculatedHeight = Math.max(140, 120 + (activeItems.length * 11));
+    const calculatedHeight = Math.max(150, 130 + (activeItems.length * 12));
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [80, calculatedHeight] });
 
     doc.setFont("courier", "bold");
     let y = 8;
 
-    doc.setFontSize(13);
+    doc.setFontSize(12);
     doc.text((storeProfile.name || "STORE").toUpperCase(), 40, y, { align: "center" });
-    y += 5;
-    doc.setFontSize(10);
+    y += 4.5;
+    doc.setFontSize(9);
     doc.text(`STORE #${storeProfile.number || "101"}`, 40, y, { align: "center" });
     y += 4;
+    
+    // ISSUE #7: Add store address on thermal receipt
+    if (storeProfile.address) {
+      doc.setFontSize(7.5);
+      doc.setFont("courier", "normal");
+      doc.text(storeProfile.address, 40, y, { align: "center" });
+      y += 4;
+    }
+
     doc.setFontSize(8.5);
+    doc.setFont("courier", "bold");
     doc.text(isWorksheet ? "*** LOTTO COUNT WORKSHEET ***" : "*** FINAL SHIFT LOTTO RECEIPT ***", 40, y, { align: "center" });
     y += 3;
 
@@ -1613,9 +2029,14 @@ function printThermalReceipt(isWorksheet = false, formatChoice = null) {
   doc.setFontSize(10);
   doc.text(`STORE #${storeProfile.number || "101"} — SHIFT LOTTERY AUDIT SHEET`, 14, y + 5);
   doc.setFont("helvetica", "normal");
+  if (storeProfile.address) {
+    doc.setFontSize(8.5);
+    doc.text(storeProfile.address, 14, y + 10);
+    y += 5;
+  }
   doc.text(`DATE: ${reportDate}  |  SHIFT: ${shiftType}`, 14, y + 10);
   doc.text(`OUTGOING: ${cashierOut}  |  INCOMING: ${cashierIn}`, 14, y + 15);
-  y += 20;
+  y += 22;
 
   doc.setLineWidth(0.3);
   doc.line(14, y, 202, y);
@@ -1685,7 +2106,7 @@ function printThermalReceipt(isWorksheet = false, formatChoice = null) {
   window.open(blobUrl, '_blank');
 }
 
-function printTwoColumnBackupSheet() { printThermalReceipt(true); }
+function printTwoColumnBackupSheet() { printThermalReceipt(true, 'thermal'); }
 
 function buildMatrixPrintHTML(repData, isFinalReport = false) {
   const bList = Array.isArray(repData.boxesSnapshot) ? repData.boxesSnapshot : boxes;
@@ -1732,6 +2153,7 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
           <div style="font-size: 12px; font-weight: 900; text-transform: uppercase;">
             ${repData.storeName || storeProfile.name} (#${repData.storeNumber || storeProfile.number}) — ${isFinalReport ? 'Shift Lottery Audit' : 'Shift Count Worksheet'}
           </div>
+          ${storeProfile.address ? `<div style="font-size: 7.5px; color: #334155;">${storeProfile.address}</div>` : ''}
           <div style="font-size: 8px; color: #334155; margin-top: 1px;">Date: <strong>${repData.date}</strong> &nbsp;|&nbsp; Shift: <strong>${repData.shiftType}</strong></div>
         </div>
         <div style="text-align: right; font-size: 7.5px; font-weight: bold;">AUDIT REPORT</div>
@@ -1766,6 +2188,9 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
               <div><strong>Outgoing:</strong> ${repData.cashierOut || '&nbsp;'}</div>
               <div><strong>Incoming:</strong> ${repData.cashierIn || '&nbsp;'}</div>
             </div>
+            <div style="font-size: 7px; color: #334155; margin-top: 2px;">
+              ⚖ <em>"I hereby certify that the ticket counts and shift totals are accurate to the best of my knowledge."</em>
+            </div>
           </div>
           <div style="width: 140px; text-align: center; border-left: 1px solid #94a3b8; padding-left: 4px;">
             <div style="height: 24px; display: flex; align-items: center; justify-content: center;">${sigImgHtml}</div>
@@ -1778,24 +2203,7 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
 }
 
 function printWorksheet() {
-  let printContainer = document.getElementById('print-container');
-  if (!printContainer) {
-    printContainer = document.createElement('div');
-    printContainer.id = 'print-container';
-    document.body.appendChild(printContainer);
-  }
-  printContainer.innerHTML = buildMatrixPrintHTML({
-    storeName: storeProfile.name,
-    storeNumber: storeProfile.number,
-    date: document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10),
-    shiftType: document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)',
-    cashierOut: document.getElementById('rec-cashier-out')?.value?.trim() || '____________________',
-    cashierIn: '____________________',
-    totals: recalculateReconciliationTotals(),
-    signatureDataUrl: null,
-    boxesSnapshot: boxes
-  }, false);
-  window.print();
+  openWorksheetPrintChoiceModal();
 }
 
 function printFinalReport() {
@@ -1838,26 +2246,6 @@ function printFilteredReportSummary() { window.print(); }
 window.addEventListener('DOMContentLoaded', () => {
   loadMasterGames();
   initActiveLocation();
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const monthIso = todayIso.slice(0, 7);
-  if (document.getElementById('report-filter-date')) document.getElementById('report-filter-date').value = todayIso;
-  if (document.getElementById('report-filter-month')) document.getElementById('report-filter-month').value = monthIso;
-
-  renderDispenserGrid();
-  renderAdminGamesTable();
-  renderAdminBoxLabelsGrid();
-  loadReconciliationDraft();
-  recalculateReconciliationTotals();
-  initSignaturePad();
-  executeReportLookup();
-});
-/* ==========================================================================
-   PROJECT LOTTO — INITIALIZATION & RENDER HOOK (CRITICAL FOR BOXES)
-   ========================================================================== */
-
-window.addEventListener('DOMContentLoaded', () => {
-  loadMasterGames();
-  initActiveLocation();
   
   const todayIso = new Date().toISOString().slice(0, 10);
   const monthIso = todayIso.slice(0, 7);
@@ -1865,13 +2253,15 @@ window.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('report-filter-date')) document.getElementById('report-filter-date').value = todayIso;
   if (document.getElementById('report-filter-month')) document.getElementById('report-filter-month').value = monthIso;
 
-  // Force render boxes and totals immediately on load
   loadActiveStoreData();
   renderDispenserGrid();
+  renderMainGridCashierShiftBar();
   renderAdminGamesTable();
   renderAdminBoxLabelsGrid();
+  renderAdminCashiersTable();
   loadReconciliationDraft();
   recalculateReconciliationTotals();
   initSignaturePad();
   executeReportLookup();
+  startNightly11PMBackupScheduler();
 });
