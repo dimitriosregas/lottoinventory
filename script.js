@@ -1726,6 +1726,21 @@ function finalizeAndSaveShiftReport() {
   history.unshift(reportRecord);
   saveLocationHistoricalReports(history, activeLocationId);
 
+   const CLOUDWORKER_SYNC_URL = "https://lottoinventory.dimitriosregas.workers.dev/sync";
+
+async function syncActiveStoreToCloud() {
+  const payload = buildFullTabletBackupPayload();
+  try {
+    await fetch(`${CLOUDWORKER_SYNC_URL}?storeId=${activeLocationId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+  } catch (err) {
+    // Fails silently offline so local device storage takes over without interruption
+  }
+}
+   
   const ind = document.getElementById('last-archived-indicator');
   if (ind) ind.textContent = `✔ Archived ${normalizedDate} (${shiftVal}) at ${new Date().toLocaleTimeString()}`;
 
@@ -1858,7 +1873,26 @@ function saveNewMasterGameManual() {
   const idx = masterGames.findIndex(g => String(g.gameNum).trim() === gNum);
   if (idx >= 0) masterGames[idx] = newEntry;
   else masterGames.push(newEntry);
-
+function sanitizeMasterGamesList(gamesArray) {
+  if (!Array.isArray(gamesArray)) return [];
+  const uniqueMap = new Map();
+  
+  // Iterate through and ensure each gameNum is strictly unique, merging duplicates safely
+  gamesArray.forEach(g => {
+    if (g && g.gameNum) {
+      const cleanNum = String(g.gameNum).trim();
+      uniqueMap.set(cleanNum, {
+        gameNum: cleanNum,
+        name: (g.name || `GAME #${cleanNum}`).toUpperCase(),
+        price: Number(g.price) || 1,
+        count: Number(g.count) || getDefaultRollCountForPrice(Number(g.price) || 1)
+      });
+    }
+  });
+  
+  return Array.from(uniqueMap.values());
+}
+   
   masterGames = sanitizeMasterGamesList(masterGames);
   saveGamesState();
 
