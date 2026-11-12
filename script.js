@@ -1061,9 +1061,9 @@ function executeUnifiedPrint(formatChoice) {
 
   document.getElementById('modal-print-worksheet-choice').classList.add('hidden');
   
-  // 1. Generate Print based on chosen format (Thermal vs Legal)
+  // 1. Generate Print directly via DOM container (Zero blank windows/tabs)
   if (formatChoice === 'thermal') {
-    printThermalReceipt(true, 'thermal');
+    printThermalReceiptDirect();
   } else {
     printWorksheetDirect();
   }
@@ -1079,6 +1079,65 @@ function executeUnifiedPrint(formatChoice) {
       switchMainView(lastActiveViewName || 'grid');
     }
   }, 600);
+}
+
+function printThermalReceiptDirect() {
+  let printContainer = document.getElementById('print-container');
+  if (!printContainer) {
+    printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    document.body.appendChild(printContainer);
+  }
+
+  const totals = recalculateReconciliationTotals();
+  const dateStr = document.getElementById('rec-report-date')?.value || new Date().toLocaleDateString();
+  const shiftStr = document.getElementById('rec-shift-type')?.value || 'Shift 1';
+  const cashierStr = document.getElementById('print-modal-cashier-input')?.value || 'Manager';
+
+  let itemsHtml = '';
+  boxes.forEach((box, idx) => {
+    const m = calculateBoxMetrics(box);
+    if (box.gameNum) {
+      itemsHtml += `
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #000; padding: 2px 0;">
+          <span>B#${box.boxNumber} (#${box.gameNum})</span>
+          <span>${m.ticketsSold} tix = $${m.dollarSales.toFixed(2)}</span>
+        </div>
+      `;
+    }
+  });
+
+  const sigImg = currentSignatureDataUrl ? `<img src="${currentSignatureDataUrl}" style="max-height: 24px; max-width: 140px;" />` : `___________________________`;
+
+  printContainer.innerHTML = `
+    <style>
+      @media print {
+        html, body { width: 80mm !important; margin: 0 !important; padding: 2mm !important; font-family: monospace !important; font-size: 11px !important; color: #000 !important; }
+        body > header, body > main, body > div.fixed, #app-shell, .no-print { display: none !important; }
+        #print-container { display: block !important; width: 100% !important; }
+      }
+    </style>
+    <div style="width: 76mm; font-family: monospace; font-size: 11px; color: #000; line-height: 1.2; padding: 4px;">
+      <div style="text-align: center; font-weight: bold; font-size: 13px;">${storeProfile.name} (#${storeProfile.number})</div>
+      ${storeProfile.address ? `<div style="text-align: center; font-size: 9px;">${storeProfile.address}</div>` : ''}
+      <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 4px; margin-bottom: 4px; font-size: 10px;">
+        80mm THERMAL WORKSHEET<br>Date: ${dateStr} | ${shiftStr}<br>Cashier: ${cashierStr}
+      </div>
+      <div style="margin-bottom: 6px;">${itemsHtml}</div>
+      <div style="border-top: 1px dashed #000; padding-top: 4px; font-weight: bold;">
+        <div style="display: flex; justify-content: space-between;"><span>TOTAL SALES:</span><span>$${totals.scratchSales.toFixed(2)}</span></div>
+        <div style="display: flex; justify-content: space-between;"><span>EXPECTED NET:</span><span>$${totals.expectedNet.toFixed(2)}</span></div>
+        <div style="display: flex; justify-content: space-between;"><span>POS ACTUAL:</span><span>$${totals.posActual.toFixed(2)}</span></div>
+        <div style="display: flex; justify-content: space-between;"><span>VARIANCE:</span><span>$${totals.variance.toFixed(2)}</span></div>
+      </div>
+      <div style="margin-top: 8px; border-top: 1px dashed #000; padding-top: 4px; text-align: center;">
+        <div style="margin-bottom: 2px;">${sigImg}</div>
+        <div style="font-size: 9px; font-weight: bold;">CASHIER SIGNATURE</div>
+        <div style="font-size: 8px; font-style: italic; margin-top: 2px;">"I certify these figures are accurate."</div>
+      </div>
+    </div>
+  `;
+  window.print();
 }
 
 function renderMainGridCashierShiftBar() {
@@ -1299,36 +1358,36 @@ function buildFullTabletBackupPayload() {
   };
 }
 
-// Completely silent background backup (no popups, alerts, or save-as prompts)
+// Completely silent background backup (stored in local IndexedDB/localStorage rolling cache without popup prompts)
 function executeSilentBackgroundBackup(slotLabel = 'MANUAL') {
   const payload = buildFullTabletBackupPayload();
   try {
-    // Store latest rolling snapshot inside localStorage as an immediate internal safeguard
     localStorage.setItem('project_lotto_latest_silent_snapshot', JSON.stringify(payload));
     localStorage.setItem('project_lotto_last_backup_timestamp', `${new Date().toLocaleString()} (${slotLabel})`);
   } catch (e) {}
-
-  // Trigger silent background file download without any UI dialogs
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16);
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.style.display = 'none';
-  a.href = url;
-  a.download = `ProjectLotto_Backup_${slotLabel}_${stamp}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
   return payload;
 }
 
 function downloadFullTabletBackup(silent = true) {
-  return executeSilentBackgroundBackup(silent ? 'AUTO' : 'MANUAL');
+  const payload = executeSilentBackgroundBackup(silent ? 'AUTO' : 'MANUAL');
+  if (!silent) {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16);
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = `ProjectLotto_Backup_${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+  return payload;
 }
 
 function exportCurrentLocationBackup() {
-  executeSilentBackgroundBackup('MANUAL');
+  downloadFullTabletBackup(false);
 }
 
 function exportSpecificLocationBackup(locId) {
@@ -1447,8 +1506,6 @@ function sendNightlyEmailBackupToOwner(isScheduled11PM = false) {
     summaryLines.push(`• ${loc.name} (#${loc.number}): ${activeBoxes} active games | ${repCount} archived reports`);
   });
 
-  summaryLines.push(``, `NOTE: Your full restore JSON file (ProjectLotto_Backup_*.json) has been saved silently to this tablet's Downloads folder. Attach that file to this email to restore onto any tablet.`);
-
   const subject = encodeURIComponent(`Project Lotto Daily Backup - ${todayStr} (${storeProfile.name})`);
   const body = encodeURIComponent(summaryLines.join('\n'));
 
@@ -1463,20 +1520,18 @@ function startTwiceDailyBackupScheduler() {
     const hour = now.getHours(); // 14 = 2:00 PM, 23 = 11:00 PM
     const todayStr = now.toISOString().slice(0, 10);
 
-    // 1. Silent 2:00 PM Backup
     const last2PM = localStorage.getItem('project_lotto_last_2pm_backup_date');
     if (hour === 14 && last2PM !== todayStr) {
       localStorage.setItem('project_lotto_last_2pm_backup_date', todayStr);
       executeSilentBackgroundBackup('2PM');
     }
 
-    // 2. Silent 11:00 PM Backup + Nightly Email Dispatch
     const last11PM = localStorage.getItem('project_lotto_last_11pm_backup_date');
     if (hour === 23 && last11PM !== todayStr) {
       localStorage.setItem('project_lotto_last_11pm_backup_date', todayStr);
       sendNightlyEmailBackupToOwner(true);
     }
-  }, 30000); // Checks every 30 seconds silently in the background
+  }, 30000);
 }
 /* ==========================================================================
    PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 7 OF 7)
@@ -1662,7 +1717,7 @@ function finalizeAndSaveShiftReport() {
   if (ind) ind.textContent = `✔ Archived ${reportDate} (${shiftType}) at ${new Date().toLocaleTimeString()}`;
 
   executeSilentBackgroundBackup('REPORT');
-  alert(`Shift Report for ${storeProfile.name} archived and full tablet backup downloaded successfully in the background!`);
+  alert(`Shift Report for ${storeProfile.name} archived and system backed up silently in the background!`);
 }
 
 function handleReportFilterModeChange(mode) {
@@ -1941,7 +1996,7 @@ function switchMainView(viewName) {
 }
 
 // --------------------------------------------------------------------------
-// UNIFIED 1-PAGE PRINT WORKSHEET (WITH STORE ADDRESS & SIGNATURE ABOVE ATTESTATION)
+// DIRECT CSS PRINT ENGINE (ZERO BLANK TABS OR WINDOWS)
 // --------------------------------------------------------------------------
 function buildMatrixPrintHTML(repData, isFinalReport = false) {
   const bList = Array.isArray(repData.boxesSnapshot) ? repData.boxesSnapshot : boxes;
