@@ -1683,24 +1683,29 @@ function getLocationHistoricalReports(locId = activeLocationId) {
 function saveLocationHistoricalReports(reportsArr, locId = activeLocationId) {
   try { localStorage.setItem(getStoreHistoryStorageKey(locId), JSON.stringify(reportsArr)); } catch (e) {}
 }
-
 function finalizeAndSaveShiftReport() {
   const totals = recalculateReconciliationTotals();
-  const reportDate = document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10);
-  const shiftType = document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
+  const normalizedDate = document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10);
+  const shiftVal = document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
   const cashierOut = document.getElementById('rec-cashier-out')?.value?.trim() || 'Unspecified Cashier';
   const cashierIn = document.getElementById('rec-cashier-in')?.value?.trim() || '-';
   const notes = document.getElementById('rec-shift-notes')?.value?.trim() || '';
 
+  // Assign strict sequence order: Morning = 1, Evening = 2, Night/Close = 3
+  let shiftOrder = 1;
+  if (shiftVal.includes('2') || shiftVal.toLowerCase().includes('evening')) shiftOrder = 2;
+  else if (shiftVal.includes('3') || shiftVal.toLowerCase().includes('night') || shiftVal.toLowerCase().includes('close')) shiftOrder = 3;
+
   const reportRecord = {
-    reportId: `rep_${activeLocationId}_${reportDate}_${Date.now()}`,
+    reportId: `rep_${activeLocationId}_${normalizedDate}_${shiftOrder}_${Date.now()}`,
     timestamp: new Date().toISOString(),
     locationId: activeLocationId,
     storeName: storeProfile.name,
     storeNumber: storeProfile.number,
-    date: reportDate,
-    monthKey: reportDate.slice(0, 7),
-    shiftType,
+    date: normalizedDate,
+    monthKey: normalizedDate.slice(0, 7),
+    shiftType: shiftVal,
+    shiftSequence: shiftOrder,
     cashierOut,
     cashierIn,
     notes,
@@ -1714,7 +1719,7 @@ function finalizeAndSaveShiftReport() {
   saveLocationHistoricalReports(history, activeLocationId);
 
   const ind = document.getElementById('last-archived-indicator');
-  if (ind) ind.textContent = `✔ Archived ${reportDate} (${shiftType}) at ${new Date().toLocaleTimeString()}`;
+  if (ind) ind.textContent = `✔ Archived ${normalizedDate} (${shiftVal}) at ${new Date().toLocaleTimeString()}`;
 
   executeSilentBackgroundBackup('REPORT');
   alert(`Shift Report for ${storeProfile.name} archived and system backed up silently in the background!`);
@@ -1757,6 +1762,328 @@ function executeReportLookup() {
   } else {
     filtered = allHistory.filter(r => r.date === filterDate);
   }
+
+  // Sort filtered reports so Morning (Shift 1) always comes first
+  filtered.sort((a, b) => (a.shiftSequence || 1) - (b.shiftSequence || 1));
+
+  let sumScratch = 0, sumExpected = 0, sumVariance = 0;
+  filtered.forEach(r => {
+    sumScratch += Number(r.totals?.scratchSales) || 0;
+    sumExpected += Number(r.totals?.expectedNet) || 0;
+    sumVariance += Number(r.totals?.variance) || 0;
+  });
+
+  const cntEl = document.getElementById('rep-summary-shift-count');
+  const scrEl = document.getElementById('rep-summary-scratch-sales');
+  const expEl = document.getElementById('rep-summary-expected-revenue');
+  const varEl = document.getElementById('rep-summary-variance');
+
+  if (cntEl) cntEl.textContent = String(filtered.length);
+  if (scrEl) scrEl.textContent = `$${sumScratch.toFixed(2)}`;
+  if (expEl) expEl.textContent = `$${sumExpected.toFixed(2)}`;
+  if (varEl) {
+    const sign = sumVariance > 0 ? '+' : '';
+    varEl.textContent = `${sign}$${sumVariance.toFixed(2)}`;
+  }
+
+  const tbody = document.getElementById('historical-reports-tbody');
+  if (!tbody) return;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="11" class="p-6 text-center text-slate-400">No archived shift reports found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(r => {
+    const t = r.totals || {};
+    const v = Number(t.variance) || 0;
+    const vColor = Math.abs(v) < 0.01 ? 'text-emerald-700' : (v < 0 ? 'text-red-600' : 'text-amber-600');
+    return `
+      <tr class="hover:bg-slate-50">
+        <td class="p-2.5 text-center font-mono">${r.date}</td>
+        <td class="p-2.5 font-bold text-slate-800">${r.shiftType}</td>
+        <td class="p-2.5">${r.cashierOut || '-'}</td>
+        <td class="p-2.5 text-center font-mono">${t.totalTickets || 0}</td>
+        <td class="p-2.5 text-right font-mono font-bold">$${(Number(t.scratchSales) || 0).toFixed(2)}</td>
+        <td class="p-2.5 text-right font-mono">$${(Number(t.onlineSales) || 0).toFixed(2)}</td>
+        <td class="p-2.5 text-right font-mono font-bold text-blue-800">$${(Number(t.expectedNet) || 0).toFixed(2)}</td>
+        <td class="p-2.5 text-right font-mono font-bold">$${(Number(t.posActual) || 0).toFixed(2)}</td>
+        <td class="p-2.5 text-right font-mono font-extrabold ${vColor}">${v > 0 ? '+' : ''}$${v.toFixed(2)}</td>
+        <td class="p-2.5 text-center">${r.signatureDataUrl ? '<span class="text-emerald-600 font-bold">✔ Signed</span>' : '<span class="text-slate-400">None</span>'}</td>
+        <td class="p-2.5 text-center">
+          <button type="button" onclick="printArchivedSingleReport('${r.reportId}')" class="bg-slate-800 text-white text-[10px] px-2 py-1 rounded">🖨 Print</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function exportHistoricalReportsJSON() {
+  const history = getLocationHistoricalReports(activeLocationId);
+  const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(history, null, 2));
+  const a = document.createElement('a');
+  a.setAttribute('href', dataStr);
+  a.setAttribute('download', `HistoricalReports_${storeProfile.name.replace(/\s+/g, '_')}.json`);
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function triggerMonthlyEmailDispatchManually() {
+  sendNightlyEmailBackupToOwner(false);
+}
+
+function saveNewMasterGameManual() {
+  const numInp = document.getElementById('new-game-num');
+  const nameInp = document.getElementById('new-game-name');
+  const priceInp = document.getElementById('new-game-price');
+  const countInp = document.getElementById('new-game-count');
+
+  const gNum = numInp?.value?.trim();
+  const gName = nameInp?.value?.trim().toUpperCase();
+  const price = Number(priceInp?.value) || 1;
+  const count = Number(countInp?.value) || getDefaultRollCountForPrice(price);
+
+  if (!gNum || !gName) { alert('Please enter both a Game Number and a Game Name.'); return; }
+  const newEntry = { gameNum: gNum, name: gName, price, count };
+
+  const idx = masterGames.findIndex(g => String(g.gameNum).trim() === gNum);
+  if (idx >= 0) masterGames[idx] = newEntry;
+  else masterGames.push(newEntry);
+
+  masterGames = sanitizeMasterGamesList(masterGames);
+  saveGamesState();
+
+  if (numInp) numInp.value = '';
+  if (nameInp) nameInp.value = '';
+  if (priceInp) priceInp.value = '';
+  if (countInp) countInp.value = '';
+
+  loadActiveStoreData();
+  renderAdminGamesTable();
+  renderDispenserGrid();
+  recalculateReconciliationTotals();
+  alert(`Master Game #${gNum} saved successfully!`);
+}
+
+function deleteMasterGame(gNum) {
+  if (!confirm(`Delete Game #${gNum} from Master Catalog?`)) return;
+  masterGames = masterGames.filter(g => String(g.gameNum).trim() !== String(gNum).trim());
+  saveGamesState();
+  renderAdminGamesTable();
+}
+
+function renderAdminGamesTable(filterQuery = '') {
+  const tbody = document.getElementById('admin-games-tbody');
+  const countEl = document.getElementById('admin-games-count');
+  if (countEl) countEl.textContent = String(masterGames.length);
+  if (!tbody) return;
+
+  const q = filterQuery.trim().toLowerCase();
+  const list = q ? masterGames.filter(g => String(g.gameNum).toLowerCase().includes(q) || String(g.name).toLowerCase().includes(q)) : masterGames;
+
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">No matching games found.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map(g => `
+    <tr class="hover:bg-slate-50">
+      <td class="p-2 text-center font-mono font-bold text-blue-800">${g.gameNum}</td>
+      <td class="p-2 font-bold text-slate-800">${g.name}</td>
+      <td class="p-2 text-center font-mono font-bold text-emerald-700">$${g.price}</td>
+      <td class="p-2 text-center font-mono text-slate-600">${g.count}</td>
+      <td class="p-2 text-center">
+        <button type="button" onclick="deleteMasterGame('${g.gameNum}')" class="text-red-600 hover:text-red-800 font-bold text-[11px] px-2 py-0.5 rounded bg-red-50">Delete</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function addBoxSlot() {
+  const nextNum = boxes.length + 1;
+  boxes.push({ boxNumber: String(nextNum), gameNum: '', gameName: '', price: 0, rollCount: 60, startTicket: 0, endTicket: '', rollovers: [], needsNewGameEntry: false });
+  saveBoxesState();
+  const badgeElem = document.getElementById('admin-box-count-badge');
+  if (badgeElem) badgeElem.textContent = String(boxes.length);
+  renderDispenserGrid();
+  renderAdminBoxLabelsGrid();
+  updateHeaderTotalsUI();
+}
+
+function removeBoxSlot() {
+  if (boxes.length <= 1) { alert('You must keep at least 1 box slot active.'); return; }
+  boxes.pop();
+  saveBoxesState();
+  const badgeElem = document.getElementById('admin-box-count-badge');
+  if (badgeElem) badgeElem.textContent = String(boxes.length);
+  renderDispenserGrid();
+  renderAdminBoxLabelsGrid();
+  updateHeaderTotalsUI();
+}
+
+function renderAdminBoxLabelsGrid() {
+  const container = document.getElementById('admin-box-labels-grid');
+  if (!container) return;
+  let html = '';
+  boxes.forEach((box, idx) => {
+    const hasGame = Boolean(box.gameNum);
+    const gameLabel = hasGame ? (box.gameName || 'Game #' + box.gameNum) : 'Empty Slot';
+    html += `
+      <div class="border border-slate-200 rounded-lg p-2 bg-slate-50 flex flex-col justify-between text-xs">
+        <div class="flex items-center justify-between text-[10px] text-slate-500 font-bold mb-1">
+          <span>Index #${idx + 1}</span>
+          <span class="text-emerald-700 font-mono">${hasGame && box.price ? '$' + box.price : ''}</span>
+        </div>
+        <div class="mb-1.5">
+          <input type="text" id="admin-box-label-inp-${idx}" value="${box.boxNumber || (idx + 1)}" oninput="updateBoxLabelDirect(${idx}, this.value)" onkeydown="handleBoxLabelKeydown(event, ${idx})" class="w-full text-center font-mono font-black text-xs border rounded py-1 px-1.5 bg-white lotto-input" />
+        </div>
+        <div class="text-[10px] text-slate-600 truncate font-medium">${gameLabel}</div>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+function handleBoxLabelKeydown(event, currentIdx) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    const nextIdx = currentIdx + 1;
+    const nextInp = document.getElementById(`admin-box-label-inp-${nextIdx}`);
+    if (nextInp) {
+      nextInp.focus();
+      nextInp.select();
+    }
+  }
+}
+
+function updateBoxLabelDirect(idx, val) {
+  if (!boxes[idx]) return;
+  boxes[idx].boxNumber = val === '' ? String(idx + 1) : String(val).trim();
+  saveBoxesState();
+}
+
+function setBoxLabelsSequential(mode) {
+  boxes.forEach((box, idx) => {
+    if (mode === 'numbers') box.boxNumber = String(idx + 1);
+    else if (mode === 'letters') box.boxNumber = idx < 26 ? String.fromCharCode(65 + idx) : 'A' + String.fromCharCode(65 + (idx - 26));
+  });
+  saveBoxesState();
+  renderAdminBoxLabelsGrid();
+  renderDispenserGrid();
+}
+
+function switchMainView(viewName) {
+  lastActiveViewName = viewName;
+  const views = ['grid', 'reconcile', 'reports', 'admin'];
+  views.forEach(v => {
+    const sec = document.getElementById(`view-${v}`);
+    const btn = document.getElementById(`nav-btn-${v}`);
+    if (sec) {
+      if (v === viewName) sec.classList.remove('hidden');
+      else sec.classList.add('hidden');
+    }
+    if (btn) {
+      btn.className = v === viewName ? 'bg-blue-600 text-white font-bold text-xs px-3 py-1.5 rounded shadow-sm transition' : 'bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3 py-1.5 rounded shadow-sm transition';
+    }
+  });
+  if (viewName === 'grid') {
+    renderDispenserGrid();
+    renderMainGridCashierShiftBar();
+  } else if (viewName === 'reconcile') {
+    recalculateReconciliationTotals();
+    handleCashierInputAutocomplete('rec-cashier-out', 'cashier-datalist-rec-out');
+    handleCashierInputAutocomplete('rec-cashier-in', 'cashier-datalist-rec-in');
+  } else if (viewName === 'reports') {
+    executeReportLookup();
+  } else if (viewName === 'admin') {
+    renderAdminGamesTable();
+    renderAdminBoxLabelsGrid();
+    renderAdminCashiersTable();
+  }
+}
+function finalizeAndSaveShiftReport() {
+  const totals = recalculateReconciliationTotals();
+  const normalizedDate = document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10);
+  const shiftVal = document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
+  const cashierOut = document.getElementById('rec-cashier-out')?.value?.trim() || 'Unspecified Cashier';
+  const cashierIn = document.getElementById('rec-cashier-in')?.value?.trim() || '-';
+  const notes = document.getElementById('rec-shift-notes')?.value?.trim() || '';
+
+  // Assign strict sequence order: Morning = 1, Evening = 2, Night/Close = 3
+  let shiftOrder = 1;
+  if (shiftVal.includes('2') || shiftVal.toLowerCase().includes('evening')) shiftOrder = 2;
+  else if (shiftVal.includes('3') || shiftVal.toLowerCase().includes('night') || shiftVal.toLowerCase().includes('close')) shiftOrder = 3;
+
+  const reportRecord = {
+    reportId: `rep_${activeLocationId}_${normalizedDate}_${shiftOrder}_${Date.now()}`,
+    timestamp: new Date().toISOString(),
+    locationId: activeLocationId,
+    storeName: storeProfile.name,
+    storeNumber: storeProfile.number,
+    date: normalizedDate,
+    monthKey: normalizedDate.slice(0, 7),
+    shiftType: shiftVal,
+    shiftSequence: shiftOrder,
+    cashierOut,
+    cashierIn,
+    notes,
+    totals,
+    signatureDataUrl: currentSignatureDataUrl || null,
+    boxesSnapshot: JSON.parse(JSON.stringify(boxes))
+  };
+
+  const history = getLocationHistoricalReports(activeLocationId);
+  history.unshift(reportRecord);
+  saveLocationHistoricalReports(history, activeLocationId);
+
+  const ind = document.getElementById('last-archived-indicator');
+  if (ind) ind.textContent = `✔ Archived ${normalizedDate} (${shiftVal}) at ${new Date().toLocaleTimeString()}`;
+
+  executeSilentBackgroundBackup('REPORT');
+  alert(`Shift Report for ${storeProfile.name} archived and system backed up silently in the background!`);
+}
+
+function handleReportFilterModeChange(mode) {
+  const dateCont = document.getElementById('filter-date-container');
+  const monthCont = document.getElementById('filter-month-container');
+  const shiftCont = document.getElementById('filter-shift-container');
+
+  if (mode === 'monthly') {
+    dateCont?.classList.add('hidden');
+    monthCont?.classList.remove('hidden');
+    shiftCont?.classList.add('hidden');
+  } else if (mode === 'shift') {
+    dateCont?.classList.remove('hidden');
+    monthCont?.classList.add('hidden');
+    shiftCont?.classList.remove('hidden');
+  } else {
+    dateCont?.classList.remove('hidden');
+    monthCont?.classList.add('hidden');
+    shiftCont?.classList.add('hidden');
+  }
+  executeReportLookup();
+}
+
+function executeReportLookup() {
+  const mode = document.getElementById('report-filter-mode')?.value || 'daily';
+  const filterDate = document.getElementById('report-filter-date')?.value || new Date().toISOString().slice(0, 10);
+  const filterMonth = document.getElementById('report-filter-month')?.value || new Date().toISOString().slice(0, 7);
+  const filterShift = document.getElementById('report-filter-shift-type')?.value || 'ALL';
+
+  const allHistory = getLocationHistoricalReports(activeLocationId);
+  let filtered = [];
+
+  if (mode === 'monthly') {
+    filtered = allHistory.filter(r => (r.monthKey || r.date?.slice(0, 7)) === filterMonth);
+  } else if (mode === 'shift') {
+    filtered = allHistory.filter(r => r.date === filterDate && (filterShift === 'ALL' || r.shiftType === filterShift));
+  } else {
+    filtered = allHistory.filter(r => r.date === filterDate);
+  }
+
+  // Sort filtered reports so Morning (Shift 1) always comes first
+  filtered.sort((a, b) => (a.shiftSequence || 1) - (b.shiftSequence || 1));
 
   let sumScratch = 0, sumExpected = 0, sumVariance = 0;
   filtered.forEach(r => {
@@ -1996,7 +2323,7 @@ function switchMainView(viewName) {
 }
 
 // --------------------------------------------------------------------------
-// DIRECT CSS PRINT ENGINE (ZERO BLANK TABS OR WINDOWS)
+// DIRECT CSS PRINT ENGINE (LETTER SIZE 8.5" x 11")
 // --------------------------------------------------------------------------
 function buildMatrixPrintHTML(repData, isFinalReport = false) {
   const bList = Array.isArray(repData.boxesSnapshot) ? repData.boxesSnapshot : boxes;
@@ -2028,13 +2355,13 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
   const sigImgHtml = repData.signatureDataUrl ? `<img src="${repData.signatureDataUrl}" style="max-height: 26px; max-width: 150px; object-fit: contain;" alt="Signature" />` : `<span style="color: #94a3b8; font-size: 7.5px;">______________________________</span>`;
 
   return `
-   <style>
+    <style>
       @page { size: letter portrait; margin: 0.2in 0.25in; }
       @media print {
         html, body { margin: 0 !important; padding: 0 !important; height: 100% !important; background: #fff !important; color: #000 !important; overflow: hidden !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         body > header, body > main, body > div.fixed, #app-shell, .no-print { display: none !important; }
         #print-container { display: block !important; width: 100% !important; }
-        .one-page-print-sheet { width: 100%; max-height: 10.5in; page-break-inside: avoid !important; }
+        .one-page-print-sheet { width: 100%; max-height: 10.4in; page-break-inside: avoid !important; }
       }
     </style>
     <div class="one-page-print-sheet" style="font-family: Arial, sans-serif; color: #000; font-size: 8px; line-height: 1.1;">
