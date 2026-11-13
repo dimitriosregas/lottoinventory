@@ -1088,6 +1088,13 @@ function getFormattedStoreAddress() {
   return 'Sparta, TN 38583';
 }
 function printThermalReceiptDirect() {
+  let printContainer = document.getElementById('print-container');
+  if (!printContainer) {
+    printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    document.body.appendChild(printContainer);
+  }
+
   const totals = recalculateReconciliationTotals();
   const dateStr = document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10);
   const shiftStr = document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
@@ -1107,16 +1114,16 @@ function printThermalReceiptDirect() {
       const endDisplay = hasEnd ? box.endTicket : '____';
       const soldDisplay = hasEnd
         ? `${m.ticketsSold}${roCount > 0 ? '*' : ''} Sold ($${m.dollarSales.toFixed(2)})`
-        : 'Sold:____';
-      const gName = (box.gameName || 'GAME #' + box.gameNum).slice(0, 18);
+        : 'Sold:  ____';
+      const gName = String(box.gameName || 'GAME #' + box.gameNum).toUpperCase().slice(0, 18);
 
       itemsHtml += `
-        <div class="box-item">
-          <div class="row-line top-line">
+        <div class="t-box-row">
+          <div class="t-flex t-bold">
             <span>[BOX ${box.boxNumber}] #${box.gameNum} ${gName}</span>
             <span>$${box.price}</span>
           </div>
-          <div class="row-line bot-line">
+          <div class="t-flex t-sub">
             <span>Start:${startNum} &nbsp;End:${endDisplay}</span>
             <span>${soldDisplay}</span>
           </div>
@@ -1126,237 +1133,197 @@ function printThermalReceiptDirect() {
   });
 
   const sigImg = currentSignatureDataUrl
-    ? `<img src="${currentSignatureDataUrl}" style="max-height: 55px; max-width: 90%; object-fit: contain; display: block; margin: 4px auto;" />`
-    : `<div style="height: 36px;"></div>`;
+    ? `<img src="${currentSignatureDataUrl}" style="max-height: 45px; max-width: 85%; object-fit: contain; display: block; margin: 4px auto;" />`
+    : `<div style="height: 32px;"></div>`;
 
   const varianceVal = Number(totals.variance) || 0;
-  const varianceDisplay = varianceVal < 0 ? `$-${Math.abs(varianceVal).toFixed(2)}` : `$${varianceVal.toFixed(2)}`;
+  const varianceDisplay = varianceVal < 0
+    ? `$-${Math.abs(varianceVal).toFixed(2)}`
+    : `$${varianceVal.toFixed(2)}`;
 
-  const receiptHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>Lotto_Count_Worksheet_${dateStr}</title>
-      <style>
-        @page {
-          margin: 0;
-        }
-        * {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
+  printContainer.innerHTML = `
+    <style>
+      @page {
+        size: auto;
+        margin: 0mm !important;
+      }
+      @media print {
+        html, body {
+          width: 100% !important;
+          max-width: 100% !important;
+          height: auto !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: #fff !important;
+          color: #000 !important;
+          overflow: visible !important;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
         }
-        html, body {
-          width: 100%;
-          margin: 0;
-          padding: 2mm 2.5mm 8mm 2.5mm;
-          background: #fff;
-          color: #000;
-          font-family: 'Courier New', Courier, monospace;
-          font-size: 16px;
-          font-weight: 700;
-          line-height: 1.3;
+        body > header, body > main, body > footer, body > div.fixed, #app-shell, .no-print {
+          display: none !important;
         }
-        .no-print-bar {
-          display: flex;
-          gap: 8px;
-          margin-bottom: 10px;
-          padding-bottom: 8px;
-          border-bottom: 2px solid #000;
+        #print-container {
+          display: block !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          margin: 0 !important;
+          padding: 2mm 3mm 6mm 3mm !important;
+          font-family: 'Courier New', Courier, monospace !important;
+          font-size: 13pt !important;
+          font-weight: 700 !important;
+          line-height: 1.25 !important;
+          color: #000 !important;
         }
-        .btn {
-          flex: 1;
-          padding: 10px 6px;
-          font-family: Arial, sans-serif;
-          font-weight: 900;
-          font-size: 14px;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          text-align: center;
-        }
-        .btn-print { background: #0f172a; color: #fff; }
-        .btn-close { background: #e2e8f0; color: #0f172a; }
-        @media print {
-          .no-print-bar { display: none !important; }
-          html, body {
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 1mm 2mm 6mm 2mm !important;
-          }
-        }
-        .header-center {
+        .t-header {
           text-align: center;
           margin-bottom: 6px;
         }
-        .store-name {
-          font-size: 22px;
-          font-weight: 900;
+        .t-store-name {
+          font-size: 17pt !important;
+          font-weight: 900 !important;
+          text-transform: uppercase;
           letter-spacing: 0.5px;
-          text-transform: uppercase;
         }
-        .store-num {
-          font-size: 16px;
-          font-weight: 900;
-          margin-top: 2px;
+        .t-store-num {
+          font-size: 13pt !important;
+          font-weight: 900 !important;
           text-transform: uppercase;
-        }
-        .store-addr {
-          font-size: 15px;
-          font-weight: 800;
           margin-top: 2px;
         }
-        .worksheet-banner {
-          font-size: 15px;
-          font-weight: 900;
+        .t-store-addr {
+          font-size: 12pt !important;
+          font-weight: 800 !important;
+          margin-top: 2px;
+        }
+        .t-banner {
+          font-size: 12.5pt !important;
+          font-weight: 900 !important;
           margin-top: 4px;
         }
-        .meta-block {
+        .t-meta {
           border-top: 1.5px dashed #000;
           border-bottom: 2px solid #000;
           padding: 5px 0;
           margin-bottom: 4px;
-          font-size: 15.5px;
-          font-weight: 800;
+          font-size: 12.5pt !important;
+          font-weight: 800 !important;
           line-height: 1.3;
         }
-        .meta-row {
+        .t-meta-row {
           display: flex;
         }
-        .meta-label {
-          width: 72px;
+        .t-meta-lbl {
+          width: 65px;
           flex-shrink: 0;
         }
-        .box-item {
+        .t-box-row {
           border-bottom: 1.5px dashed #000;
           padding: 5px 0;
           width: 100%;
+          page-break-inside: avoid;
         }
-        .row-line {
+        .t-flex {
           display: flex;
           justify-content: space-between;
           align-items: baseline;
           width: 100%;
         }
-        .top-line {
-          font-size: 16px;
-          font-weight: 900;
+        .t-bold {
+          font-size: 13.5pt !important;
+          font-weight: 900 !important;
         }
-        .bot-line {
-          font-size: 15.5px;
-          font-weight: 700;
+        .t-sub {
+          font-size: 12.5pt !important;
+          font-weight: 700 !important;
           margin-top: 2px;
         }
-        .totals-section {
+        .t-totals {
           border-top: 2px solid #000;
           padding-top: 6px;
           margin-top: 4px;
-          font-size: 16px;
-          font-weight: 800;
-          line-height: 1.4;
+          font-size: 13pt !important;
+          font-weight: 800 !important;
+          line-height: 1.35;
+          page-break-inside: avoid;
         }
-        .net-section {
+        .t-net-box {
           border-top: 1.5px dashed #000;
           border-bottom: 1.5px dashed #000;
           padding: 5px 0;
           margin: 5px 0;
         }
-        .variance-row {
-          font-size: 19px;
-          font-weight: 900;
-          padding-top: 2px;
+        .t-variance {
+          font-size: 15pt !important;
+          font-weight: 900 !important;
+          padding-top: 3px;
         }
-        .sig-section {
-          margin-top: 18px;
+        .t-sig {
+          margin-top: 16px;
           text-align: center;
+          page-break-inside: avoid;
         }
-        .sig-line {
+        .t-sig-line {
           border-top: 1.5px solid #000;
-          width: 88%;
+          width: 85%;
           margin: 0 auto;
           padding-top: 4px;
-          font-size: 14px;
-          font-weight: 900;
+          font-size: 11.5pt !important;
+          font-weight: 900 !important;
           text-transform: uppercase;
         }
-        .timestamp {
-          font-size: 13.5px;
-          font-weight: 700;
-          margin-top: 6px;
+        .t-time {
+          font-size: 11pt !important;
+          font-weight: 700 !important;
+          margin-top: 5px;
         }
-      </style>
-    </head>
-    <body>
-      <div class="no-print-bar">
-        <button class="btn btn-print" onclick="window.print()">🖨 Print / Save PDF</button>
-        <button class="btn btn-close" onclick="window.close()">✕ Close</button>
+      }
+    </style>
+
+    <div class="t-header">
+      <div class="t-store-name">${storeProfile.name}</div>
+      <div class="t-store-num">STORE #${storeProfile.number}</div>
+      <div class="t-store-addr">${storeAddr}</div>
+      <div class="t-banner">*** LOTTO COUNT WORKSHEET ***</div>
+    </div>
+
+    <div class="t-meta">
+      <div class="t-meta-row"><span class="t-meta-lbl">DATE:</span><span>${dateStr}</span></div>
+      <div class="t-meta-row"><span class="t-meta-lbl">SHIFT:</span><span>${shiftStr}</span></div>
+      <div class="t-meta-row"><span class="t-meta-lbl">OUT:</span><span>${cashierOut}</span></div>
+      <div class="t-meta-row"><span class="t-meta-lbl">IN:</span><span>${cashierIn}</span></div>
+    </div>
+
+    <div>
+      ${itemsHtml || '<div style="text-align:center; padding: 10px 0;">No active boxes assigned.</div>'}
+    </div>
+
+    <div class="t-totals">
+      <div class="t-flex"><span>TOTAL TICKETS SOLD:</span><span>${totals.totalTickets}</span></div>
+      <div class="t-flex"><span>SCRATCH SALES:</span><span>$${totals.scratchSales.toFixed(2)}</span></div>
+      <div class="t-flex"><span>ONLINE SALES:</span><span>$${totals.onlineSales.toFixed(2)}</span></div>
+      <div class="t-flex"><span>SCRATCH CASHED:</span><span>-$${totals.scratchCashed.toFixed(2)}</span></div>
+      <div class="t-flex"><span>ONLINE CASHED:</span><span>-$${totals.onlineCashed.toFixed(2)}</span></div>
+
+      <div class="t-net-box">
+        <div class="t-flex"><span>EXPECTED NET:</span><span>$${totals.expectedNet.toFixed(2)}</span></div>
+        <div class="t-flex"><span>POS ACTUAL:</span><span>$${totals.posActual.toFixed(2)}</span></div>
       </div>
 
-      <div class="header-center">
-        <div class="store-name">${storeProfile.name}</div>
-        <div class="store-num">STORE #${storeProfile.number}</div>
-        <div class="store-addr">${storeAddr}</div>
-        <div class="worksheet-banner">*** LOTTO COUNT WORKSHEET ***</div>
+      <div class="t-flex t-variance">
+        <span>VARIANCE:</span>
+        <span>${varianceDisplay}</span>
       </div>
+    </div>
 
-      <div class="meta-block">
-        <div class="meta-row"><span class="meta-label">DATE:</span><span>${dateStr}</span></div>
-        <div class="meta-row"><span class="meta-label">SHIFT:</span><span>${shiftStr}</span></div>
-        <div class="meta-row"><span class="meta-label">OUT:</span><span>${cashierOut}</span></div>
-        <div class="meta-row"><span class="meta-label">IN:</span><span>${cashierIn}</span></div>
-      </div>
-
-      <div>
-        ${itemsHtml || '<div style="text-align:center; padding: 10px 0;">No active boxes assigned.</div>'}
-      </div>
-
-      <div class="totals-section">
-        <div class="row-line"><span>TOTAL TICKETS SOLD:</span><span>${totals.totalTickets}</span></div>
-        <div class="row-line"><span>SCRATCH SALES:</span><span>$${totals.scratchSales.toFixed(2)}</span></div>
-        <div class="row-line"><span>ONLINE SALES:</span><span>$${totals.onlineSales.toFixed(2)}</span></div>
-        <div class="row-line"><span>SCRATCH CASHED:</span><span>-$${totals.scratchCashed.toFixed(2)}</span></div>
-        <div class="row-line"><span>ONLINE CASHED:</span><span>-$${totals.onlineCashed.toFixed(2)}</span></div>
-
-        <div class="net-section">
-          <div class="row-line"><span>EXPECTED NET:</span><span>$${totals.expectedNet.toFixed(2)}</span></div>
-          <div class="row-line"><span>POS ACTUAL:</span><span>$${totals.posActual.toFixed(2)}</span></div>
-        </div>
-
-        <div class="row-line variance-row">
-          <span>VARIANCE:</span>
-          <span>${varianceDisplay}</span>
-        </div>
-      </div>
-
-      <div class="sig-section">
-        ${sigImg}
-        <div class="sig-line">CASHIER SIGNATURE (${cashierOut})</div>
-        <div class="timestamp">${new Date().toLocaleString()}</div>
-      </div>
-
-      <script>
-        window.onload = function() {
-          setTimeout(function() {
-            window.focus();
-            window.print();
-          }, 250);
-        };
-      </script>
-    </body>
-    </html>
+    <div class="t-sig">
+      ${sigImg}
+      <div class="t-sig-line">CASHIER SIGNATURE</div>
+      <div class="t-time">${new Date().toLocaleString()}</div>
+    </div>
   `;
 
-  const printWin = window.open('', '_blank', 'width=420,height=780,scrollbars=yes');
-  if (printWin) {
-    printWin.document.open();
-    printWin.document.write(receiptHtml);
-    printWin.document.close();
-  } else {
-    alert('Please allow pop-ups for this site so the 80mm receipt window can open.');
-  }
+  window.print();
 }
 function renderMainGridCashierShiftBar() {
   let bar = document.getElementById('main-grid-cashier-shift-bar');
