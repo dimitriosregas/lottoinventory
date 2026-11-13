@@ -1077,16 +1077,23 @@ function executeUnifiedPrint(formatChoice) {
   }, 800);
 }
 
-// --------------------------------------------------------------------------
-// DEDICATED 80mm (3 1/8") THERMAL RECEIPT IFRAME ENGINE
-// Isolates receipt from index.html Letter CSS so it prints 100% width & cuts cleanly
-// --------------------------------------------------------------------------
-// ✅ PASTE THIS STANDALONE 80mm PDF / THERMAL PRINT FUNCTION:
+function getFormattedStoreAddress() {
+  if (storeProfile && storeProfile.address && storeProfile.address.trim() !== '') {
+    return storeProfile.address.trim();
+  }
+  const activeLocObj = locations.find(l => l.id === activeLocationId);
+  if (activeLocObj && activeLocObj.address && activeLocObj.address.trim() !== '') {
+    return activeLocObj.address.trim();
+  }
+  return 'Sparta, TN 38583';
+}
+
 function printThermalReceiptDirect() {
   const totals = recalculateReconciliationTotals();
   const dateStr = document.getElementById('rec-report-date')?.value || new Date().toLocaleDateString();
   const shiftStr = document.getElementById('rec-shift-type')?.value || 'Shift 1';
   const cashierStr = document.getElementById('print-modal-cashier-input')?.value || 'Manager';
+  const storeAddr = getFormattedStoreAddress();
 
   let itemsHtml = '';
   boxes.forEach((box) => {
@@ -1099,11 +1106,11 @@ function printThermalReceiptDirect() {
       const endNum = box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '-';
       itemsHtml += `
         <div class="item-row">
-          <div class="row-flex bold-line">
-            <span>B#${box.boxNumber} • #${box.gameNum} ($${box.price})</span>
+          <div class="row-flex box-line">
+            <span>BOX ${box.boxNumber} • #${box.gameNum} ($${box.price})</span>
             <span>$${m.dollarSales.toFixed(2)}</span>
           </div>
-          <div class="row-flex sub-line">
+          <div class="row-flex detail-line">
             <span class="game-title">${box.gameName || 'GAME #' + box.gameNum}</span>
             <span>#${startNum}→#${endNum} (${m.ticketsSold}${roCount > 0 ? '*' : ''} tix)</span>
           </div>
@@ -1113,8 +1120,8 @@ function printThermalReceiptDirect() {
   });
 
   const sigImg = currentSignatureDataUrl
-    ? `<img src="${currentSignatureDataUrl}" style="max-height: 48px; max-width: 90%; object-fit: contain; display: block; margin: 0 auto;" />`
-    : `<div style="height: 30px; border-bottom: 1.5px solid #000; width: 90%; margin: 0 auto;"></div>`;
+    ? `<img src="${currentSignatureDataUrl}" style="max-height: 60px; max-width: 92%; object-fit: contain; display: block; margin: 0 auto;" />`
+    : `<div style="height: 38px; border-bottom: 2px solid #000; width: 92%; margin: 0 auto;"></div>`;
 
   const signPrefix = totals.variance > 0 ? '+' : '';
 
@@ -1127,8 +1134,8 @@ function printThermalReceiptDirect() {
       <title>Lotto_80mm_Receipt_${dateStr.replace(/[^a-zA-Z0-9_-]/g, '-')}</title>
       <style>
         @page {
-          size: 80mm auto;
-          margin: 0mm;
+          size: auto;
+          margin: 0mm !important;
         }
         * {
           box-sizing: border-box;
@@ -1138,28 +1145,30 @@ function printThermalReceiptDirect() {
           print-color-adjust: exact !important;
         }
         html, body {
-          width: 80mm;
-          margin: 0 auto;
-          padding: 2mm 3mm 8mm 3mm;
+          width: 100%;
+          max-width: 100%;
+          margin: 0;
+          padding: 4px 6px 14px 6px;
           background: #fff;
           color: #000;
-          font-family: 'Courier New', Courier, monospace;
-          font-size: 13px;
-          line-height: 1.25;
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 12pt;
+          font-weight: 700;
+          line-height: 1.3;
         }
         .no-print-bar {
           display: flex;
-          gap: 6px;
-          margin-bottom: 8px;
+          gap: 8px;
+          margin-bottom: 10px;
           padding-bottom: 8px;
           border-bottom: 2px solid #000;
         }
         .btn {
           flex: 1;
-          padding: 8px 4px;
+          padding: 10px 6px;
           font-family: sans-serif;
           font-weight: 900;
-          font-size: 12px;
+          font-size: 12pt;
           border: none;
           border-radius: 6px;
           cursor: pointer;
@@ -1171,25 +1180,44 @@ function printThermalReceiptDirect() {
           .no-print-bar { display: none !important; }
           html, body {
             width: 100% !important;
+            max-width: 100% !important;
             margin: 0 !important;
-            padding: 1mm 2mm 6mm 2mm !important;
+            padding: 1mm 1.5mm 8mm 1.5mm !important;
           }
         }
         .header {
           text-align: center;
-          border-bottom: 2px solid #000;
-          padding-bottom: 5px;
-          margin-bottom: 5px;
+          border-bottom: 2.5px solid #000;
+          padding-bottom: 6px;
+          margin-bottom: 6px;
           width: 100%;
         }
         .store-title {
           font-weight: 900;
-          font-size: 16px;
+          font-size: 16pt;
+          text-transform: uppercase;
+          line-height: 1.15;
+        }
+        .store-address {
+          font-size: 12pt;
+          font-weight: 700;
+          margin-top: 2px;
+        }
+        .report-subtitle {
+          font-size: 13pt;
+          font-weight: 900;
+          margin-top: 4px;
           text-transform: uppercase;
         }
+        .meta-info {
+          font-size: 12pt;
+          font-weight: 700;
+          margin-top: 3px;
+          line-height: 1.25;
+        }
         .item-row {
-          border-bottom: 1px dashed #000;
-          padding: 3px 0;
+          border-bottom: 1.5px dashed #000;
+          padding: 5px 0;
           width: 100%;
         }
         .row-flex {
@@ -1198,32 +1226,40 @@ function printThermalReceiptDirect() {
           align-items: baseline;
           width: 100%;
         }
-        .bold-line {
+        .box-line {
           font-weight: 900;
-          font-size: 13.5px;
+          font-size: 13pt;
         }
-        .sub-line {
-          font-size: 11.5px;
-          font-weight: bold;
+        .detail-line {
+          font-size: 12pt;
+          font-weight: 700;
+          margin-top: 2px;
         }
         .game-title {
-          max-width: 56%;
+          max-width: 55%;
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
         }
         .totals-box {
-          border-top: 2px solid #000;
-          border-bottom: 2px solid #000;
-          padding: 5px 0;
-          margin-top: 5px;
-          font-size: 13px;
-          font-weight: bold;
-          line-height: 1.35;
+          border-top: 2.5px solid #000;
+          border-bottom: 2.5px solid #000;
+          padding: 6px 0;
+          margin-top: 6px;
+          font-size: 12.5pt;
+          font-weight: 800;
+          line-height: 1.4;
           width: 100%;
         }
+        .variance-line {
+          font-size: 15pt;
+          font-weight: 900;
+          border-top: 2px solid #000;
+          margin-top: 4px;
+          padding-top: 4px;
+        }
         .footer {
-          margin-top: 8px;
+          margin-top: 10px;
           text-align: center;
           width: 100%;
         }
@@ -1237,16 +1273,17 @@ function printThermalReceiptDirect() {
 
       <div class="header">
         <div class="store-title">${storeProfile.name} (#${storeProfile.number})</div>
-        ${storeProfile.address ? `<div style="font-size: 11px;">${storeProfile.address}</div>` : ''}
-        <div style="font-size: 12px; font-weight: bold; margin-top: 2px;">80mm THERMAL WORKSHEET</div>
-        <div style="font-size: 11.5px;">
-          Date: <strong>${dateStr}</strong> | ${shiftStr}<br>
+        <div class="store-address">${storeAddr}</div>
+        <div class="report-subtitle">SHIFT LOTTO WORKSHEET</div>
+        <div class="meta-info">
+          Date: <strong>${dateStr}</strong><br>
+          Shift: <strong>${shiftStr}</strong><br>
           Cashier: <strong>${cashierStr}</strong>
         </div>
       </div>
 
       <div>
-        ${itemsHtml || '<div style="text-align:center; padding: 8px 0;">No active boxes assigned.</div>'}
+        ${itemsHtml || '<div style="text-align:center; padding: 10px 0; font-size: 12pt;">No active boxes assigned.</div>'}
       </div>
 
       <div class="totals-box">
@@ -1255,16 +1292,16 @@ function printThermalReceiptDirect() {
         <div class="row-flex"><span>ONLINE SALES:</span><span>$${totals.onlineSales.toFixed(2)}</span></div>
         <div class="row-flex"><span>SCRATCH CASHED:</span><span>-$${totals.scratchCashed.toFixed(2)}</span></div>
         <div class="row-flex"><span>ONLINE CASHED:</span><span>-$${totals.onlineCashed.toFixed(2)}</span></div>
-        <div class="row-flex" style="border-top: 1px dashed #000; margin-top: 2px; padding-top: 2px;"><span>EXPECTED NET:</span><span>$${totals.expectedNet.toFixed(2)}</span></div>
+        <div class="row-flex" style="border-top: 1.5px dashed #000; margin-top: 3px; padding-top: 3px;"><span>EXPECTED NET:</span><span>$${totals.expectedNet.toFixed(2)}</span></div>
         <div class="row-flex"><span>POS ACTUAL:</span><span>$${totals.posActual.toFixed(2)}</span></div>
-        <div class="row-flex" style="font-size: 15px; font-weight: 900; border-top: 1px solid #000; margin-top: 2px; padding-top: 2px;"><span>VARIANCE:</span><span>${signPrefix}$${totals.variance.toFixed(2)}</span></div>
+        <div class="row-flex variance-line"><span>VARIANCE:</span><span>${signPrefix}$${totals.variance.toFixed(2)}</span></div>
       </div>
 
       <div class="footer">
-        <div style="margin-bottom: 3px;">${sigImg}</div>
-        <div style="font-size: 11px; font-weight: 900;">CASHIER SIGNATURE (${cashierStr})</div>
-        <div style="font-size: 10px; font-style: italic; margin-top: 2px;">"I certify these figures are true and accurate."</div>
-        <div style="font-size: 10px; margin-top: 4px; border-top: 1px dashed #000; padding-top: 3px;">Printed: ${new Date().toLocaleString()}</div>
+        <div style="margin-bottom: 4px;">${sigImg}</div>
+        <div style="font-size: 12pt; font-weight: 900;">CASHIER SIGNATURE (${cashierStr})</div>
+        <div style="font-size: 10.5pt; font-style: italic; margin-top: 4px;">"I certify these figures are true, complete, and accurate."</div>
+        <div style="font-size: 10.5pt; margin-top: 6px; border-top: 1.5px dashed #000; padding-top: 4px;">Printed: ${new Date().toLocaleString()}</div>
       </div>
 
       <script>
@@ -1279,7 +1316,7 @@ function printThermalReceiptDirect() {
     </html>
   `;
 
-  const printWin = window.open('', '_blank', 'width=360,height=700,scrollbars=yes');
+  const printWin = window.open('', '_blank', 'width=420,height=760,scrollbars=yes');
   if (printWin) {
     printWin.document.open();
     printWin.document.write(receiptHtml);
@@ -2170,12 +2207,13 @@ function switchMainView(viewName) {
 }
 
 // --------------------------------------------------------------------------
-// DIRECT CSS PRINT ENGINE (LETTER SIZE 8.5" x 11" — STRICT 1-PAGE FIT)
+// STANDALONE 8.5" x 11" FULL-PAGE PDF / PRINT WINDOW ENGINE (STRICT 1-PAGE FIT)
 // --------------------------------------------------------------------------
 function buildMatrixPrintHTML(repData, isFinalReport = false) {
   const bList = Array.isArray(repData.boxesSnapshot) ? repData.boxesSnapshot : boxes;
   const t = repData.totals || {};
   const variance = Number(t.variance) || 0;
+  const storeAddr = getFormattedStoreAddress();
   let gtTickets = 0;
   let gtSales = 0;
 
@@ -2186,112 +2224,236 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
     const hasGame = Boolean(box.gameNum);
     const roCount = Array.isArray(box.rollovers) ? box.rollovers.length : 0;
     return `
-      <tr style="border-bottom: 1px solid #cbd5e1; font-size: 7.5px;">
-        <td style="padding: 1.5px 3px; text-align: center; font-weight: 900; background: #0f172a; color: #fff;">${box.boxNumber}</td>
-        <td style="padding: 1.5px 3px; text-align: center; font-family: monospace; font-weight: bold;">${box.gameNum || '-'}</td>
-        <td style="padding: 1.5px 3px; font-weight: 600;">${hasGame ? (box.gameName || 'Game #' + box.gameNum) : '<span style="color:#94a3b8;">Empty</span>'}</td>
-        <td style="padding: 1.5px 3px; text-align: center; font-weight: bold; color: #047857;">${hasGame && box.price ? '$' + box.price : '-'}</td>
-        <td style="padding: 1.5px 3px; text-align: center; font-family: monospace;">${box.startTicket !== '' ? box.startTicket : '-'}</td>
-        <td style="padding: 1.5px 3px; text-align: center; font-family: monospace; font-weight: bold;">${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '-'}</td>
-        <td style="padding: 1.5px 3px; text-align: center; font-weight: bold;">${m.ticketsSold}${roCount > 0 ? ' *' : ''}</td>
-        <td style="padding: 1.5px 3px; text-align: right; font-family: monospace; font-weight: 900; color: #047857;">$${m.dollarSales.toFixed(2)}</td>
+      <tr>
+        <td class="col-box">${box.boxNumber}</td>
+        <td class="col-num">${box.gameNum || '-'}</td>
+        <td class="col-name">${hasGame ? (box.gameName || 'Game #' + box.gameNum) : '<span style="color:#94a3b8;">Empty</span>'}</td>
+        <td class="col-price">${hasGame && box.price ? '$' + box.price : '-'}</td>
+        <td class="col-tix">${box.startTicket !== '' && box.startTicket !== undefined ? box.startTicket : '-'}</td>
+        <td class="col-tix bold">${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '-'}</td>
+        <td class="col-sold">${m.ticketsSold}${roCount > 0 ? ' *' : ''}</td>
+        <td class="col-sales">$${m.dollarSales.toFixed(2)}</td>
       </tr>
     `;
   }).join('');
 
-  const sigImgHtml = repData.signatureDataUrl ? `<img src="${repData.signatureDataUrl}" style="max-height: 24px; max-width: 140px; object-fit: contain;" alt="Signature" />` : `<span style="color: #94a3b8; font-size: 7.5px;">______________________________</span>`;
+  const sigImgHtml = repData.signatureDataUrl
+    ? `<img src="${repData.signatureDataUrl}" style="max-height: 28px; max-width: 160px; object-fit: contain;" alt="Signature" />`
+    : `<span style="color: #94a3b8; font-size: 9pt;">____________________________________</span>`;
+
+  const cleanDate = String(repData.date || '').replace(/[^a-zA-Z0-9_-]/g, '-');
 
   return `
-    <style>
-      @page {
-        size: letter portrait;
-        margin: 0.15in 0.2in;
-      }
-      @media print {
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Lotto_Worksheet_8.5x11_${cleanDate}</title>
+      <style>
+        @page {
+          size: letter portrait;
+          margin: 0.18in 0.22in;
+        }
+        * {
+          box-sizing: border-box;
+          margin: 0;
+          padding: 0;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
         html, body {
-          margin: 0 !important;
-          padding: 0 !important;
-          height: 100% !important;
-          background: #fff !important;
-          color: #000 !important;
-          overflow: hidden !important;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
+          width: 100%;
+          max-width: 8.5in;
+          margin: 0 auto;
+          padding: 8px 12px;
+          background: #fff;
+          color: #000;
+          font-family: Arial, Helvetica, sans-serif;
+          font-size: 10pt;
+          line-height: 1.15;
         }
-        body > header, body > main, body > div.fixed, #app-shell, .no-print {
-          display: none !important;
+        .no-print-bar {
+          display: flex;
+          gap: 10px;
+          margin-bottom: 10px;
+          padding-bottom: 8px;
+          border-bottom: 2px solid #0f172a;
         }
-        #print-container {
-          display: block !important;
-          width: 100% !important;
-          margin: 0 !important;
-          padding: 0 !important;
+        .btn {
+          padding: 8px 16px;
+          font-family: sans-serif;
+          font-weight: 900;
+          font-size: 11pt;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
         }
-        .one-page-print-sheet {
-          width: 100% !important;
-          max-height: 10.4in !important;
-          overflow: hidden !important;
-          page-break-inside: avoid !important;
-          page-break-after: avoid !important;
-          page-break-before: avoid !important;
-          transform: scale(0.97);
-          transform-origin: top left;
+        .btn-print { background: #2563eb; color: #fff; }
+        .btn-close { background: #e2e8f0; color: #0f172a; }
+        @media print {
+          .no-print-bar { display: none !important; }
+          html, body {
+            width: 100% !important;
+            max-width: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: hidden !important;
+          }
+          .sheet-wrap {
+            page-break-inside: avoid !important;
+            page-break-after: avoid !important;
+          }
         }
-      }
-    </style>
-    <div class="one-page-print-sheet" style="font-family: Arial, sans-serif; color: #000; font-size: 7.5px; line-height: 1.05;">
-      <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; padding-bottom: 2px; margin-bottom: 2px;">
-        <div>
-          <div style="font-size: 11px; font-weight: 900; text-transform: uppercase;">
-            ${repData.storeName || storeProfile.name} (#${repData.storeNumber || storeProfile.number}) — Shift Lotto Count Worksheet
-          </div>
-          ${storeProfile.address ? `<div style="font-size: 7px; color: #334155;">${storeProfile.address}</div>` : ''}
-          <div style="font-size: 7.5px; color: #334155; margin-top: 1px;">Date: <strong>${repData.date}</strong> &nbsp;|&nbsp; Shift: <strong>${repData.shiftType}</strong></div>
-        </div>
-        <div style="text-align: right; font-size: 7px; font-weight: bold;">WORKSHEET</div>
+        .header-bar {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-end;
+          border-bottom: 2px solid #000;
+          padding-bottom: 4px;
+          margin-bottom: 4px;
+        }
+        .store-headline {
+          font-size: 13pt;
+          font-weight: 900;
+          text-transform: uppercase;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 5px;
+        }
+        th {
+          background: #e2e8f0;
+          border-bottom: 1.5px solid #000;
+          padding: 3px 4px;
+          font-size: 9pt;
+          text-transform: uppercase;
+        }
+        td {
+          border-bottom: 1px solid #cbd5e1;
+          padding: 2px 4px;
+          font-size: 9.5pt;
+        }
+        .col-box { text-align: center; font-weight: 900; background: #0f172a; color: #fff; width: 38px; }
+        .col-num { text-align: center; font-family: monospace; font-weight: bold; width: 62px; }
+        .col-name { text-align: left; font-weight: 700; }
+        .col-price { text-align: center; font-weight: bold; color: #047857; width: 45px; }
+        .col-tix { text-align: center; font-family: monospace; width: 58px; }
+        .col-sold { text-align: center; font-weight: bold; width: 48px; }
+        .col-sales { text-align: right; font-family: monospace; font-weight: 900; color: #047857; width: 78px; }
+        .bold { font-weight: bold; }
+        .summary-card {
+          border: 1.5px solid #000;
+          padding: 5px 8px;
+          background: #f8fafc;
+        }
+        .kpi-grid {
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          gap: 4px;
+          border-bottom: 1px solid #94a3b8;
+          padding-bottom: 4px;
+          margin-bottom: 4px;
+          text-align: center;
+          font-size: 9pt;
+        }
+        .kpi-val {
+          font-family: monospace;
+          font-weight: 900;
+          font-size: 11pt;
+          margin-top: 1px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="no-print-bar">
+        <button class="btn btn-print" onclick="window.print()">🖨 Print / Save as PDF (8.5" x 11")</button>
+        <button class="btn btn-close" onclick="window.close()">✕ Close Window</button>
       </div>
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 3px;">
-        <thead>
-          <tr style="background: #e2e8f0; border-bottom: 1.5px solid #000; font-size: 7px; text-transform: uppercase;">
-            <th style="padding: 2.5px; text-align: center; width: 30px;">Box</th>
-            <th style="padding: 2.5px; text-align: center; width: 50px;">Game #</th>
-            <th style="padding: 2.5px; text-align: left;">Game Name</th>
-            <th style="padding: 2.5px; text-align: center; width: 32px;">Price</th>
-            <th style="padding: 2.5px; text-align: center; width: 45px;">Start</th>
-            <th style="padding: 2.5px; text-align: center; width: 45px;">End</th>
-            <th style="padding: 2.5px; text-align: center; width: 32px;">Sold</th>
-            <th style="padding: 2.5px; text-align: right; width: 60px;">Sales $</th>
-          </tr>
-        </thead>
-        <tbody>${rowsHtml}</tbody>
-      </table>
-      <div style="border: 1.5px solid #000; padding: 3px 5px; background: #f8fafc;">
-        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; border-bottom: 1px solid #94a3b8; padding-bottom: 2px; margin-bottom: 2px; text-align: center; font-size: 7px;">
-          <div><span>Total Sold:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">${gtTickets} tix</div></div>
-          <div><span>Scratch Sales:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px; color:#047857;">$${gtSales.toFixed(2)}</div></div>
-          <div><span>Online Sales:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">$${(Number(t.onlineSales) || 0).toFixed(2)}</div></div>
-          <div><span>Expected Net:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">$${(Number(t.expectedNet) || 0).toFixed(2)}</div></div>
-          <div><span>POS Actual:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">$${(Number(t.posActual) || 0).toFixed(2)}</div></div>
-          <div><span>Variance:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">${variance > 0 ? '+' : ''}$${variance.toFixed(2)}</div></div>
+
+      <div class="sheet-wrap">
+        <div class="header-bar">
+          <div>
+            <div class="store-headline">
+              ${repData.storeName || storeProfile.name} (#${repData.storeNumber || storeProfile.number}) — Shift Lotto Count Worksheet
+            </div>
+            <div style="font-size: 9.5pt; font-weight: bold; color: #1e293b;">${storeAddr}</div>
+            <div style="font-size: 9.5pt; color: #334155; margin-top: 1px;">
+              Date: <strong>${repData.date}</strong> &nbsp;|&nbsp; Shift: <strong>${repData.shiftType}</strong>
+            </div>
+          </div>
+          <div style="text-align: right; font-size: 9.5pt; font-weight: bold;">
+            ${isFinalReport ? 'ARCHIVED SHIFT REPORT' : 'SHIFT WORKSHEET'}
+          </div>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 6px;">
-          <div style="flex: 1.2;">
-            <div style="display: flex; gap: 8px; font-size: 7px; margin-bottom: 2px;">
-              <div><strong>Outgoing Cashier:</strong> ${repData.cashierOut || '&nbsp;'}</div>
-              <div><strong>Incoming Cashier:</strong> ${repData.cashierIn || '&nbsp;'}</div>
-            </div>
-            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 1px;">
-              <div style="height: 22px; min-width: 120px; display: flex; align-items: center; border-bottom: 1px solid #000;">${sigImgHtml}</div>
-              <span style="font-size: 6px; font-weight: bold; text-transform: uppercase;">Cashier Signature</span>
-            </div>
-            <div style="font-size: 6.5px; color: #1e293b; font-style: italic; line-height: 1.05;">
-              "I hereby certify that the ticket counts, game numbers, and shift totals recorded above are true, complete, and accurate to the best of my knowledge."
+
+        <table>
+          <thead>
+            <tr>
+              <th>Box</th>
+              <th>Game #</th>
+              <th style="text-align:left;">Game Name</th>
+              <th>Price</th>
+              <th>Start</th>
+              <th>End</th>
+              <th>Sold</th>
+              <th style="text-align:right;">Sales $</th>
+            </tr>
+          </thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+
+        <div class="summary-card">
+          <div class="kpi-grid">
+            <div><span>Total Sold:</span><div class="kpi-val">${gtTickets} tix</div></div>
+            <div><span>Scratch Sales:</span><div class="kpi-val" style="color:#047857;">$${gtSales.toFixed(2)}</div></div>
+            <div><span>Online Sales:</span><div class="kpi-val">$${(Number(t.onlineSales) || 0).toFixed(2)}</div></div>
+            <div><span>Expected Net:</span><div class="kpi-val">$${(Number(t.expectedNet) || 0).toFixed(2)}</div></div>
+            <div><span>POS Actual:</span><div class="kpi-val">$${(Number(t.posActual) || 0).toFixed(2)}</div></div>
+            <div><span>Variance:</span><div class="kpi-val">${variance > 0 ? '+' : ''}$${variance.toFixed(2)}</div></div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 10px;">
+            <div style="flex: 1;">
+              <div style="display: flex; gap: 16px; font-size: 9.5pt; margin-bottom: 3px;">
+                <div><strong>Outgoing Cashier:</strong> ${repData.cashierOut || '&nbsp;'}</div>
+                <div><strong>Incoming Cashier:</strong> ${repData.cashierIn || '&nbsp;'}</div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                <div style="height: 28px; min-width: 150px; display: flex; align-items: center; border-bottom: 1px solid #000;">${sigImgHtml}</div>
+                <span style="font-size: 8.5pt; font-weight: bold; text-transform: uppercase;">Cashier Signature</span>
+              </div>
+              <div style="font-size: 8.5pt; color: #1e293b; font-style: italic;">
+                "I hereby certify that the ticket counts, game numbers, and shift totals recorded above are true, complete, and accurate to the best of my knowledge."
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+
+      <script>
+        window.onload = function() {
+          setTimeout(function() {
+            window.focus();
+            window.print();
+          }, 250);
+        };
+      </script>
+    </body>
+    </html>
   `;
+}
+
+function openFullSheetPrintWindow(htmlContent) {
+  const printWin = window.open('', '_blank', 'width=900,height=800,scrollbars=yes');
+  if (printWin) {
+    printWin.document.open();
+    printWin.document.write(htmlContent);
+    printWin.document.close();
+  } else {
+    alert('Please allow pop-ups for this site so the 8.5" x 11" PDF/Print window can open.');
+  }
 }
 
 function printWorksheet() {
@@ -2305,13 +2467,7 @@ function printWorksheet() {
 }
 
 function printWorksheetDirect() {
-  let printContainer = document.getElementById('print-container');
-  if (!printContainer) {
-    printContainer = document.createElement('div');
-    printContainer.id = 'print-container';
-    document.body.appendChild(printContainer);
-  }
-  printContainer.innerHTML = buildMatrixPrintHTML({
+  const html = buildMatrixPrintHTML({
     storeName: storeProfile.name,
     storeNumber: storeProfile.number,
     date: document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10),
@@ -2322,7 +2478,7 @@ function printWorksheetDirect() {
     signatureDataUrl: currentSignatureDataUrl,
     boxesSnapshot: boxes
   }, false);
-  window.print();
+  openFullSheetPrintWindow(html);
 }
 
 function printFinalReport() {
@@ -2333,14 +2489,8 @@ function printArchivedSingleReport(reportId) {
   const history = getLocationHistoricalReports(activeLocationId);
   const found = history.find(r => r.reportId === reportId);
   if (!found) return;
-  let printContainer = document.getElementById('print-container');
-  if (!printContainer) {
-    printContainer = document.createElement('div');
-    printContainer.id = 'print-container';
-    document.body.appendChild(printContainer);
-  }
-  printContainer.innerHTML = buildMatrixPrintHTML(found, true);
-  window.print();
+  const html = buildMatrixPrintHTML(found, true);
+  openFullSheetPrintWindow(html);
 }
 
 function printFilteredReportSummary() { window.print(); }
