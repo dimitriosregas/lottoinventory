@@ -1099,7 +1099,7 @@ function printThermalReceiptDirect() {
   // Calculate dynamic height based on active items so paper rolls continuously without cutting off
   let activeItemsCount = 0;
   boxes.forEach(b => { if (b.gameNum) activeItemsCount++; });
-  const dynamicHeightMm = Math.max(120, 75 + (activeItemsCount * 8) + (currentSignatureDataUrl ? 35 : 0));
+  const dynamicHeightMm = Math.max(140, 85 + (activeItemsCount * 11) + (currentSignatureDataUrl ? 35 : 0));
 
   // Initialize jsPDF strictly for 3 1/8" (80mm) thermal roll width with continuous length
   const doc = new jsPDF({
@@ -1113,11 +1113,15 @@ function printThermalReceiptDirect() {
   const pageWidth = 80;
   const margin = 4;
 
-  // Store Header
+  // Store Header (Matching your photo)
   doc.setFont('Courier', 'bold');
   doc.setFontSize(basePt + 3);
-  doc.text(`${storeProfile.name} (#${storeProfile.number})`, pageWidth / 2, y, { align: 'center' });
+  doc.text(`${storeProfile.name}`, pageWidth / 2, y, { align: 'center' });
   y += 5;
+
+  doc.setFontSize(basePt + 1);
+  doc.text(`STORE #${storeProfile.number}`, pageWidth / 2, y, { align: 'center' });
+  y += 4;
 
   if (storeAddr) {
     doc.setFontSize(basePt - 2);
@@ -1126,28 +1130,41 @@ function printThermalReceiptDirect() {
   }
 
   doc.setFontSize(basePt);
-  doc.text('THERMAL WORKSHEET', pageWidth / 2, y, { align: 'center' });
-  y += 4;
+  doc.text('*** LOTTO COUNT WORKSHEET ***', pageWidth / 2, y, { align: 'center' });
+  y += 6;
 
+  // Metadata block
   doc.setFontSize(basePt - 1);
-  doc.text(`Date: ${dateStr} | ${shiftStr}`, pageWidth / 2, y, { align: 'center' });
+  doc.text(`DATE: ${dateStr}`, margin, y);
   y += 4;
-  doc.text(`Cashier: ${cashierStr}`, pageWidth / 2, y, { align: 'center' });
-  y += 3;
+  doc.text(`SHIFT: ${shiftStr}`, margin, y);
+  y += 4;
+  doc.text(`OUT: ${cashierStr}`, margin, y);
+  y += 4;
+  doc.text(`IN: -`, margin, y);
+  y += 4;
 
   doc.setLineDash([0.5, 0.5], 0);
   doc.line(margin, y, pageWidth - margin, y);
   y += 5;
 
-  // Active Boxes & Sales Items
+  // Active Boxes (Exact 2-Line Format from your photo)
   doc.setFontSize(basePt - 1);
   boxes.forEach((box) => {
     const m = calculateBoxMetrics(box);
     if (box.gameNum) {
-      const lineText = `B#${box.boxNumber} (#${box.gameNum})`;
-      const salesText = `${m.ticketsSold} tix = $${m.dollarSales.toFixed(2)}`;
-      doc.text(lineText, margin, y);
-      doc.text(salesText, pageWidth - margin, y, { align: 'right' });
+      const gName = String(box.gameName || 'GAME #' + box.gameNum).toUpperCase();
+      
+      // Top Line: [BOX X] #GAME_NUM GAME_NAME     $PRICE
+      doc.text(`[BOX ${box.boxNumber}] #${box.gameNum} ${gName}`, margin, y);
+      doc.text(`$${box.price}`, pageWidth - margin, y, { align: 'right' });
+      y += 4.5;
+
+      // Bottom Line: Start:XX End:XX                 X Sold ($XX.00)
+      const endDisplay = box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '_____';
+      const soldText = `${m.ticketsSold} Sold ($${m.dollarSales.toFixed(2)})`;
+      doc.text(`Start:${box.startTicket !== '' ? box.startTicket : 0}  End:${endDisplay}`, margin, y);
+      doc.text(soldText, pageWidth - margin, y, { align: 'right' });
       y += 6;
     }
   });
@@ -1155,7 +1172,7 @@ function printThermalReceiptDirect() {
   doc.line(margin, y, pageWidth - margin, y);
   y += 5;
 
-  // Totals & Variance
+  // Totals & Variance (Matching your photo's bottom summary block)
   doc.setFont('Courier', 'bold');
   doc.setFontSize(basePt);
   
@@ -1165,26 +1182,34 @@ function printThermalReceiptDirect() {
     y += 5;
   };
 
-  drawTotalLine('TOTAL SALES:', `$${totals.scratchSales.toFixed(2)}`);
+  drawTotalLine('TOTAL TICKETS SOLD:', String(totals.totalTickets || 0));
+  drawTotalLine('SCRATCH SALES:', `$${totals.scratchSales.toFixed(2)}`);
+  drawTotalLine('ONLINE SALES:', `$${totals.onlineSales.toFixed(2)}`);
+  drawTotalLine('SCRATCH CASHED:', `-$${totals.scratchCashed.toFixed(2)}`);
+  drawTotalLine('ONLINE CASHED:', `-$${totals.onlineCashed.toFixed(2)}`);
+  
+  y += 2;
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 5;
+
   drawTotalLine('EXPECTED NET:', `$${totals.expectedNet.toFixed(2)}`);
   drawTotalLine('POS ACTUAL:', `$${totals.posActual.toFixed(2)}`);
   
   doc.setFontSize(basePt + 2);
   drawTotalLine('VARIANCE:', `$${totals.variance.toFixed(2)}`);
-  y += 4;
-
-  doc.line(margin, y, pageWidth - margin, y);
   y += 6;
 
   // Signature Block
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 6;
   doc.setFontSize(basePt);
   doc.text('CASHIER SIGNATURE', pageWidth / 2, y, { align: 'center' });
   y += 4;
 
   if (currentSignatureDataUrl) {
     try {
-      doc.addImage(currentSignatureDataUrl, 'PNG', (pageWidth - 40) / 2, y, 40, 15);
-      y += 18;
+      doc.addImage(currentSignatureDataUrl, 'PNG', (pageWidth - 45) / 2, y, 45, 16);
+      y += 19;
     } catch (e) {
       doc.text('___________________________', pageWidth / 2, y, { align: 'center' });
       y += 6;
@@ -1194,11 +1219,12 @@ function printThermalReceiptDirect() {
     y += 6;
   }
 
-  // Generate PDF and open in browser PDF viewer for instant printing
+  doc.setFontSize(basePt - 2);
+  doc.text(new Date().toLocaleString(), pageWidth / 2, y, { align: 'center' });
+
+  // Generate PDF and trigger clean download/view
   const pdfBlob = doc.output('blob');
   const pdfUrl = URL.createObjectURL(pdfBlob);
-  
-  // Create an anchor element to trigger clean download/view without popup blocker restrictions
   const downloadLink = document.createElement('a');
   downloadLink.href = pdfUrl;
   downloadLink.target = '_blank';
@@ -1206,7 +1232,6 @@ function printThermalReceiptDirect() {
   document.body.appendChild(downloadLink);
   downloadLink.click();
   document.body.removeChild(downloadLink);
-  
   setTimeout(() => URL.revokeObjectURL(pdfUrl), 3000);
 }
 
