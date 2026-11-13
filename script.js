@@ -2147,6 +2147,18 @@ function switchMainView(viewName) {
     renderAdminCashiersTable();
   }
 }
+function jumpToReconciliation() {
+  if (typeof switchMainView === 'function') {
+    switchMainView('reconcile');
+  } else {
+    // Fallback if needed
+    document.getElementById('view-grid').classList.add('hidden');
+    document.getElementById('view-reconcile').classList.remove('hidden');
+    if (typeof recalculateReconciliationTotals === 'function') {
+      recalculateReconciliationTotals();
+    }
+  }
+}
 
 // --------------------------------------------------------------------------
 // DIRECT CSS PRINT ENGINE (LETTER SIZE 8.5" x 11" — STRICT 1-PAGE FIT)
