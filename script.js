@@ -72,6 +72,8 @@ let isDrawingSignature = false;
 let sigCanvas = null;
 let sigCtx = null;
 let lastActiveViewName = 'grid';
+let globalPrintFontSizePt = 13; // Default 13pt readable size
+const STORAGE_KEY_PRINT_FONT_SIZE = 'project_lotto_print_font_size_v1';
 
 function getDefaultRollCountForPrice(price) {
   const p = Number(price);
@@ -1112,7 +1114,7 @@ function printThermalReceiptDirect() {
   printContainer.innerHTML = `
     <style>
       @media print {
-        html, body { width: 80mm !important; margin: 0 !important; padding: 2mm !important; font-family: monospace !important; font-size: 11px !important; color: #000 !important; }
+        html, body { width: 80mm !important; margin: 0 !important; padding: 2mm !important; font-family: monospace !important; font-size: 27px !important; color: #000 !important; }
         body > header, body > main, body > div.fixed, #app-shell, .no-print { display: none !important; }
         #print-container { display: block !important; width: 100% !important; }
       }
