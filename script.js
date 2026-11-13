@@ -1093,15 +1093,15 @@ function printThermalReceiptDirect() {
   const totals = recalculateReconciliationTotals();
   const dateStr = document.getElementById('rec-report-date')?.value || new Date().toLocaleDateString();
   const shiftStr = document.getElementById('rec-shift-type')?.value || 'Shift 1';
-  const cashierStr = document.getElementById('print-modal-cashier-input')?.value || 'Manager';
+  const cashierStr = document.getElementById('print-modal-cashier-input')?.value || document.getElementById('grid-cashier-input')?.value || 'Manager';
   const storeAddr = storeProfile.address || 'Sparta, TN 38583';
 
-  // Calculate dynamic height based on active items so paper rolls continuously without cutting off
+  // Count active boxes to calculate exact receipt length
   let activeItemsCount = 0;
   boxes.forEach(b => { if (b.gameNum) activeItemsCount++; });
-  const dynamicHeightMm = Math.max(140, 85 + (activeItemsCount * 11) + (currentSignatureDataUrl ? 35 : 0));
+  const dynamicHeightMm = Math.max(140, 90 + (activeItemsCount * 14) + (currentSignatureDataUrl ? 35 : 0));
 
-  // Initialize jsPDF strictly for 3 1/8" (80mm) thermal roll width with continuous length
+  // Initialize jsPDF strictly for 3 1/8" (80mm) thermal roll width
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -1113,7 +1113,7 @@ function printThermalReceiptDirect() {
   const pageWidth = 80;
   const margin = 4;
 
-  // Store Header (Matching your reference photo)
+  // Store Header (Matching your photo)
   doc.setFont('Courier', 'bold');
   doc.setFontSize(basePt + 3);
   doc.text(`${storeProfile.name}`, pageWidth / 2, y, { align: 'center' });
@@ -1142,13 +1142,13 @@ function printThermalReceiptDirect() {
   doc.text(`OUT: ${cashierStr}`, margin, y);
   y += 4;
   doc.text(`IN: -`, margin, y);
-  y += 4;
+  y += 5;
 
   doc.setLineDash([0.5, 0.5], 0);
   doc.line(margin, y, pageWidth - margin, y);
-  y += 5;
+  y += 6;
 
-  // Active Boxes (Exact 2-Line Format matching your uploaded receipt photo)
+  // Active Boxes (Exact 2-Line Format with dashed separator lines between each box)
   doc.setFontSize(basePt - 1);
   boxes.forEach((box) => {
     const m = calculateBoxMetrics(box);
@@ -1165,14 +1165,20 @@ function printThermalReceiptDirect() {
       const soldText = `${m.ticketsSold} Sold ($${m.dollarSales.toFixed(2)})`;
       doc.text(`Start:${box.startTicket !== '' ? box.startTicket : 0}  End:${endDisplay}`, margin, y);
       doc.text(soldText, pageWidth - margin, y, { align: 'right' });
-      y += 6;
+      y += 4;
+
+      // Dashed separator between boxes (matching your reference photo)
+      doc.setFontSize(basePt - 3);
+      doc.text('-----------------------------------------------------------------', pageWidth / 2, y, { align: 'center' });
+      doc.setFontSize(basePt - 1);
+      y += 5.5;
     }
   });
 
   doc.line(margin, y, pageWidth - margin, y);
   y += 5;
 
-  // Totals & Variance (Matching your photo's bottom summary block)
+  // Totals & Variance Summary Block
   doc.setFont('Courier', 'bold');
   doc.setFontSize(basePt);
   
@@ -1222,16 +1228,22 @@ function printThermalReceiptDirect() {
   doc.setFontSize(basePt - 2);
   doc.text(new Date().toLocaleString(), pageWidth / 2, y, { align: 'center' });
 
-  // Generate PDF and trigger clean download/view
+  // Generate PDF and instantly trigger print preview
   const pdfBlob = doc.output('blob');
   const pdfUrl = URL.createObjectURL(pdfBlob);
-  const downloadLink = document.createElement('a');
-  downloadLink.href = pdfUrl;
-  downloadLink.target = '_blank';
-  downloadLink.download = `LottoReceipt_${storeProfile.number}_${dateStr.replace(/[/]/g, '-')}.pdf`;
-  document.body.appendChild(downloadLink);
-  downloadLink.click();
-  document.body.removeChild(downloadLink);
+  const printWindow = window.open(pdfUrl, '_blank');
+  if (printWindow) {
+    printWindow.onload = () => {
+      setTimeout(() => printWindow.print(), 250);
+    };
+  } else {
+    const downloadLink = document.createElement('a');
+    downloadLink.href = pdfUrl;
+    downloadLink.download = `LottoReceipt_${storeProfile.number}_${dateStr.replace(/[/]/g, '-')}.pdf`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+  }
   setTimeout(() => URL.revokeObjectURL(pdfUrl), 3000);
 }
 
