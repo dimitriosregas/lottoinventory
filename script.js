@@ -6,6 +6,7 @@ const STORAGE_KEY_LOCATIONS = 'project_lotto_locations_v1';
 const STORAGE_KEY_ACTIVE_LOC = 'project_lotto_active_loc_id_v1';
 const STORAGE_KEY_MASTER_GAMES = 'project_lotto_master_games_v1';
 const STORAGE_KEY_CASHIERS = 'project_lotto_cashiers_v1';
+const STORAGE_KEY_PRINT_FONT_SIZE = 'project_lotto_print_font_size_v1';
 
 const DEFAULT_LOCATIONS = [
   { id: 'loc-regas-shell', name: 'Regas Shell', number: '101' },
@@ -65,6 +66,7 @@ let storeProfile = { name: 'Regas Shell', number: '101', address: '', email: 'di
 let boxes = [];
 let masterGames = [];
 let savedCashiers = [];
+let globalPrintFontSizePt = 13; // Adjustable print font size (default 13pt)
 let isSetupLocked = false;
 let currentDispenserView = 'grid';
 let currentSignatureDataUrl = null;
@@ -152,6 +154,27 @@ function saveGamesState() {
   try { localStorage.setItem(STORAGE_KEY_MASTER_GAMES, JSON.stringify(masterGames)); } catch (e) {}
 }
 
+function loadPrintFontSizeSetting() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_PRINT_FONT_SIZE);
+    if (saved) {
+      const val = Number(saved);
+      if (!isNaN(val) && val >= 8 && val <= 36) {
+        globalPrintFontSizePt = val;
+      }
+    }
+  } catch (e) {}
+  const inp = document.getElementById('admin-print-fontsize-input');
+  if (inp) inp.value = globalPrintFontSizePt;
+}
+
+function savePrintFontSizeSetting(newSizeVal) {
+  const val = Number(newSizeVal);
+  if (isNaN(val) || val < 8 || val > 36) return;
+  globalPrintFontSizePt = val;
+  try { localStorage.setItem(STORAGE_KEY_PRINT_FONT_SIZE, String(val)); } catch (e) {}
+}
+
 function loadCashiersList() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_CASHIERS);
@@ -193,6 +216,7 @@ function saveLocationsRegistry() {
 function initActiveLocation() {
   loadLocationsRegistry();
   loadCashiersList();
+  loadPrintFontSizeSetting();
   const savedActive = localStorage.getItem(STORAGE_KEY_ACTIVE_LOC);
   if (savedActive && locations.some(l => l.id === savedActive)) {
     activeLocationId = savedActive;
@@ -234,12 +258,14 @@ function loadActiveStoreData() {
   const adminAddr = document.getElementById('admin-store-address');
   const adminEmail = document.getElementById('admin-store-email');
   const adminPass = document.getElementById('admin-store-pass');
+  const adminPrintSize = document.getElementById('admin-print-fontsize-input');
 
   if (adminName) adminName.value = storeProfile.name || '';
   if (adminNum) adminNum.value = storeProfile.number || '';
   if (adminAddr) adminAddr.value = storeProfile.address || '';
   if (adminEmail) adminEmail.value = storeProfile.email || 'dimitriosregas@gmail.com';
   if (adminPass) adminPass.value = storeProfile.password || '';
+  if (adminPrintSize) adminPrintSize.value = globalPrintFontSizePt;
 
   const boxKey = getStoreBoxesStorageKey(activeLocationId);
   try {
@@ -293,6 +319,7 @@ function saveActiveStoreProfile() {
   const addrInp = document.getElementById('admin-store-address')?.value?.trim() || '';
   const emailInp = document.getElementById('admin-store-email')?.value?.trim() || 'dimitriosregas@gmail.com';
   const passInp = document.getElementById('admin-store-pass')?.value?.trim() || '';
+  const printSizeInp = document.getElementById('admin-print-fontsize-input')?.value;
 
   if (!nameInp) {
     alert('Please enter a valid store location name.');
@@ -304,6 +331,10 @@ function saveActiveStoreProfile() {
   storeProfile.address = addrInp;
   storeProfile.email = emailInp;
   storeProfile.password = passInp;
+
+  if (printSizeInp) {
+    savePrintFontSizeSetting(printSizeInp);
+  }
 
   try { localStorage.setItem(getStoreProfileStorageKey(activeLocationId), JSON.stringify(storeProfile)); } catch (e) {}
 
@@ -318,7 +349,7 @@ function saveActiveStoreProfile() {
 
   populateLocationSwitcherDropdown();
   loadActiveStoreData();
-  alert(`Store Profile Saved: ${storeProfile.name} (#${storeProfile.number})`);
+  alert(`Store Profile & Print Settings Saved: ${storeProfile.name} (#${storeProfile.number}) | Print Font: ${globalPrintFontSizePt}pt`);
 }
 
 function populateLocationSwitcherDropdown() {
@@ -1087,6 +1118,7 @@ function getFormattedStoreAddress() {
   }
   return 'Sparta, TN 38583';
 }
+
 function printThermalReceiptDirect() {
   let printContainer = document.getElementById('print-container');
   if (!printContainer) {
@@ -1101,6 +1133,12 @@ function printThermalReceiptDirect() {
   const cashierOut = document.getElementById('print-modal-cashier-input')?.value?.trim() || document.getElementById('rec-cashier-out')?.value?.trim() || 'Unspecified';
   const cashierIn = document.getElementById('rec-cashier-in')?.value?.trim() || '-';
   const storeAddr = getFormattedStoreAddress();
+  
+  const baseSize = Number(globalPrintFontSizePt) || 13;
+  const storeNameSize = Math.round(baseSize * 1.35);
+  const storeNumSize = Math.round(baseSize * 1.0);
+  const storeAddrSize = Math.round(baseSize * 0.92);
+  const varianceSize = Math.round(baseSize * 1.2);
 
   let itemsHtml = '';
   boxes.forEach((box) => {
@@ -1133,8 +1171,8 @@ function printThermalReceiptDirect() {
   });
 
   const sigImg = currentSignatureDataUrl
-    ? `<img src="${currentSignatureDataUrl}" style="max-height: 45px; max-width: 85%; object-fit: contain; display: block; margin: 4px auto;" />`
-    : `<div style="height: 32px;"></div>`;
+    ? `<img src="${currentSignatureDataUrl}" style="max-height: 55px; max-width: 85%; object-fit: contain; display: block; margin: 4px auto;" />`
+    : `<div style="height: 36px;"></div>`;
 
   const varianceVal = Number(totals.variance) || 0;
   const varianceDisplay = varianceVal < 0
@@ -1168,9 +1206,9 @@ function printThermalReceiptDirect() {
           width: 100% !important;
           max-width: 100% !important;
           margin: 0 !important;
-          padding: 2mm 3mm 6mm 3mm !important;
+          padding: 2mm 3mm 8mm 3mm !important;
           font-family: 'Courier New', Courier, monospace !important;
-          font-size: 13pt !important;
+          font-size: ${baseSize}pt !important;
           font-weight: 700 !important;
           line-height: 1.25 !important;
           color: #000 !important;
@@ -1180,24 +1218,24 @@ function printThermalReceiptDirect() {
           margin-bottom: 6px;
         }
         .t-store-name {
-          font-size: 17pt !important;
+          font-size: ${storeNameSize}pt !important;
           font-weight: 900 !important;
           text-transform: uppercase;
           letter-spacing: 0.5px;
         }
         .t-store-num {
-          font-size: 13pt !important;
+          font-size: ${storeNumSize}pt !important;
           font-weight: 900 !important;
           text-transform: uppercase;
           margin-top: 2px;
         }
         .t-store-addr {
-          font-size: 12pt !important;
+          font-size: ${storeAddrSize}pt !important;
           font-weight: 800 !important;
           margin-top: 2px;
         }
         .t-banner {
-          font-size: 12.5pt !important;
+          font-size: ${baseSize}pt !important;
           font-weight: 900 !important;
           margin-top: 4px;
         }
@@ -1206,7 +1244,7 @@ function printThermalReceiptDirect() {
           border-bottom: 2px solid #000;
           padding: 5px 0;
           margin-bottom: 4px;
-          font-size: 12.5pt !important;
+          font-size: ${baseSize}pt !important;
           font-weight: 800 !important;
           line-height: 1.3;
         }
@@ -1214,7 +1252,7 @@ function printThermalReceiptDirect() {
           display: flex;
         }
         .t-meta-lbl {
-          width: 65px;
+          width: 70px;
           flex-shrink: 0;
         }
         .t-box-row {
@@ -1230,11 +1268,11 @@ function printThermalReceiptDirect() {
           width: 100%;
         }
         .t-bold {
-          font-size: 13.5pt !important;
+          font-size: ${baseSize}pt !important;
           font-weight: 900 !important;
         }
         .t-sub {
-          font-size: 12.5pt !important;
+          font-size: ${baseSize}pt !important;
           font-weight: 700 !important;
           margin-top: 2px;
         }
@@ -1242,7 +1280,7 @@ function printThermalReceiptDirect() {
           border-top: 2px solid #000;
           padding-top: 6px;
           margin-top: 4px;
-          font-size: 13pt !important;
+          font-size: ${baseSize}pt !important;
           font-weight: 800 !important;
           line-height: 1.35;
           page-break-inside: avoid;
@@ -1254,7 +1292,7 @@ function printThermalReceiptDirect() {
           margin: 5px 0;
         }
         .t-variance {
-          font-size: 15pt !important;
+          font-size: ${varianceSize}pt !important;
           font-weight: 900 !important;
           padding-top: 3px;
         }
@@ -1268,12 +1306,12 @@ function printThermalReceiptDirect() {
           width: 85%;
           margin: 0 auto;
           padding-top: 4px;
-          font-size: 11.5pt !important;
+          font-size: ${Math.round(baseSize * 0.9)}pt !important;
           font-weight: 900 !important;
           text-transform: uppercase;
         }
         .t-time {
-          font-size: 11pt !important;
+          font-size: ${Math.round(baseSize * 0.85)}pt !important;
           font-weight: 700 !important;
           margin-top: 5px;
         }
@@ -1325,6 +1363,7 @@ function printThermalReceiptDirect() {
 
   window.print();
 }
+
 function renderMainGridCashierShiftBar() {
   let bar = document.getElementById('main-grid-cashier-shift-bar');
   if (!bar) {
@@ -1532,13 +1571,14 @@ function buildFullTabletBackupPayload() {
   });
 
   return {
-    backupVersion: '3.0-FULL-TABLET',
+    backupVersion: '3.1-FULL-TABLET-FONTS',
     exportedAt: new Date().toISOString(),
     targetEmail: 'dimitriosregas@gmail.com',
     activeLocationId,
     locations,
     masterGames: sanitizeMasterGamesList(masterGames),
     savedCashiers,
+    printFontSize: globalPrintFontSizePt,
     storesData: allStoresData
   };
 }
@@ -1582,13 +1622,14 @@ function exportSpecificLocationBackup(locId) {
   try { locHistory = JSON.parse(localStorage.getItem(getStoreHistoryStorageKey(locId)) || '[]'); } catch (e) {}
 
   const payload = {
-    backupVersion: '3.0-SINGLE-STORE',
+    backupVersion: '3.1-SINGLE-STORE',
     exportedAt: new Date().toISOString(),
     locationId: locId,
     storeProfile: { name: locObj.name, number: locObj.number, address: locObj.address || '' },
     boxes: locBoxes.length > 0 ? locBoxes : boxes,
     masterGames: sanitizeMasterGamesList(masterGames),
     savedCashiers,
+    printFontSize: globalPrintFontSizePt,
     historicalReports: locHistory
   };
 
@@ -1613,6 +1654,9 @@ function importLocationBackupFile(event) {
     try {
       const data = JSON.parse(e.target.result);
 
+      if (data.printFontSize) {
+        savePrintFontSizeSetting(data.printFontSize);
+      }
       if (Array.isArray(data.masterGames) && data.masterGames.length > 0) {
         masterGames = sanitizeMasterGamesList([...masterGames, ...data.masterGames]);
         saveGamesState();
@@ -1716,803 +1760,12 @@ function startTwiceDailyBackupScheduler() {
     }
   }, 30000);
 }
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 7 OF 7)
-   ========================================================================== */
-
-function advanceEndToStartForNewShift() {
-  boxes.forEach(b => {
-    if (b.endTicket !== '' && b.endTicket !== undefined && b.endTicket !== null) {
-      b.startTicket = Number(b.endTicket);
-    }
-    b.endTicket = '';
-    b.rollovers = [];
-  });
-  saveBoxesState();
-  renderDispenserGrid();
-  recalculateReconciliationTotals();
-  alert('Shift ended successfully! Start tickets updated to previous end tickets for the new shift.');
-  switchMainView('grid');
-}
-
-function handleShiftTypeChange(val) {
-  const badge = document.getElementById('header-shift-badge');
-  if (badge) badge.textContent = val;
-  saveReconciliationDraft();
-}
-
-function recalculateReconciliationTotals() {
-  let scratchSales = 0;
-  let totalTickets = 0;
-  boxes.forEach(b => {
-    const m = calculateBoxMetrics(b);
-    scratchSales += m.dollarSales;
-    totalTickets += m.ticketsSold;
-  });
-
-  const onlineSales = Number(document.getElementById('rec-online-sales')?.value) || 0;
-  const scratchCashed = Number(document.getElementById('rec-scratch-cashed')?.value) || 0;
-  const onlineCashed = Number(document.getElementById('rec-online-cashed')?.value) || 0;
-  const posActual = Number(document.getElementById('rec-pos-actual')?.value) || 0;
-
-  const expectedNet = (scratchSales + onlineSales) - (scratchCashed + onlineCashed);
-  const variance = posActual - expectedNet;
-
-  const scEl = document.getElementById('rec-scratch-sales');
-  const expEl = document.getElementById('rec-expected-total');
-  const varEl = document.getElementById('rec-variance-display');
-  const accEl = document.getElementById('rec-accounted-total');
-
-  if (scEl) scEl.textContent = `$${scratchSales.toFixed(2)}`;
-  if (expEl) expEl.textContent = `$${expectedNet.toFixed(2)}`;
-  if (accEl) accEl.textContent = `$${posActual.toFixed(2)}`;
-
-  if (varEl) {
-    const sign = variance > 0 ? '+' : '';
-    varEl.textContent = `${sign}$${variance.toFixed(2)}`;
-    varEl.className = Math.abs(variance) < 0.01 ? 'font-mono font-black text-lg text-emerald-600' : (variance < 0 ? 'font-mono font-black text-lg text-red-600' : 'font-mono font-black text-lg text-amber-600');
-  }
-
-  saveReconciliationDraft();
-  return { scratchSales, totalTickets, onlineSales, scratchCashed, onlineCashed, expectedNet, posActual, variance };
-}
-
-function saveReconciliationDraft() {
-  const draft = {
-    date: document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10),
-    shiftType: document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)',
-    cashierOut: document.getElementById('rec-cashier-out')?.value || '',
-    cashierIn: document.getElementById('rec-cashier-in')?.value || '',
-    onlineSales: document.getElementById('rec-online-sales')?.value || '',
-    scratchCashed: document.getElementById('rec-scratch-cashed')?.value || '',
-    onlineCashed: document.getElementById('rec-online-cashed')?.value || '',
-    posActual: document.getElementById('rec-pos-actual')?.value || '',
-    notes: document.getElementById('rec-shift-notes')?.value || ''
-  };
-  try { localStorage.setItem(`project_lotto_recdraft_${activeLocationId}`, JSON.stringify(draft)); } catch (e) {}
-}
-
-function loadReconciliationDraft() {
-  const today = new Date().toISOString().slice(0, 10);
-  try {
-    const raw = localStorage.getItem(`project_lotto_recdraft_${activeLocationId}`);
-    if (raw) {
-      const d = JSON.parse(raw);
-      document.getElementById('rec-report-date').value = d.date || today;
-      document.getElementById('rec-shift-type').value = d.shiftType || 'Shift 1 (Morning)';
-      document.getElementById('rec-cashier-out').value = d.cashierOut || '';
-      document.getElementById('rec-cashier-in').value = d.cashierIn || '';
-      document.getElementById('rec-online-sales').value = d.onlineSales || '';
-      document.getElementById('rec-scratch-cashed').value = d.scratchCashed || '';
-      document.getElementById('rec-online-cashed').value = d.onlineCashed || '';
-      document.getElementById('rec-pos-actual').value = d.posActual || '';
-      document.getElementById('rec-shift-notes').value = d.notes || '';
-      const badge = document.getElementById('header-shift-badge');
-      if (badge) badge.textContent = d.shiftType || 'Shift 1 (Morning)';
-      return;
-    }
-  } catch (e) {}
-  const dtInp = document.getElementById('rec-report-date');
-  if (dtInp) dtInp.value = today;
-}
-
-function initSignaturePad() {
-  sigCanvas = document.getElementById('signature-pad');
-  if (!sigCanvas) return;
-  sigCtx = sigCanvas.getContext('2d');
-  sigCtx.strokeStyle = '#0f172a';
-  sigCtx.lineWidth = 2.2;
-  sigCtx.lineCap = 'round';
-
-  const getPos = (e) => {
-    const rect = sigCanvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return {
-      x: (clientX - rect.left) * (sigCanvas.width / rect.width),
-      y: (clientY - rect.top) * (sigCanvas.height / rect.height)
-    };
-  };
-
-  const startDraw = (e) => { e.preventDefault(); isDrawingSignature = true; const pos = getPos(e); sigCtx.beginPath(); sigCtx.moveTo(pos.x, pos.y); };
-  const moveDraw = (e) => { if (!isDrawingSignature) return; e.preventDefault(); const pos = getPos(e); sigCtx.lineTo(pos.x, pos.y); sigCtx.stroke(); };
-  const endDraw = () => { if (!isDrawingSignature) return; isDrawingSignature = false; currentSignatureDataUrl = sigCanvas.toDataURL('image/png'); };
-
-  sigCanvas.addEventListener('mousedown', startDraw);
-  sigCanvas.addEventListener('mousemove', moveDraw);
-  window.addEventListener('mouseup', endDraw);
-  sigCanvas.addEventListener('touchstart', startDraw, { passive: false });
-  sigCanvas.addEventListener('touchmove', moveDraw, { passive: false });
-  window.addEventListener('touchend', endDraw);
-}
-
-function clearSignaturePad() {
-  if (!sigCanvas || !sigCtx) return;
-  sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
-  currentSignatureDataUrl = null;
-}
-
-function getLocationHistoricalReports(locId = activeLocationId) {
-  try {
-    const raw = localStorage.getItem(getStoreHistoryStorageKey(locId));
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch (e) {}
-  return [];
-}
-
-function saveLocationHistoricalReports(reportsArr, locId = activeLocationId) {
-  try { localStorage.setItem(getStoreHistoryStorageKey(locId), JSON.stringify(reportsArr)); } catch (e) {}
-}
-
-function finalizeAndSaveShiftReport() {
-  const totals = recalculateReconciliationTotals();
-  const normalizedDate = document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10);
-  const shiftVal = document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
-  const cashierOut = document.getElementById('rec-cashier-out')?.value?.trim() || 'Unspecified Cashier';
-  const cashierIn = document.getElementById('rec-cashier-in')?.value?.trim() || '-';
-  const notes = document.getElementById('rec-shift-notes')?.value?.trim() || '';
-
-  if (cashierOut && cashierOut !== 'Unspecified Cashier' && !savedCashiers.includes(cashierOut)) {
-    savedCashiers.push(cashierOut);
-    saveCashiersState();
-    renderAdminCashiersTable();
-  }
-
-  let shiftOrder = 1;
-  if (shiftVal.includes('2') || shiftVal.toLowerCase().includes('evening')) shiftOrder = 2;
-  else if (shiftVal.includes('3') || shiftVal.toLowerCase().includes('night') || shiftVal.toLowerCase().includes('close')) shiftOrder = 3;
-
-  const reportRecord = {
-    reportId: `rep_${activeLocationId}_${normalizedDate}_${shiftOrder}_${Date.now()}`,
-    timestamp: new Date().toISOString(),
-    locationId: activeLocationId,
-    storeName: storeProfile.name,
-    storeNumber: storeProfile.number,
-    date: normalizedDate,
-    monthKey: normalizedDate.slice(0, 7),
-    shiftType: shiftVal,
-    shiftSequence: shiftOrder,
-    cashierOut,
-    cashierIn,
-    notes,
-    totals,
-    signatureDataUrl: currentSignatureDataUrl || null,
-    boxesSnapshot: JSON.parse(JSON.stringify(boxes))
-  };
-
-  const history = getLocationHistoricalReports(activeLocationId);
-  history.unshift(reportRecord);
-  saveLocationHistoricalReports(history, activeLocationId);
-
-  const CLOUDWORKER_SYNC_URL = "https://lottoinventory.dimitriosregas.workers.dev/sync";
-
-  async function syncActiveStoreToCloud() {
-    const payload = buildFullTabletBackupPayload();
-    try {
-      await fetch(`${CLOUDWORKER_SYNC_URL}?storeId=${activeLocationId}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-    } catch (err) {}
-  }
-  syncActiveStoreToCloud();
-
-  const ind = document.getElementById('last-archived-indicator');
-  if (ind) ind.textContent = `✔ Archived ${normalizedDate} (${shiftVal}) at ${new Date().toLocaleTimeString()}`;
-
-  executeSilentBackgroundBackup('REPORT');
-  alert(`Shift Report for ${storeProfile.name} archived and system backed up silently in the background!`);
-}
-
-function handleReportFilterModeChange(mode) {
-  const dateCont = document.getElementById('filter-date-container');
-  const monthCont = document.getElementById('filter-month-container');
-  const shiftCont = document.getElementById('filter-shift-container');
-
-  if (mode === 'monthly') {
-    dateCont?.classList.add('hidden');
-    monthCont?.classList.remove('hidden');
-    shiftCont?.classList.add('hidden');
-  } else if (mode === 'shift') {
-    dateCont?.classList.remove('hidden');
-    monthCont?.classList.add('hidden');
-    shiftCont?.classList.remove('hidden');
-  } else {
-    dateCont?.classList.remove('hidden');
-    monthCont?.classList.add('hidden');
-    shiftCont?.classList.add('hidden');
-  }
-  executeReportLookup();
-}
-
-function executeReportLookup() {
-  const mode = document.getElementById('report-filter-mode')?.value || 'daily';
-  const filterDate = document.getElementById('report-filter-date')?.value || new Date().toISOString().slice(0, 10);
-  const filterMonth = document.getElementById('report-filter-month')?.value || new Date().toISOString().slice(0, 7);
-  const filterShift = document.getElementById('report-filter-shift-type')?.value || 'ALL';
-
-  const allHistory = getLocationHistoricalReports(activeLocationId);
-  let filtered = [];
-
-  if (mode === 'monthly') {
-    filtered = allHistory.filter(r => (r.monthKey || r.date?.slice(0, 7)) === filterMonth);
-  } else if (mode === 'shift') {
-    filtered = allHistory.filter(r => r.date === filterDate && (filterShift === 'ALL' || r.shiftType === filterShift));
-  } else {
-    filtered = allHistory.filter(r => r.date === filterDate);
-  }
-
-  filtered.sort((a, b) => (a.shiftSequence || 1) - (b.shiftSequence || 1));
-
-  let sumScratch = 0, sumExpected = 0, sumVariance = 0;
-  filtered.forEach(r => {
-    sumScratch += Number(r.totals?.scratchSales) || 0;
-    sumExpected += Number(r.totals?.expectedNet) || 0;
-    sumVariance += Number(r.totals?.variance) || 0;
-  });
-
-  const cntEl = document.getElementById('rep-summary-shift-count');
-  const scrEl = document.getElementById('rep-summary-scratch-sales');
-  const expEl = document.getElementById('rep-summary-expected-revenue');
-  const varEl = document.getElementById('rep-summary-variance');
-
-  if (cntEl) cntEl.textContent = String(filtered.length);
-  if (scrEl) scrEl.textContent = `$${sumScratch.toFixed(2)}`;
-  if (expEl) expEl.textContent = `$${sumExpected.toFixed(2)}`;
-  if (varEl) {
-    const sign = sumVariance > 0 ? '+' : '';
-    varEl.textContent = `${sign}$${sumVariance.toFixed(2)}`;
-  }
-
-  const tbody = document.getElementById('historical-reports-tbody');
-  if (!tbody) return;
-
-  if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="11" class="p-6 text-center text-slate-400">No archived shift reports found.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = filtered.map(r => {
-    const t = r.totals || {};
-    const v = Number(t.variance) || 0;
-    const vColor = Math.abs(v) < 0.01 ? 'text-emerald-700' : (v < 0 ? 'text-red-600' : 'text-amber-600');
-    return `
-      <tr class="hover:bg-slate-50">
-        <td class="p-2.5 text-center font-mono">${r.date}</td>
-        <td class="p-2.5 font-bold text-slate-800">${r.shiftType}</td>
-        <td class="p-2.5">${r.cashierOut || '-'}</td>
-        <td class="p-2.5 text-center font-mono">${t.totalTickets || 0}</td>
-        <td class="p-2.5 text-right font-mono font-bold">$${(Number(t.scratchSales) || 0).toFixed(2)}</td>
-        <td class="p-2.5 text-right font-mono">$${(Number(t.onlineSales) || 0).toFixed(2)}</td>
-        <td class="p-2.5 text-right font-mono font-bold text-blue-800">$${(Number(t.expectedNet) || 0).toFixed(2)}</td>
-        <td class="p-2.5 text-right font-mono font-bold">$${(Number(t.posActual) || 0).toFixed(2)}</td>
-        <td class="p-2.5 text-right font-mono font-extrabold ${vColor}">${v > 0 ? '+' : ''}$${v.toFixed(2)}</td>
-        <td class="p-2.5 text-center">${r.signatureDataUrl ? '<span class="text-emerald-600 font-bold">✔ Signed</span>' : '<span class="text-slate-400">None</span>'}</td>
-        <td class="p-2.5 text-center">
-          <button type="button" onclick="printArchivedSingleReport('${r.reportId}')" class="bg-slate-800 text-white text-[10px] px-2 py-1 rounded">🖨 Print</button>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
-
-function exportHistoricalReportsJSON() {
-  const history = getLocationHistoricalReports(activeLocationId);
-  const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(history, null, 2));
-  const a = document.createElement('a');
-  a.setAttribute('href', dataStr);
-  a.setAttribute('download', `HistoricalReports_${storeProfile.name.replace(/\s+/g, '_')}.json`);
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
-
-function triggerMonthlyEmailDispatchManually() {
-  sendNightlyEmailBackupToOwner(false);
-}
-
-function saveNewMasterGameManual() {
-  const numInp = document.getElementById('new-game-num');
-  const nameInp = document.getElementById('new-game-name');
-  const priceInp = document.getElementById('new-game-price');
-  const countInp = document.getElementById('new-game-count');
-
-  const gNum = numInp?.value?.trim();
-  const gName = nameInp?.value?.trim().toUpperCase();
-  const price = Number(priceInp?.value) || 1;
-  const count = Number(countInp?.value) || getDefaultRollCountForPrice(price);
-
-  if (!gNum || !gName) { alert('Please enter both a Game Number and a Game Name.'); return; }
-  const newEntry = { gameNum: gNum, name: gName, price, count };
-
-  const idx = masterGames.findIndex(g => String(g.gameNum).trim() === gNum);
-  if (idx >= 0) masterGames[idx] = newEntry;
-  else masterGames.push(newEntry);
-
-  masterGames = sanitizeMasterGamesList(masterGames);
-  saveGamesState();
-
-  if (numInp) numInp.value = '';
-  if (nameInp) nameInp.value = '';
-  if (priceInp) priceInp.value = '';
-  if (countInp) countInp.value = '';
-
-  loadActiveStoreData();
-  renderAdminGamesTable();
-  renderDispenserGrid();
-  recalculateReconciliationTotals();
-  alert(`Master Game #${gNum} saved successfully!`);
-}
-
-function deleteMasterGame(gNum) {
-  if (!confirm(`Delete Game #${gNum} from Master Catalog?`)) return;
-  masterGames = masterGames.filter(g => String(g.gameNum).trim() !== String(gNum).trim());
-  saveGamesState();
-  renderAdminGamesTable();
-}
-
-function renderAdminGamesTable(filterQuery = '') {
-  const tbody = document.getElementById('admin-games-tbody');
-  const countEl = document.getElementById('admin-games-count');
-  if (countEl) countEl.textContent = String(masterGames.length);
-  if (!tbody) return;
-
-  const q = filterQuery.trim().toLowerCase();
-  const list = q ? masterGames.filter(g => String(g.gameNum).toLowerCase().includes(q) || String(g.name).toLowerCase().includes(q)) : masterGames;
-
-  if (list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">No matching games found.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = list.map(g => `
-    <tr class="hover:bg-slate-50">
-      <td class="p-2 text-center font-mono font-bold text-blue-800">${g.gameNum}</td>
-      <td class="p-2 font-bold text-slate-800">${g.name}</td>
-      <td class="p-2 text-center font-mono font-bold text-emerald-700">$${g.price}</td>
-      <td class="p-2 text-center font-mono text-slate-600">${g.count}</td>
-      <td class="p-2 text-center">
-        <button type="button" onclick="deleteMasterGame('${g.gameNum}')" class="text-red-600 hover:text-red-800 font-bold text-[11px] px-2 py-0.5 rounded bg-red-50">Delete</button>
-      </td>
-    </tr>
-  `).join('');
-}
-
-function addBoxSlot() {
-  const nextNum = boxes.length + 1;
-  boxes.push({ boxNumber: String(nextNum), gameNum: '', gameName: '', price: 0, rollCount: 60, startTicket: 0, endTicket: '', rollovers: [], needsNewGameEntry: false });
-  saveBoxesState();
-  const badgeElem = document.getElementById('admin-box-count-badge');
-  if (badgeElem) badgeElem.textContent = String(boxes.length);
-  renderDispenserGrid();
-  renderAdminBoxLabelsGrid();
-  updateHeaderTotalsUI();
-}
-
-function removeBoxSlot() {
-  if (boxes.length <= 1) { alert('You must keep at least 1 box slot active.'); return; }
-  boxes.pop();
-  saveBoxesState();
-  const badgeElem = document.getElementById('admin-box-count-badge');
-  if (badgeElem) badgeElem.textContent = String(boxes.length);
-  renderDispenserGrid();
-  renderAdminBoxLabelsGrid();
-  updateHeaderTotalsUI();
-}
-
-function renderAdminBoxLabelsGrid() {
-  const container = document.getElementById('admin-box-labels-grid');
-  if (!container) return;
-  let html = '';
-  boxes.forEach((box, idx) => {
-    const hasGame = Boolean(box.gameNum);
-    const gameLabel = hasGame ? (box.gameName || 'Game #' + box.gameNum) : 'Empty Slot';
-    html += `
-      <div class="border border-slate-200 rounded-lg p-2 bg-slate-50 flex flex-col justify-between text-xs">
-        <div class="flex items-center justify-between text-[10px] text-slate-500 font-bold mb-1">
-          <span>Index #${idx + 1}</span>
-          <span class="text-emerald-700 font-mono">${hasGame && box.price ? '$' + box.price : ''}</span>
-        </div>
-        <div class="mb-1.5">
-          <input type="text" id="admin-box-label-inp-${idx}" value="${box.boxNumber || (idx + 1)}" oninput="updateBoxLabelDirect(${idx}, this.value)" onkeydown="handleBoxLabelKeydown(event, ${idx})" class="w-full text-center font-mono font-black text-xs border rounded py-1 px-1.5 bg-white lotto-input" />
-        </div>
-        <div class="text-[10px] text-slate-600 truncate font-medium">${gameLabel}</div>
-      </div>
-    `;
-  });
-  container.innerHTML = html;
-}
-
-function handleBoxLabelKeydown(event, currentIdx) {
-  if (event.key === 'Enter') {
-    event.preventDefault();
-    const nextIdx = currentIdx + 1;
-    const nextInp = document.getElementById(`admin-box-label-inp-${nextIdx}`);
-    if (nextInp) {
-      nextInp.focus();
-      nextInp.select();
-    }
-  }
-}
-
-function updateBoxLabelDirect(idx, val) {
-  if (!boxes[idx]) return;
-  boxes[idx].boxNumber = val === '' ? String(idx + 1) : String(val).trim();
-  saveBoxesState();
-}
-
-function setBoxLabelsSequential(mode) {
-  boxes.forEach((box, idx) => {
-    if (mode === 'numbers') box.boxNumber = String(idx + 1);
-    else if (mode === 'letters') box.boxNumber = idx < 26 ? String.fromCharCode(65 + idx) : 'A' + String.fromCharCode(65 + (idx - 26));
-  });
-  saveBoxesState();
-  renderAdminBoxLabelsGrid();
-  renderDispenserGrid();
-}
-
-function switchMainView(viewName) {
-  lastActiveViewName = viewName;
-  const views = ['grid', 'reconcile', 'reports', 'admin'];
-  views.forEach(v => {
-    const sec = document.getElementById(`view-${v}`);
-    const btn = document.getElementById(`nav-btn-${v}`);
-    if (sec) {
-      if (v === viewName) sec.classList.remove('hidden');
-      else sec.classList.add('hidden');
-    }
-    if (btn) {
-      btn.className = v === viewName ? 'bg-blue-600 text-white font-bold text-xs px-3 py-1.5 rounded shadow-sm transition' : 'bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3 py-1.5 rounded shadow-sm transition';
-    }
-  });
-  if (viewName === 'grid') {
-    renderDispenserGrid();
-    renderMainGridCashierShiftBar();
-  } else if (viewName === 'reconcile') {
-    recalculateReconciliationTotals();
-    handleCashierInputAutocomplete('rec-cashier-out', 'cashier-datalist-rec-out');
-    handleCashierInputAutocomplete('rec-cashier-in', 'cashier-datalist-rec-in');
-  } else if (viewName === 'reports') {
-    executeReportLookup();
-  } else if (viewName === 'admin') {
-    renderAdminGamesTable();
-    renderAdminBoxLabelsGrid();
-    renderAdminCashiersTable();
-  }
-}
-
-// --------------------------------------------------------------------------
-// STANDALONE 8.5" x 11" FULL-PAGE PDF / PRINT WINDOW ENGINE (STRICT 1-PAGE FIT)
-// --------------------------------------------------------------------------
-function buildMatrixPrintHTML(repData, isFinalReport = false) {
-  const bList = Array.isArray(repData.boxesSnapshot) ? repData.boxesSnapshot : boxes;
-  const t = repData.totals || {};
-  const variance = Number(t.variance) || 0;
-  const storeAddr = getFormattedStoreAddress();
-  let gtTickets = 0;
-  let gtSales = 0;
-
-  const rowsHtml = bList.map(box => {
-    const m = calculateBoxMetrics(box);
-    gtTickets += m.ticketsSold;
-    gtSales += m.dollarSales;
-    const hasGame = Boolean(box.gameNum);
-    const roCount = Array.isArray(box.rollovers) ? box.rollovers.length : 0;
-    return `
-      <tr>
-        <td class="col-box">${box.boxNumber}</td>
-        <td class="col-num">${box.gameNum || '-'}</td>
-        <td class="col-name">${hasGame ? (box.gameName || 'Game #' + box.gameNum) : '<span style="color:#94a3b8;">Empty</span>'}</td>
-        <td class="col-price">${hasGame && box.price ? '$' + box.price : '-'}</td>
-        <td class="col-tix">${box.startTicket !== '' && box.startTicket !== undefined ? box.startTicket : '-'}</td>
-        <td class="col-tix bold">${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '-'}</td>
-        <td class="col-sold">${m.ticketsSold}${roCount > 0 ? ' *' : ''}</td>
-        <td class="col-sales">$${m.dollarSales.toFixed(2)}</td>
-      </tr>
-    `;
-  }).join('');
-
-  const sigImgHtml = repData.signatureDataUrl
-    ? `<img src="${repData.signatureDataUrl}" style="max-height: 28px; max-width: 160px; object-fit: contain;" alt="Signature" />`
-    : `<span style="color: #94a3b8; font-size: 9pt;">____________________________________</span>`;
-
-  const cleanDate = String(repData.date || '').replace(/[^a-zA-Z0-9_-]/g, '-');
-
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Lotto_Worksheet_8.5x11_${cleanDate}</title>
-      <style>
-        @page {
-          size: letter portrait;
-          margin: 0.18in 0.22in;
-        }
-        * {
-          box-sizing: border-box;
-          margin: 0;
-          padding: 0;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        html, body {
-          width: 100%;
-          max-width: 8.5in;
-          margin: 0 auto;
-          padding: 8px 12px;
-          background: #fff;
-          color: #000;
-          font-family: Arial, Helvetica, sans-serif;
-          font-size: 10pt;
-          line-height: 1.15;
-        }
-        .no-print-bar {
-          display: flex;
-          gap: 10px;
-          margin-bottom: 10px;
-          padding-bottom: 8px;
-          border-bottom: 2px solid #0f172a;
-        }
-        .btn {
-          padding: 8px 16px;
-          font-family: sans-serif;
-          font-weight: 900;
-          font-size: 11pt;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-        }
-        .btn-print { background: #2563eb; color: #fff; }
-        .btn-close { background: #e2e8f0; color: #0f172a; }
-        @media print {
-          .no-print-bar { display: none !important; }
-          html, body {
-            width: 100% !important;
-            max-width: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            overflow: hidden !important;
-          }
-          .sheet-wrap {
-            page-break-inside: avoid !important;
-            page-break-after: avoid !important;
-          }
-        }
-        .header-bar {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-end;
-          border-bottom: 2px solid #000;
-          padding-bottom: 4px;
-          margin-bottom: 4px;
-        }
-        .store-headline {
-          font-size: 13pt;
-          font-weight: 900;
-          text-transform: uppercase;
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-bottom: 5px;
-        }
-        th {
-          background: #e2e8f0;
-          border-bottom: 1.5px solid #000;
-          padding: 3px 4px;
-          font-size: 9pt;
-          text-transform: uppercase;
-        }
-        td {
-          border-bottom: 1px solid #cbd5e1;
-          padding: 2px 4px;
-          font-size: 9.5pt;
-        }
-        .col-box { text-align: center; font-weight: 900; background: #0f172a; color: #fff; width: 38px; }
-        .col-num { text-align: center; font-family: monospace; font-weight: bold; width: 62px; }
-        .col-name { text-align: left; font-weight: 700; }
-        .col-price { text-align: center; font-weight: bold; color: #047857; width: 45px; }
-        .col-tix { text-align: center; font-family: monospace; width: 58px; }
-        .col-sold { text-align: center; font-weight: bold; width: 48px; }
-        .col-sales { text-align: right; font-family: monospace; font-weight: 900; color: #047857; width: 78px; }
-        .bold { font-weight: bold; }
-        .summary-card {
-          border: 1.5px solid #000;
-          padding: 5px 8px;
-          background: #f8fafc;
-        }
-        .kpi-grid {
-          display: grid;
-          grid-template-columns: repeat(6, 1fr);
-          gap: 4px;
-          border-bottom: 1px solid #94a3b8;
-          padding-bottom: 4px;
-          margin-bottom: 4px;
-          text-align: center;
-          font-size: 9pt;
-        }
-        .kpi-val {
-          font-family: monospace;
-          font-weight: 900;
-          font-size: 11pt;
-          margin-top: 1px;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="no-print-bar">
-        <button class="btn btn-print" onclick="window.print()">🖨 Print / Save as PDF (8.5" x 11")</button>
-        <button class="btn btn-close" onclick="window.close()">✕ Close Window</button>
-      </div>
-
-      <div class="sheet-wrap">
-        <div class="header-bar">
-          <div>
-            <div class="store-headline">
-              ${repData.storeName || storeProfile.name} (#${repData.storeNumber || storeProfile.number}) — Shift Lotto Count Worksheet
-            </div>
-            <div style="font-size: 9.5pt; font-weight: bold; color: #1e293b;">${storeAddr}</div>
-            <div style="font-size: 9.5pt; color: #334155; margin-top: 1px;">
-              Date: <strong>${repData.date}</strong> &nbsp;|&nbsp; Shift: <strong>${repData.shiftType}</strong>
-            </div>
-          </div>
-          <div style="text-align: right; font-size: 9.5pt; font-weight: bold;">
-            ${isFinalReport ? 'ARCHIVED SHIFT REPORT' : 'SHIFT WORKSHEET'}
-          </div>
-        </div>
-
-        <table>
-          <thead>
-            <tr>
-              <th>Box</th>
-              <th>Game #</th>
-              <th style="text-align:left;">Game Name</th>
-              <th>Price</th>
-              <th>Start</th>
-              <th>End</th>
-              <th>Sold</th>
-              <th style="text-align:right;">Sales $</th>
-            </tr>
-          </thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>
-
-        <div class="summary-card">
-          <div class="kpi-grid">
-            <div><span>Total Sold:</span><div class="kpi-val">${gtTickets} tix</div></div>
-            <div><span>Scratch Sales:</span><div class="kpi-val" style="color:#047857;">$${gtSales.toFixed(2)}</div></div>
-            <div><span>Online Sales:</span><div class="kpi-val">$${(Number(t.onlineSales) || 0).toFixed(2)}</div></div>
-            <div><span>Expected Net:</span><div class="kpi-val">$${(Number(t.expectedNet) || 0).toFixed(2)}</div></div>
-            <div><span>POS Actual:</span><div class="kpi-val">$${(Number(t.posActual) || 0).toFixed(2)}</div></div>
-            <div><span>Variance:</span><div class="kpi-val">${variance > 0 ? '+' : ''}$${variance.toFixed(2)}</div></div>
-          </div>
-
-          <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 10px;">
-            <div style="flex: 1;">
-              <div style="display: flex; gap: 16px; font-size: 9.5pt; margin-bottom: 3px;">
-                <div><strong>Outgoing Cashier:</strong> ${repData.cashierOut || '&nbsp;'}</div>
-                <div><strong>Incoming Cashier:</strong> ${repData.cashierIn || '&nbsp;'}</div>
-              </div>
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
-                <div style="height: 28px; min-width: 150px; display: flex; align-items: center; border-bottom: 1px solid #000;">${sigImgHtml}</div>
-                <span style="font-size: 8.5pt; font-weight: bold; text-transform: uppercase;">Cashier Signature</span>
-              </div>
-              <div style="font-size: 8.5pt; color: #1e293b; font-style: italic;">
-                "I hereby certify that the ticket counts, game numbers, and shift totals recorded above are true, complete, and accurate to the best of my knowledge."
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <script>
-        window.onload = function() {
-          setTimeout(function() {
-            window.focus();
-            window.print();
-          }, 250);
-        };
-      </script>
-    </body>
-    </html>
-  `;
-}
-
-function openFullSheetPrintWindow(htmlContent) {
-  const printWin = window.open('', '_blank', 'width=900,height=800,scrollbars=yes');
-  if (printWin) {
-    printWin.document.open();
-    printWin.document.write(htmlContent);
-    printWin.document.close();
-  } else {
-    alert('Please allow pop-ups for this site so the 8.5" x 11" PDF/Print window can open.');
-  }
-}
-
-function printWorksheet() {
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const dateInput = document.getElementById('rec-report-date');
-  if (dateInput && dateInput.value !== todayIso) {
-    dateInput.value = todayIso;
-    saveReconciliationDraft();
-  }
-  openWorksheetPrintChoiceModal();
-}
-
-function printWorksheetDirect() {
-  const html = buildMatrixPrintHTML({
-    storeName: storeProfile.name,
-    storeNumber: storeProfile.number,
-    date: document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10),
-    shiftType: document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)',
-    cashierOut: document.getElementById('rec-cashier-out')?.value?.trim() || document.getElementById('grid-cashier-input')?.value?.trim() || 'Unspecified',
-    cashierIn: document.getElementById('rec-cashier-in')?.value?.trim() || '-',
-    totals: recalculateReconciliationTotals(),
-    signatureDataUrl: currentSignatureDataUrl,
-    boxesSnapshot: boxes
-  }, false);
-  openFullSheetPrintWindow(html);
-}
-
-function printFinalReport() {
-  printWorksheet();
-}
-
-function printArchivedSingleReport(reportId) {
-  const history = getLocationHistoricalReports(activeLocationId);
-  const found = history.find(r => r.reportId === reportId);
-  if (!found) return;
-  const html = buildMatrixPrintHTML(found, true);
-  openFullSheetPrintWindow(html);
-}
-
-function printFilteredReportSummary() { window.print(); }
-
-window.addEventListener('DOMContentLoaded', () => {
-  loadMasterGames();
-  initActiveLocation();
-  
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const monthIso = todayIso.slice(0, 7);
-  
-  if (document.getElementById('report-filter-date')) document.getElementById('report-filter-date').value = todayIso;
-  if (document.getElementById('report-filter-month')) document.getElementById('report-filter-month').value = monthIso;
-
-  loadActiveStoreData();
-  renderDispenserGrid();
-  renderMainGridCashierShiftBar();
-  renderAdminGamesTable();
-  renderAdminBoxLabelsGrid();
-  renderAdminCashiersTable();
-  loadReconciliationDraft();
-  recalculateReconciliationTotals();
-  initSignaturePad();
-  executeReportLookup();
-  startTwiceDailyBackupScheduler();
-});
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3">
+  <h4 class="font-black text-slate-900 text-sm">🖨 Thermal Print Font Size (pt)</h4>
+  <p class="text-xs text-slate-500">Adjust the font size (8pt to 36pt) for printed thermal receipts. Takes effect immediately.</p>
+  <div class="flex items-center gap-3">
+    <input type="number" id="admin-print-fontsize-input" min="8" max="36" value="13" class="w-24 text-center font-mono font-bold border border-slate-300 rounded-lg p-2 text-xs" />
+    <span class="text-xs font-bold text-slate-700">pt (Points)</span>
+    <button type="button" onclick="saveActiveStoreProfile()" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-lg text-xs transition">Save Setting</button>
+  </div>
+</div>
