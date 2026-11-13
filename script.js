@@ -1760,12 +1760,3 @@ function startTwiceDailyBackupScheduler() {
     }
   }, 30000);
 }
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3">
-  <h4 class="font-black text-slate-900 text-sm">🖨 Thermal Print Font Size (pt)</h4>
-  <p class="text-xs text-slate-500">Adjust the font size (8pt to 36pt) for printed thermal receipts. Takes effect immediately.</p>
-  <div class="flex items-center gap-3">
-    <input type="number" id="admin-print-fontsize-input" min="8" max="36" value="13" class="w-24 text-center font-mono font-bold border border-slate-300 rounded-lg p-2 text-xs" />
-    <span class="text-xs font-bold text-slate-700">pt (Points)</span>
-    <button type="button" onclick="saveActiveStoreProfile()" class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-lg text-xs transition">Save Setting</button>
-  </div>
-</div>
