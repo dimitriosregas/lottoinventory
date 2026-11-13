@@ -1095,13 +1095,19 @@ function printThermalReceiptDirect() {
   const dateStr = document.getElementById('rec-report-date')?.value || new Date().toLocaleDateString();
   const shiftStr = document.getElementById('rec-shift-type')?.value || 'Shift 1';
   const cashierStr = document.getElementById('print-modal-cashier-input')?.value || 'Manager';
+  const storeAddr = storeProfile.address || 'Sparta, TN 38583';
+
+  // Reads the adjustable font size from your global setting (default 13pt)
+  const baseSize = Number(globalPrintFontSizePt) || 13;
+  const storeNameSize = Math.round(baseSize * 1.35);
+  const varianceSize = Math.round(baseSize * 1.2);
 
   let itemsHtml = '';
-  boxes.forEach((box, idx) => {
+  boxes.forEach((box) => {
     const m = calculateBoxMetrics(box);
     if (box.gameNum) {
       itemsHtml += `
-        <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #000; padding: 2px 0;">
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #000; padding: 3px 0;">
           <span>B#${box.boxNumber} (#${box.gameNum})</span>
           <span>${m.ticketsSold} tix = $${m.dollarSales.toFixed(2)}</span>
         </div>
@@ -1109,33 +1115,47 @@ function printThermalReceiptDirect() {
     }
   });
 
-  const sigImg = currentSignatureDataUrl ? `<img src="${currentSignatureDataUrl}" style="max-height: 24px; max-width: 140px;" />` : `___________________________`;
+  const sigImg = currentSignatureDataUrl ? `<img src="${currentSignatureDataUrl}" style="max-height: 40px; max-width: 160px; display: block; margin: 4px auto;" />` : `___________________________`;
 
   printContainer.innerHTML = `
     <style>
       @media print {
-        html, body { width: 80mm !important; margin: 0 !important; padding: 2mm !important; font-family: monospace !important; font-size: 27px !important; color: #000 !important; }
-        body > header, body > main, body > div.fixed, #app-shell, .no-print { display: none !important; }
-        #print-container { display: block !important; width: 100% !important; }
+        html, body {
+          width: 80mm !important;
+          margin: 0 !important;
+          padding: 2mm !important;
+          font-family: monospace !important;
+          font-size: ${baseSize}pt !important;
+          font-weight: bold !important;
+          color: #000 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        body > header, body > main, body > div.fixed, #app-shell, .no-print {
+          display: none !important;
+        }
+        #print-container {
+          display: block !important;
+          width: 100% !important;
+        }
       }
     </style>
-    <div style="width: 76mm; font-family: monospace; font-size: 11px; color: #000; line-height: 1.2; padding: 4px;">
-      <div style="text-align: center; font-weight: bold; font-size: 13px;">${storeProfile.name} (#${storeProfile.number})</div>
-      ${storeProfile.address ? `<div style="text-align: center; font-size: 9px;">${storeProfile.address}</div>` : ''}
-      <div style="text-align: center; border-bottom: 1px dashed #000; padding-bottom: 4px; margin-bottom: 4px; font-size: 10px;">
-        80mm THERMAL WORKSHEET<br>Date: ${dateStr} | ${shiftStr}<br>Cashier: ${cashierStr}
+    <div style="width: 76mm; font-family: monospace; font-size: ${baseSize}pt; font-weight: bold; color: #000; line-height: 1.3; padding: 4px;">
+      <div style="text-align: center; font-weight: 900; font-size: ${storeNameSize}pt; text-transform: uppercase;">${storeProfile.name} (#${storeProfile.number})</div>
+      ${storeAddr ? `<div style="text-align: center; font-size: ${Math.round(baseSize*0.85)}pt;">${storeAddr}</div>` : ''}
+      <div style="text-align: center; border-bottom: 1.5px dashed #000; padding-bottom: 4px; margin-bottom: 6px; font-size: ${baseSize}pt;">
+        THERMAL WORKSHEET<br>Date: ${dateStr} | ${shiftStr}<br>Cashier: ${cashierStr}
       </div>
-      <div style="margin-bottom: 6px;">${itemsHtml}</div>
-      <div style="border-top: 1px dashed #000; padding-top: 4px; font-weight: bold;">
+      <div style="margin-bottom: 8px;">${itemsHtml}</div>
+      <div style="border-top: 2px solid #000; padding-top: 6px; font-weight: 900;">
         <div style="display: flex; justify-content: space-between;"><span>TOTAL SALES:</span><span>$${totals.scratchSales.toFixed(2)}</span></div>
         <div style="display: flex; justify-content: space-between;"><span>EXPECTED NET:</span><span>$${totals.expectedNet.toFixed(2)}</span></div>
         <div style="display: flex; justify-content: space-between;"><span>POS ACTUAL:</span><span>$${totals.posActual.toFixed(2)}</span></div>
-        <div style="display: flex; justify-content: space-between;"><span>VARIANCE:</span><span>$${totals.variance.toFixed(2)}</span></div>
+        <div style="display: flex; justify-content: space-between; font-size: ${varianceSize}pt; margin-top: 4px;"><span>VARIANCE:</span><span>$${totals.variance.toFixed(2)}</span></div>
       </div>
-      <div style="margin-top: 8px; border-top: 1px dashed #000; padding-top: 4px; text-align: center;">
-        <div style="margin-bottom: 2px;">${sigImg}</div>
-        <div style="font-size: 9px; font-weight: bold;">CASHIER SIGNATURE</div>
-        <div style="font-size: 8px; font-style: italic; margin-top: 2px;">"I certify these figures are accurate."</div>
+      <div style="margin-top: 12px; border-top: 1.5px dashed #000; padding-top: 6px; text-align: center;">
+        <div style="margin-bottom: 4px;">${sigImg}</div>
+        <div style="font-size: ${baseSize}pt; font-weight: 900;">CASHIER SIGNATURE</div>
       </div>
     </div>
   `;
