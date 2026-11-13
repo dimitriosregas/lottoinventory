@@ -270,17 +270,13 @@
               type="button"
               onclick="printWorksheet()"
               class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-sm"
-            >
-              <span>🖨 Print</span>
-            </button>
-            <button
-              type="button"
-              onclick="advanceEndToStartForNewShift()"
-              class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm"
-            >
-              ⏭ Roll End → Start (Next Shift)
-            </button>
-            <button
+<button
+  type="button"
+  onclick="switchMainView('reconcile')"
+  class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm"
+>
+  ⏭ Roll End → Start (Next Shift)
+</button>
               type="button"
               onclick="exportCurrentLocationBackup()"
               class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm"
