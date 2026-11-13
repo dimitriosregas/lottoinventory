@@ -1660,8 +1660,19 @@ function handleShiftTypeChange(val) {
   if (badge) badge.textContent = val;
   saveReconciliationDraft();
 }
+function checkMidnightDateRollover() {
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const dateInput = document.getElementById('rec-report-date');
+  if (dateInput && dateInput.value && dateInput.value !== todayIso) {
+    dateInput.value = todayIso;
+    saveReconciliationDraft();
+  }
+}
 
 function recalculateReconciliationTotals() {
+  // Auto-check midnight rollover on calculation
+  checkMidnightDateRollover();
+
   let scratchSales = 0;
   let totalTickets = 0;
   boxes.forEach(b => {
@@ -1670,23 +1681,31 @@ function recalculateReconciliationTotals() {
     totalTickets += m.ticketsSold;
   });
 
+  // Multi-shift carryover calculations for Shifts 2 and 3
+  const dailyTotalInput = Number(document.getElementById('rec-daily-scratch-total')?.value) || 0;
+  const prevShiftsInput = Number(document.getElementById('rec-previous-shifts-sales')?.value) || 0;
+  
+  // If daily total is provided, calculate net sales for this shift less previous shifts
+  const netScratchSales = dailyTotalInput > 0 ? Math.max(0, dailyTotalInput - prevShiftsInput) : scratchSales;
+
   const onlineSales = Number(document.getElementById('rec-online-sales')?.value) || 0;
   const scratchCashed = Number(document.getElementById('rec-scratch-cashed')?.value) || 0;
   const onlineCashed = Number(document.getElementById('rec-online-cashed')?.value) || 0;
   const posActual = Number(document.getElementById('rec-pos-actual')?.value) || 0;
 
-  const expectedNet = (scratchSales + onlineSales) - (scratchCashed + onlineCashed);
+  const expectedNet = (netScratchSales + onlineSales) - (scratchCashed + onlineCashed);
   const variance = posActual - expectedNet;
 
   const scEl = document.getElementById('rec-scratch-sales');
+  const netShiftEl = document.getElementById('rec-net-shift-scratch');
   const expEl = document.getElementById('rec-expected-total');
   const varEl = document.getElementById('rec-variance-display');
   const accEl = document.getElementById('rec-accounted-total');
 
   if (scEl) scEl.textContent = `$${scratchSales.toFixed(2)}`;
+  if (netShiftEl) netShiftEl.textContent = `$${netScratchSales.toFixed(2)}`;
   if (expEl) expEl.textContent = `$${expectedNet.toFixed(2)}`;
   if (accEl) accEl.textContent = `$${posActual.toFixed(2)}`;
-
   if (varEl) {
     const sign = variance > 0 ? '+' : '';
     varEl.textContent = `${sign}$${variance.toFixed(2)}`;
@@ -1694,9 +1713,8 @@ function recalculateReconciliationTotals() {
   }
 
   saveReconciliationDraft();
-  return { scratchSales, totalTickets, onlineSales, scratchCashed, onlineCashed, expectedNet, posActual, variance };
+  return { scratchSales: netScratchSales, totalTickets, onlineSales, scratchCashed, onlineCashed, expectedNet, posActual, variance };
 }
-
 function saveReconciliationDraft() {
   const draft = {
     date: document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10),
