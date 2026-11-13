@@ -1097,7 +1097,6 @@ function printThermalReceiptDirect() {
   const cashierStr = document.getElementById('print-modal-cashier-input')?.value || 'Manager';
   const storeAddr = storeProfile.address || 'Sparta, TN 38583';
 
-  // Reads the adjustable font size from your global setting (default 13pt)
   const baseSize = Number(globalPrintFontSizePt) || 13;
   const storeNameSize = Math.round(baseSize * 1.35);
   const varianceSize = Math.round(baseSize * 1.2);
@@ -1107,7 +1106,7 @@ function printThermalReceiptDirect() {
     const m = calculateBoxMetrics(box);
     if (box.gameNum) {
       itemsHtml += `
-        <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #000; padding: 3px 0;">
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #000; padding: 4px 0;">
           <span>B#${box.boxNumber} (#${box.gameNum})</span>
           <span>${m.ticketsSold} tix = $${m.dollarSales.toFixed(2)}</span>
         </div>
@@ -1115,30 +1114,39 @@ function printThermalReceiptDirect() {
     }
   });
 
-  const sigImg = currentSignatureDataUrl ? `<img src="${currentSignatureDataUrl}" style="max-height: 40px; max-width: 160px; display: block; margin: 4px auto;" />` : `___________________________`;
+  const sigImg = currentSignatureDataUrl ? `<img src="${currentSignatureDataUrl}" style="max-height: 45px; max-width: 180px; display: block; margin: 4px auto;" />` : `___________________________`;
 
   printContainer.innerHTML = `
     <style>
+      @page {
+        size: 80mm auto;
+        margin: 0mm;
+      }
       @media print {
-        html, body, #print-container, #print-container * {
-          font-family: 'Courier New', Courier, monospace !important;
-          font-size: ${baseSize}pt !important;
-          line-height: 1.25 !important;
-          color: #000 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
         html, body {
           width: 80mm !important;
+          min-width: 80mm !important;
+          max-width: 80mm !important;
           margin: 0 !important;
-          padding: 2mm !important;
+          padding: 0 !important;
+          background: #fff !important;
         }
         body > header, body > main, body > div.fixed, #app-shell, .no-print {
           display: none !important;
         }
         #print-container {
           display: block !important;
-          width: 100% !important;
+          width: 76mm !important;
+          margin: 0 auto !important;
+          padding: 2mm !important;
+        }
+        #print-container *, #print-container div, #print-container span {
+          font-family: 'Courier New', Courier, monospace !important;
+          font-size: ${baseSize}pt !important;
+          line-height: 1.3 !important;
+          color: #000 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
         }
         .print-store-title {
           font-size: ${storeNameSize}pt !important;
@@ -1150,7 +1158,7 @@ function printThermalReceiptDirect() {
         }
       }
     </style>
-    <div style="width: 76mm; font-family: monospace; color: #000; padding: 4px;">
+    <div style="width: 76mm; font-family: monospace; color: #000; padding: 2mm;">
       <div style="text-align: center; text-transform: uppercase;" class="print-store-title">${storeProfile.name} (#${storeProfile.number})</div>
       ${storeAddr ? `<div style="text-align: center;">${storeAddr}</div>` : ''}
       <div style="text-align: center; border-bottom: 1.5px dashed #000; padding-bottom: 4px; margin-bottom: 6px;">
