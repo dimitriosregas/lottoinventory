@@ -1081,6 +1081,7 @@ function executeUnifiedPrint(formatChoice) {
 // DEDICATED 80mm (3 1/8") THERMAL RECEIPT IFRAME ENGINE
 // Isolates receipt from index.html Letter CSS so it prints 100% width & cuts cleanly
 // --------------------------------------------------------------------------
+// ✅ PASTE THIS STANDALONE 80mm PDF / THERMAL PRINT FUNCTION:
 function printThermalReceiptDirect() {
   const totals = recalculateReconciliationTotals();
   const dateStr = document.getElementById('rec-report-date')?.value || new Date().toLocaleDateString();
@@ -1112,36 +1113,22 @@ function printThermalReceiptDirect() {
   });
 
   const sigImg = currentSignatureDataUrl
-    ? `<img src="${currentSignatureDataUrl}" style="max-height: 45px; max-width: 90%; object-fit: contain; display: block; margin: 0 auto;" />`
-    : `<div style="height: 28px; border-bottom: 1px solid #000; width: 90%; margin: 0 auto;"></div>`;
+    ? `<img src="${currentSignatureDataUrl}" style="max-height: 48px; max-width: 90%; object-fit: contain; display: block; margin: 0 auto;" />`
+    : `<div style="height: 30px; border-bottom: 1.5px solid #000; width: 90%; margin: 0 auto;"></div>`;
 
   const signPrefix = totals.variance > 0 ? '+' : '';
 
-  let iframe = document.getElementById('thermal-print-iframe');
-  if (iframe) iframe.remove();
-
-  iframe = document.createElement('iframe');
-  iframe.id = 'thermal-print-iframe';
-  iframe.style.position = 'fixed';
-  iframe.style.right = '0';
-  iframe.style.bottom = '0';
-  iframe.style.width = '80mm';
-  iframe.style.height = '0';
-  iframe.style.border = '0';
-  document.body.appendChild(iframe);
-
-  const doc = iframe.contentWindow.document;
-  doc.open();
-  doc.write(`
+  const receiptHtml = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
-      <title>80mm Thermal Receipt</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Lotto_80mm_Receipt_${dateStr.replace(/[^a-zA-Z0-9_-]/g, '-')}</title>
       <style>
         @page {
           size: 80mm auto;
-          margin: 0mm !important;
+          margin: 0mm;
         }
         * {
           box-sizing: border-box;
@@ -1151,22 +1138,48 @@ function printThermalReceiptDirect() {
           print-color-adjust: exact !important;
         }
         html, body {
-          width: 100%;
-          max-width: 80mm;
-          height: auto !important;
-          margin: 0 !important;
-          padding: 1mm 2mm 5mm 2mm !important;
+          width: 80mm;
+          margin: 0 auto;
+          padding: 2mm 3mm 8mm 3mm;
           background: #fff;
           color: #000;
           font-family: 'Courier New', Courier, monospace;
           font-size: 13px;
           line-height: 1.25;
         }
+        .no-print-bar {
+          display: flex;
+          gap: 6px;
+          margin-bottom: 8px;
+          padding-bottom: 8px;
+          border-bottom: 2px solid #000;
+        }
+        .btn {
+          flex: 1;
+          padding: 8px 4px;
+          font-family: sans-serif;
+          font-weight: 900;
+          font-size: 12px;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          text-align: center;
+        }
+        .btn-print { background: #0f172a; color: #fff; }
+        .btn-close { background: #e2e8f0; color: #0f172a; }
+        @media print {
+          .no-print-bar { display: none !important; }
+          html, body {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 1mm 2mm 6mm 2mm !important;
+          }
+        }
         .header {
           text-align: center;
           border-bottom: 2px solid #000;
-          padding-bottom: 4px;
-          margin-bottom: 4px;
+          padding-bottom: 5px;
+          margin-bottom: 5px;
           width: 100%;
         }
         .store-title {
@@ -1182,14 +1195,15 @@ function printThermalReceiptDirect() {
         .row-flex {
           display: flex;
           justify-content: space-between;
+          align-items: baseline;
           width: 100%;
         }
         .bold-line {
           font-weight: 900;
-          font-size: 14px;
+          font-size: 13.5px;
         }
         .sub-line {
-          font-size: 12px;
+          font-size: 11.5px;
           font-weight: bold;
         }
         .game-title {
@@ -1201,8 +1215,8 @@ function printThermalReceiptDirect() {
         .totals-box {
           border-top: 2px solid #000;
           border-bottom: 2px solid #000;
-          padding: 4px 0;
-          margin-top: 4px;
+          padding: 5px 0;
+          margin-top: 5px;
           font-size: 13px;
           font-weight: bold;
           line-height: 1.35;
@@ -1216,18 +1230,23 @@ function printThermalReceiptDirect() {
       </style>
     </head>
     <body>
+      <div class="no-print-bar">
+        <button class="btn btn-print" onclick="window.print()">🖨 Print / Save PDF</button>
+        <button class="btn btn-close" onclick="window.close()">✕ Close</button>
+      </div>
+
       <div class="header">
         <div class="store-title">${storeProfile.name} (#${storeProfile.number})</div>
         ${storeProfile.address ? `<div style="font-size: 11px;">${storeProfile.address}</div>` : ''}
-        <div style="font-size: 12px; font-weight: bold; margin-top: 2px;">SHIFT LOTTO WORKSHEET</div>
-        <div style="font-size: 12px;">
+        <div style="font-size: 12px; font-weight: bold; margin-top: 2px;">80mm THERMAL WORKSHEET</div>
+        <div style="font-size: 11.5px;">
           Date: <strong>${dateStr}</strong> | ${shiftStr}<br>
           Cashier: <strong>${cashierStr}</strong>
         </div>
       </div>
 
       <div>
-        ${itemsHtml || '<div style="text-align:center; padding: 6px 0;">No active boxes assigned.</div>'}
+        ${itemsHtml || '<div style="text-align:center; padding: 8px 0;">No active boxes assigned.</div>'}
       </div>
 
       <div class="totals-box">
@@ -1242,20 +1261,32 @@ function printThermalReceiptDirect() {
       </div>
 
       <div class="footer">
-        <div style="margin-bottom: 2px;">${sigImg}</div>
+        <div style="margin-bottom: 3px;">${sigImg}</div>
         <div style="font-size: 11px; font-weight: 900;">CASHIER SIGNATURE (${cashierStr})</div>
         <div style="font-size: 10px; font-style: italic; margin-top: 2px;">"I certify these figures are true and accurate."</div>
-        <div style="font-size: 10px; margin-top: 4px; border-top: 1px dashed #000; padding-top: 2px;">Printed: ${new Date().toLocaleString()}</div>
+        <div style="font-size: 10px; margin-top: 4px; border-top: 1px dashed #000; padding-top: 3px;">Printed: ${new Date().toLocaleString()}</div>
       </div>
+
+      <script>
+        window.onload = function() {
+          setTimeout(function() {
+            window.focus();
+            window.print();
+          }, 250);
+        };
+      </script>
     </body>
     </html>
-  `);
-  doc.close();
+  `;
 
-  setTimeout(() => {
-    iframe.contentWindow.focus();
-    iframe.contentWindow.print();
-  }, 150);
+  const printWin = window.open('', '_blank', 'width=360,height=700,scrollbars=yes');
+  if (printWin) {
+    printWin.document.open();
+    printWin.document.write(receiptHtml);
+    printWin.document.close();
+  } else {
+    alert('Please allow pop-ups for this site so the 80mm PDF/Thermal receipt window can open.');
+  }
 }
 
 function renderMainGridCashierShiftBar() {
