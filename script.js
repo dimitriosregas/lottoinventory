@@ -1113,7 +1113,7 @@ function printThermalReceiptDirect() {
   const pageWidth = 80;
   const margin = 4;
 
-  // Store Header (Matching your photo)
+  // Store Header (Matching your reference photo)
   doc.setFont('Courier', 'bold');
   doc.setFontSize(basePt + 3);
   doc.text(`${storeProfile.name}`, pageWidth / 2, y, { align: 'center' });
@@ -1148,7 +1148,7 @@ function printThermalReceiptDirect() {
   doc.line(margin, y, pageWidth - margin, y);
   y += 5;
 
-  // Active Boxes (Exact 2-Line Format from your photo)
+  // Active Boxes (Exact 2-Line Format matching your uploaded receipt photo)
   doc.setFontSize(basePt - 1);
   boxes.forEach((box) => {
     const m = calculateBoxMetrics(box);
