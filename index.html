@@ -261,8 +261,7 @@
 
     <!-- MAIN APP VIEWS -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-3 py-4">
-
-      <!-- VIEW 1: GRID -->
+<!-- VIEW 1: GRID -->
       <section id="view-grid" class="space-y-4">
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-3 flex flex-wrap items-center justify-between gap-3">
           <div class="flex flex-wrap items-center gap-2">
@@ -270,13 +269,17 @@
               type="button"
               onclick="printWorksheet()"
               class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-sm"
-<button
-  type="button"
-  onclick="switchMainView('reconcile')"
-  class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm"
->
-  ⏭ Roll End → Start (Next Shift)
-</button>
+            >
+              <span>🖨 Print</span>
+            </button>
+            <button
+              type="button"
+              onclick="switchMainView('reconcile')"
+              class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm"
+            >
+              ⏭ Roll End → Start (Next Shift)
+            </button>
+            <button
               type="button"
               onclick="exportCurrentLocationBackup()"
               class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm"
@@ -295,6 +298,10 @@
               onclick="document.getElementById('restore-location-backup-input').click()"
               class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs px-3 py-2 rounded-lg border border-slate-300"
             >
+              📂 Restore Backup
+            </button>
+          </div>
+        </div>
               📂 Restore Backup
             </button>
           </div>
