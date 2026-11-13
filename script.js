@@ -1061,17 +1061,14 @@ function executeUnifiedPrint(formatChoice) {
 
   document.getElementById('modal-print-worksheet-choice').classList.add('hidden');
   
-  // 1. Generate Print directly via DOM container (Zero blank windows/tabs)
   if (formatChoice === 'thermal') {
     printThermalReceiptDirect();
   } else {
     printWorksheetDirect();
   }
 
-  // 2. Silent Background Auto-Backup
   downloadFullTabletBackup(true);
 
-  // 3. End-shift prompt
   setTimeout(() => {
     if (confirm('Worksheet printed and system backed up successfully in the background!\n\nWould you like to end the shift and start a new shift now?')) {
       advanceEndToStartForNewShift();
@@ -1088,6 +1085,20 @@ function printThermalReceiptDirect() {
     document.body.appendChild(printContainer);
   }
 
+  // Dynamically inject 80mm roll width & zero-margin @page rules
+  let pageStyle = document.getElementById('dynamic-print-page-style');
+  if (!pageStyle) {
+    pageStyle = document.createElement('style');
+    pageStyle.id = 'dynamic-print-page-style';
+    document.head.appendChild(pageStyle);
+  }
+  pageStyle.innerHTML = `
+    @page {
+      size: 80mm auto !important;
+      margin: 0mm !important;
+    }
+  `;
+
   const totals = recalculateReconciliationTotals();
   const dateStr = document.getElementById('rec-report-date')?.value || new Date().toLocaleDateString();
   const shiftStr = document.getElementById('rec-shift-type')?.value || 'Shift 1';
@@ -1103,13 +1114,13 @@ function printThermalReceiptDirect() {
       const startNum = box.startTicket !== '' && box.startTicket !== undefined ? box.startTicket : 0;
       const endNum = box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '-';
       itemsHtml += `
-        <div style="border-bottom: 1px dashed #000; padding: 4px 0;">
-          <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 13px;">
-            <span>BOX ${box.boxNumber} • #${box.gameNum} ($${box.price})</span>
+        <div style="border-bottom: 1px dashed #000; padding: 3px 0;">
+          <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 12px;">
+            <span>B#${box.boxNumber} • #${box.gameNum} ($${box.price})</span>
             <span>$${m.dollarSales.toFixed(2)}</span>
           </div>
-          <div style="display: flex; justify-content: space-between; font-size: 11px; margin-top: 1px;">
-            <span style="max-width: 56%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${box.gameName || 'GAME #' + box.gameNum}</span>
+          <div style="display: flex; justify-content: space-between; font-size: 11px;">
+            <span style="max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${box.gameName || 'GAME #' + box.gameNum}</span>
             <span style="font-weight: bold;">#${startNum}→#${endNum} (${m.ticketsSold}${roCount > 0 ? '*' : ''} tix)</span>
           </div>
         </div>
@@ -1118,131 +1129,77 @@ function printThermalReceiptDirect() {
   });
 
   const sigImg = currentSignatureDataUrl
-    ? `<img src="${currentSignatureDataUrl}" style="max-height: 42px; max-width: 200px; object-fit: contain; display: block; margin: 0 auto;" />`
-    : `<div style="height: 30px; border-bottom: 1px solid #000; width: 85%; margin: 0 auto;"></div>`;
+    ? `<img src="${currentSignatureDataUrl}" style="max-height: 40px; max-width: 190px; object-fit: contain; display: block; margin: 0 auto;" />`
+    : `<div style="height: 28px; border-bottom: 1px solid #000; width: 85%; margin: 0 auto;"></div>`;
 
   const signPrefix = totals.variance > 0 ? '+' : '';
 
   printContainer.innerHTML = `
     <style>
-      @page {
-        size: 80mm auto;
-        margin: 0mm;
-      }
       @media print {
         html, body {
           width: 80mm !important;
-          min-width: 80mm !important;
-          max-width: 80mm !important;
-          height: auto !important;
-          max-height: none !important;
           margin: 0 !important;
           padding: 0 !important;
-          overflow: visible !important;
           background: #fff !important;
           color: #000 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-          zoom: 1 !important;
-          transform: none !important;
         }
-        body > header,
-        body > main,
-        body > div.fixed,
-        #app-shell,
-        .no-print {
+        body > *:not(#print-container) {
           display: none !important;
         }
         #print-container {
           display: block !important;
-          width: 80mm !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          overflow: visible !important;
-        }
-        .thermal-receipt-wrapper {
           width: 76mm !important;
           margin: 0 auto !important;
-          box-sizing: border-box !important;
-          padding: 2mm 1mm 12mm 1mm !important; /* 12mm bottom feed ensures clean auto-cut */
+          padding: 2mm 0 10mm 0 !important;
           font-family: 'Courier New', Courier, monospace !important;
           font-size: 12px !important;
-          line-height: 1.3 !important;
+          line-height: 1.25 !important;
           color: #000 !important;
-          page-break-after: always !important;
-          break-after: page !important;
+          page-break-inside: avoid !important;
+          page-break-after: avoid !important;
+          break-after: avoid !important;
         }
       }
     </style>
 
-    <div class="thermal-receipt-wrapper">
-      <!-- Store Header -->
-      <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 6px;">
-        <div style="font-weight: 900; font-size: 16px; text-transform: uppercase;">
+    <div>
+      <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 4px;">
+        <div style="font-weight: 900; font-size: 15px; text-transform: uppercase;">
           ${storeProfile.name} (#${storeProfile.number})
         </div>
-        ${storeProfile.address ? `<div style="font-size: 11px; margin-top: 2px;">${storeProfile.address}</div>` : ''}
-        <div style="font-size: 12px; font-weight: bold; margin-top: 4px;">
+        ${storeProfile.address ? `<div style="font-size: 10px;">${storeProfile.address}</div>` : ''}
+        <div style="font-size: 11px; font-weight: bold; margin-top: 2px;">
           80mm THERMAL WORKSHEET
         </div>
-        <div style="font-size: 11px; margin-top: 2px;">
-          Date: <strong>${dateStr}</strong><br>
-          Shift: <strong>${shiftStr}</strong><br>
+        <div style="font-size: 11px;">
+          Date: <strong>${dateStr}</strong> | ${shiftStr}<br>
           Cashier: <strong>${cashierStr}</strong>
         </div>
       </div>
 
-      <!-- Ticket Rows (Unlimited Continuous Height) -->
-      <div style="margin-bottom: 8px;">
-        ${itemsHtml || '<div style="text-align:center; padding: 10px 0;">No active boxes assigned.</div>'}
+      <div style="margin-bottom: 6px;">
+        ${itemsHtml || '<div style="text-align:center; padding: 6px 0;">No active boxes assigned.</div>'}
       </div>
 
-      <!-- Reconciliation Summary Totals -->
-      <div style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 6px 0; font-size: 13px; font-weight: bold; line-height: 1.4;">
-        <div style="display: flex; justify-content: space-between;">
-          <span>TOTAL TIX SOLD:</span>
-          <span>${totals.totalTickets} tix</span>
-        </div>
-        <div style="display: flex; justify-content: space-between;">
-          <span>SCRATCH SALES:</span>
-          <span>$${totals.scratchSales.toFixed(2)}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between;">
-          <span>ONLINE SALES:</span>
-          <span>$${totals.onlineSales.toFixed(2)}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between;">
-          <span>SCRATCH CASHED:</span>
-          <span>-$${totals.scratchCashed.toFixed(2)}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between;">
-          <span>ONLINE CASHED:</span>
-          <span>-$${totals.onlineCashed.toFixed(2)}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; border-top: 1px dashed #000; margin-top: 3px; padding-top: 3px;">
-          <span>EXPECTED NET:</span>
-          <span>$${totals.expectedNet.toFixed(2)}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between;">
-          <span>POS ACTUAL:</span>
-          <span>$${totals.posActual.toFixed(2)}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 900; border-top: 1px solid #000; margin-top: 3px; padding-top: 3px;">
-          <span>VARIANCE:</span>
-          <span>${signPrefix}$${totals.variance.toFixed(2)}</span>
-        </div>
+      <div style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 4px 0; font-size: 12px; font-weight: bold; line-height: 1.35;">
+        <div style="display: flex; justify-content: space-between;"><span>TOTAL TIX SOLD:</span><span>${totals.totalTickets} tix</span></div>
+        <div style="display: flex; justify-content: space-between;"><span>SCRATCH SALES:</span><span>$${totals.scratchSales.toFixed(2)}</span></div>
+        <div style="display: flex; justify-content: space-between;"><span>ONLINE SALES:</span><span>$${totals.onlineSales.toFixed(2)}</span></div>
+        <div style="display: flex; justify-content: space-between;"><span>SCRATCH CASHED:</span><span>-$${totals.scratchCashed.toFixed(2)}</span></div>
+        <div style="display: flex; justify-content: space-between;"><span>ONLINE CASHED:</span><span>-$${totals.onlineCashed.toFixed(2)}</span></div>
+        <div style="display: flex; justify-content: space-between; border-top: 1px dashed #000; margin-top: 2px; padding-top: 2px;"><span>EXPECTED NET:</span><span>$${totals.expectedNet.toFixed(2)}</span></div>
+        <div style="display: flex; justify-content: space-between;"><span>POS ACTUAL:</span><span>$${totals.posActual.toFixed(2)}</span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 900; border-top: 1px solid #000; margin-top: 2px; padding-top: 2px;"><span>VARIANCE:</span><span>${signPrefix}$${totals.variance.toFixed(2)}</span></div>
       </div>
 
-      <!-- Signature & Legal Attestation -->
-      <div style="margin-top: 10px; text-align: center;">
-        <div style="margin-bottom: 4px;">${sigImg}</div>
-        <div style="font-size: 11px; font-weight: 900; text-transform: uppercase;">
-          CASHIER SIGNATURE (${cashierStr})
+      <div style="margin-top: 8px; text-align: center;">
+        <div style="margin-bottom: 2px;">${sigImg}</div>
+        <div style="font-size: 10px; font-weight: 900;">CASHIER SIGNATURE (${cashierStr})</div>
+        <div style="font-size: 9px; font-style: italic; margin-top: 3px;">
+          "I certify these figures are true and accurate."
         </div>
-        <div style="font-size: 10px; font-style: italic; margin-top: 6px; line-height: 1.25;">
-          "I hereby certify that the ticket counts, game numbers, and shift totals recorded are true, complete, and accurate."
-        </div>
-        <div style="font-size: 9px; margin-top: 8px; border-top: 1px dashed #000; padding-top: 4px;">
+        <div style="font-size: 9px; margin-top: 4px; border-top: 1px dashed #000; padding-top: 3px;">
           Printed: ${new Date().toLocaleString()}
         </div>
       </div>
@@ -1251,6 +1208,7 @@ function printThermalReceiptDirect() {
 
   window.print();
 }
+
 function renderMainGridCashierShiftBar() {
   let bar = document.getElementById('main-grid-cashier-shift-bar');
   if (!bar) {
@@ -1302,7 +1260,6 @@ function syncMainGridShift(val) {
     handleShiftTypeChange(val);
   }
 }
-
 function openQuickGameModal(idx) {
   const box = boxes[idx];
   if (!box) return;
@@ -1372,7 +1329,7 @@ function renderMultiStoreModalList() {
         <td class="p-2.5 text-right space-x-1">
           ${!isCurrent ? `<button type="button" onclick="switchStoreFromModal('${loc.id}')" class="bg-blue-600 text-white text-[11px] px-2.5 py-1 rounded">Switch</button>` : ''}
           <button type="button" onclick="exportSpecificLocationBackup('${loc.id}')" class="bg-slate-700 text-white text-[11px] px-2.5 py-1 rounded">⬇ Store</button>
-          <button type="button" onclick="deleteStoreLocation('${loc.id}')" class="bg-red-100 text-red-700 text-[11px] px-2 py-1 rounded">Delete</button>
+          <button type="button" onclick="deleteStoreLocation('${loc.id}')" class="bg-red-100 text-red-700 text-[11px] px-2.5 py-1 rounded">Delete</button>
         </td>
       </tr>
     `;
@@ -1418,6 +1375,7 @@ function deleteStoreLocation(locId) {
   renderMultiStoreModalList();
   populateLocationSwitcherDropdown();
 }
+
 /* ==========================================================================
    PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 6 OF 7)
    ========================================================================== */
@@ -1469,7 +1427,6 @@ function buildFullTabletBackupPayload() {
   };
 }
 
-// Completely silent background backup (stored in local IndexedDB/localStorage rolling cache without popup prompts)
 function executeSilentBackgroundBackup(slotLabel = 'MANUAL') {
   const payload = buildFullTabletBackupPayload();
   try {
@@ -1624,11 +1581,10 @@ function sendNightlyEmailBackupToOwner(isScheduled11PM = false) {
   window.open(`mailto:${targetEmail}?subject=${subject}&body=${body}`, '_blank');
 }
 
-// Twice-daily silent background backup scheduler (2:00 PM & 11:00 PM)
 function startTwiceDailyBackupScheduler() {
   setInterval(() => {
     const now = new Date();
-    const hour = now.getHours(); // 14 = 2:00 PM, 23 = 11:00 PM
+    const hour = now.getHours();
     const todayStr = now.toISOString().slice(0, 10);
 
     const last2PM = localStorage.getItem('project_lotto_last_2pm_backup_date');
@@ -1803,14 +1759,12 @@ function finalizeAndSaveShiftReport() {
   const cashierIn = document.getElementById('rec-cashier-in')?.value?.trim() || '-';
   const notes = document.getElementById('rec-shift-notes')?.value?.trim() || '';
 
-  // Auto-save new cashier name to savedCashiers list
   if (cashierOut && cashierOut !== 'Unspecified Cashier' && !savedCashiers.includes(cashierOut)) {
     savedCashiers.push(cashierOut);
     saveCashiersState();
     renderAdminCashiersTable();
   }
 
-  // Assign strict sequence order: Morning = 1, Evening = 2, Night/Close = 3
   let shiftOrder = 1;
   if (shiftVal.includes('2') || shiftVal.toLowerCase().includes('evening')) shiftOrder = 2;
   else if (shiftVal.includes('3') || shiftVal.toLowerCase().includes('night') || shiftVal.toLowerCase().includes('close')) shiftOrder = 3;
@@ -1837,20 +1791,18 @@ function finalizeAndSaveShiftReport() {
   history.unshift(reportRecord);
   saveLocationHistoricalReports(history, activeLocationId);
 
-   const CLOUDWORKER_SYNC_URL = "https://lottoinventory.dimitriosregas.workers.dev/sync";
+  const CLOUDWORKER_SYNC_URL = "https://lottoinventory.dimitriosregas.workers.dev/sync";
 
-async function syncActiveStoreToCloud() {
-  const payload = buildFullTabletBackupPayload();
-  try {
-    await fetch(`${CLOUDWORKER_SYNC_URL}?storeId=${activeLocationId}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-  } catch (err) {
-    // Fails silently offline so local device storage takes over without interruption
+  async function syncActiveStoreToCloud() {
+    const payload = buildFullTabletBackupPayload();
+    try {
+      await fetch(`${CLOUDWORKER_SYNC_URL}?storeId=${activeLocationId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+    } catch (err) {}
   }
-}
    
   const ind = document.getElementById('last-archived-indicator');
   if (ind) ind.textContent = `✔ Archived ${normalizedDate} (${shiftVal}) at ${new Date().toLocaleTimeString()}`;
@@ -1897,7 +1849,6 @@ function executeReportLookup() {
     filtered = allHistory.filter(r => r.date === filterDate);
   }
 
-  // Sort filtered reports so Morning (Shift 1) always comes first
   filtered.sort((a, b) => (a.shiftSequence || 1) - (b.shiftSequence || 1));
 
   let sumScratch = 0, sumExpected = 0, sumVariance = 0;
@@ -1984,26 +1935,7 @@ function saveNewMasterGameManual() {
   const idx = masterGames.findIndex(g => String(g.gameNum).trim() === gNum);
   if (idx >= 0) masterGames[idx] = newEntry;
   else masterGames.push(newEntry);
-function sanitizeMasterGamesList(gamesArray) {
-  if (!Array.isArray(gamesArray)) return [];
-  const uniqueMap = new Map();
-  
-  // Iterate through and ensure each gameNum is strictly unique, merging duplicates safely
-  gamesArray.forEach(g => {
-    if (g && g.gameNum) {
-      const cleanNum = String(g.gameNum).trim();
-      uniqueMap.set(cleanNum, {
-        gameNum: cleanNum,
-        name: (g.name || `GAME #${cleanNum}`).toUpperCase(),
-        price: Number(g.price) || 1,
-        count: Number(g.count) || getDefaultRollCountForPrice(Number(g.price) || 1)
-      });
-    }
-  });
-  
-  return Array.from(uniqueMap.values());
-}
-   
+
   masterGames = sanitizeMasterGamesList(masterGames);
   saveGamesState();
 
@@ -2156,9 +2088,6 @@ function switchMainView(viewName) {
   }
 }
 
-// --------------------------------------------------------------------------
-// DIRECT CSS PRINT ENGINE (LETTER SIZE 8.5" x 11" — STRICT 1-PAGE FIT)
-// --------------------------------------------------------------------------
 function buildMatrixPrintHTML(repData, isFinalReport = false) {
   const bList = Array.isArray(repData.boxesSnapshot) ? repData.boxesSnapshot : boxes;
   const t = repData.totals || {};
@@ -2267,7 +2196,6 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
               <div><strong>Outgoing Cashier:</strong> ${repData.cashierOut || '&nbsp;'}</div>
               <div><strong>Incoming Cashier:</strong> ${repData.cashierIn || '&nbsp;'}</div>
             </div>
-            <!-- Signature ABOVE Attestation -->
             <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 1px;">
               <div style="height: 22px; min-width: 120px; display: flex; align-items: center; border-bottom: 1px solid #000;">${sigImgHtml}</div>
               <span style="font-size: 6px; font-weight: bold; text-transform: uppercase;">Cashier Signature</span>
@@ -2283,7 +2211,6 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
 }
 
 function printWorksheet() {
-  // Auto-detect midnight date rollover if tablet stayed open overnight
   const todayIso = new Date().toISOString().slice(0, 10);
   const dateInput = document.getElementById('rec-report-date');
   if (dateInput && dateInput.value !== todayIso) {
