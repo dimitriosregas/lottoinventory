@@ -1085,7 +1085,7 @@ function printThermalReceiptDirect() {
     document.body.appendChild(printContainer);
   }
 
-  // Dynamically inject 80mm roll width & zero-margin @page rules
+  // Remove any leftover @page letter rules so the thermal driver uses its native 80mm roll width & auto-cut length
   let pageStyle = document.getElementById('dynamic-print-page-style');
   if (!pageStyle) {
     pageStyle = document.createElement('style');
@@ -1094,7 +1094,7 @@ function printThermalReceiptDirect() {
   }
   pageStyle.innerHTML = `
     @page {
-      size: 80mm auto !important;
+      size: auto;
       margin: 0mm !important;
     }
   `;
@@ -1114,13 +1114,13 @@ function printThermalReceiptDirect() {
       const startNum = box.startTicket !== '' && box.startTicket !== undefined ? box.startTicket : 0;
       const endNum = box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '-';
       itemsHtml += `
-        <div style="border-bottom: 1px dashed #000; padding: 3px 0;">
-          <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 12px;">
+        <div style="border-bottom: 1px dashed #000; padding: 3px 0; width: 100%;">
+          <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 14px; width: 100%;">
             <span>B#${box.boxNumber} • #${box.gameNum} ($${box.price})</span>
             <span>$${m.dollarSales.toFixed(2)}</span>
           </div>
-          <div style="display: flex; justify-content: space-between; font-size: 11px;">
-            <span style="max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${box.gameName || 'GAME #' + box.gameNum}</span>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; width: 100%;">
+            <span style="max-width: 58%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${box.gameName || 'GAME #' + box.gameNum}</span>
             <span style="font-weight: bold;">#${startNum}→#${endNum} (${m.ticketsSold}${roCount > 0 ? '*' : ''} tix)</span>
           </div>
         </div>
@@ -1129,8 +1129,8 @@ function printThermalReceiptDirect() {
   });
 
   const sigImg = currentSignatureDataUrl
-    ? `<img src="${currentSignatureDataUrl}" style="max-height: 40px; max-width: 190px; object-fit: contain; display: block; margin: 0 auto;" />`
-    : `<div style="height: 28px; border-bottom: 1px solid #000; width: 85%; margin: 0 auto;"></div>`;
+    ? `<img src="${currentSignatureDataUrl}" style="max-height: 45px; max-width: 90%; object-fit: contain; display: block; margin: 0 auto;" />`
+    : `<div style="height: 28px; border-bottom: 1px solid #000; width: 90%; margin: 0 auto;"></div>`;
 
   const signPrefix = totals.variance > 0 ? '+' : '';
 
@@ -1138,51 +1138,60 @@ function printThermalReceiptDirect() {
     <style>
       @media print {
         html, body {
-          width: 80mm !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          height: auto !important;
+          min-height: 0 !important;
+          max-height: none !important;
           margin: 0 !important;
           padding: 0 !important;
           background: #fff !important;
           color: #000 !important;
+          overflow: visible !important;
         }
         body > *:not(#print-container) {
           display: none !important;
+          height: 0 !important;
+          margin: 0 !important;
+          padding: 0 !important;
         }
         #print-container {
           display: block !important;
-          width: 76mm !important;
-          margin: 0 auto !important;
-          padding: 2mm 0 10mm 0 !important;
+          position: static !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          height: auto !important;
+          margin: 0 !important;
+          padding: 1mm 2mm 4mm 2mm !important;
+          box-sizing: border-box !important;
           font-family: 'Courier New', Courier, monospace !important;
-          font-size: 12px !important;
+          font-size: 13px !important;
           line-height: 1.25 !important;
           color: #000 !important;
-          page-break-inside: avoid !important;
-          page-break-after: avoid !important;
-          break-after: avoid !important;
         }
       }
     </style>
 
-    <div>
-      <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 4px;">
-        <div style="font-weight: 900; font-size: 15px; text-transform: uppercase;">
+    <div style="width: 100%; box-sizing: border-box;">
+      <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 4px; width: 100%;">
+        <div style="font-weight: 900; font-size: 16px; text-transform: uppercase;">
           ${storeProfile.name} (#${storeProfile.number})
         </div>
-        ${storeProfile.address ? `<div style="font-size: 10px;">${storeProfile.address}</div>` : ''}
-        <div style="font-size: 11px; font-weight: bold; margin-top: 2px;">
-          80mm THERMAL WORKSHEET
+        ${storeProfile.address ? `<div style="font-size: 11px;">${storeProfile.address}</div>` : ''}
+        <div style="font-size: 12px; font-weight: bold; margin-top: 2px;">
+          SHIFT LOTTO WORKSHEET
         </div>
-        <div style="font-size: 11px;">
+        <div style="font-size: 12px;">
           Date: <strong>${dateStr}</strong> | ${shiftStr}<br>
           Cashier: <strong>${cashierStr}</strong>
         </div>
       </div>
 
-      <div style="margin-bottom: 6px;">
+      <div style="margin-bottom: 6px; width: 100%;">
         ${itemsHtml || '<div style="text-align:center; padding: 6px 0;">No active boxes assigned.</div>'}
       </div>
 
-      <div style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 4px 0; font-size: 12px; font-weight: bold; line-height: 1.35;">
+      <div style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 4px 0; font-size: 13px; font-weight: bold; line-height: 1.35; width: 100%;">
         <div style="display: flex; justify-content: space-between;"><span>TOTAL TIX SOLD:</span><span>${totals.totalTickets} tix</span></div>
         <div style="display: flex; justify-content: space-between;"><span>SCRATCH SALES:</span><span>$${totals.scratchSales.toFixed(2)}</span></div>
         <div style="display: flex; justify-content: space-between;"><span>ONLINE SALES:</span><span>$${totals.onlineSales.toFixed(2)}</span></div>
@@ -1190,16 +1199,16 @@ function printThermalReceiptDirect() {
         <div style="display: flex; justify-content: space-between;"><span>ONLINE CASHED:</span><span>-$${totals.onlineCashed.toFixed(2)}</span></div>
         <div style="display: flex; justify-content: space-between; border-top: 1px dashed #000; margin-top: 2px; padding-top: 2px;"><span>EXPECTED NET:</span><span>$${totals.expectedNet.toFixed(2)}</span></div>
         <div style="display: flex; justify-content: space-between;"><span>POS ACTUAL:</span><span>$${totals.posActual.toFixed(2)}</span></div>
-        <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 900; border-top: 1px solid #000; margin-top: 2px; padding-top: 2px;"><span>VARIANCE:</span><span>${signPrefix}$${totals.variance.toFixed(2)}</span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 900; border-top: 1px solid #000; margin-top: 2px; padding-top: 2px;"><span>VARIANCE:</span><span>${signPrefix}$${totals.variance.toFixed(2)}</span></div>
       </div>
 
-      <div style="margin-top: 8px; text-align: center;">
+      <div style="margin-top: 8px; text-align: center; width: 100%;">
         <div style="margin-bottom: 2px;">${sigImg}</div>
-        <div style="font-size: 10px; font-weight: 900;">CASHIER SIGNATURE (${cashierStr})</div>
-        <div style="font-size: 9px; font-style: italic; margin-top: 3px;">
+        <div style="font-size: 11px; font-weight: 900;">CASHIER SIGNATURE (${cashierStr})</div>
+        <div style="font-size: 10px; font-style: italic; margin-top: 2px;">
           "I certify these figures are true and accurate."
         </div>
-        <div style="font-size: 9px; margin-top: 4px; border-top: 1px dashed #000; padding-top: 3px;">
+        <div style="font-size: 10px; margin-top: 4px; border-top: 1px dashed #000; padding-top: 2px;">
           Printed: ${new Date().toLocaleString()}
         </div>
       </div>
@@ -1803,7 +1812,8 @@ function finalizeAndSaveShiftReport() {
       });
     } catch (err) {}
   }
-   
+  syncActiveStoreToCloud();
+
   const ind = document.getElementById('last-archived-indicator');
   if (ind) ind.textContent = `✔ Archived ${normalizedDate} (${shiftVal}) at ${new Date().toLocaleTimeString()}`;
 
@@ -2088,7 +2098,166 @@ function switchMainView(viewName) {
   }
 }
 
+// --------------------------------------------------------------------------
+// 80mm THERMAL RECEIPT OVERRIDE (100% FULL WIDTH + AUTO-CUT + NO BLANK FEED)
+// --------------------------------------------------------------------------
+function printThermalReceiptDirect() {
+  let printContainer = document.getElementById('print-container');
+  if (!printContainer) {
+    printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    document.body.appendChild(printContainer);
+  }
+
+  let pageStyle = document.getElementById('dynamic-print-page-style');
+  if (!pageStyle) {
+    pageStyle = document.createElement('style');
+    pageStyle.id = 'dynamic-print-page-style';
+    document.head.appendChild(pageStyle);
+  }
+  pageStyle.innerHTML = `
+    @page {
+      size: auto;
+      margin: 0mm !important;
+    }
+  `;
+
+  const totals = recalculateReconciliationTotals();
+  const dateStr = document.getElementById('rec-report-date')?.value || new Date().toLocaleDateString();
+  const shiftStr = document.getElementById('rec-shift-type')?.value || 'Shift 1';
+  const cashierStr = document.getElementById('print-modal-cashier-input')?.value || 'Manager';
+
+  let itemsHtml = '';
+  boxes.forEach((box) => {
+    const m = calculateBoxMetrics(box);
+    const hasGame = Boolean(box.gameNum);
+    const roCount = Array.isArray(box.rollovers) ? box.rollovers.length : 0;
+
+    if (hasGame) {
+      const startNum = box.startTicket !== '' && box.startTicket !== undefined ? box.startTicket : 0;
+      const endNum = box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '-';
+      itemsHtml += `
+        <div style="border-bottom: 1px dashed #000; padding: 3px 0; width: 100%;">
+          <div style="display: flex; justify-content: space-between; font-weight: 900; font-size: 14px; width: 100%;">
+            <span>B#${box.boxNumber} • #${box.gameNum} ($${box.price})</span>
+            <span>$${m.dollarSales.toFixed(2)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; width: 100%;">
+            <span style="max-width: 58%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${box.gameName || 'GAME #' + box.gameNum}</span>
+            <span style="font-weight: bold;">#${startNum}→#${endNum} (${m.ticketsSold}${roCount > 0 ? '*' : ''} tix)</span>
+          </div>
+        </div>
+      `;
+    }
+  });
+
+  const sigImg = currentSignatureDataUrl
+    ? `<img src="${currentSignatureDataUrl}" style="max-height: 45px; max-width: 90%; object-fit: contain; display: block; margin: 0 auto;" />`
+    : `<div style="height: 28px; border-bottom: 1px solid #000; width: 90%; margin: 0 auto;"></div>`;
+
+  const signPrefix = totals.variance > 0 ? '+' : '';
+
+  printContainer.innerHTML = `
+    <style>
+      @media print {
+        html, body {
+          width: 100% !important;
+          max-width: 100% !important;
+          height: auto !important;
+          min-height: 0 !important;
+          max-height: none !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: #fff !important;
+          color: #000 !important;
+          overflow: visible !important;
+        }
+        body > *:not(#print-container) {
+          display: none !important;
+          height: 0 !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+        #print-container {
+          display: block !important;
+          position: static !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          height: auto !important;
+          margin: 0 !important;
+          padding: 1mm 2mm 4mm 2mm !important;
+          box-sizing: border-box !important;
+          font-family: 'Courier New', Courier, monospace !important;
+          font-size: 13px !important;
+          line-height: 1.25 !important;
+          color: #000 !important;
+        }
+      }
+    </style>
+
+    <div style="width: 100%; box-sizing: border-box;">
+      <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 4px; width: 100%;">
+        <div style="font-weight: 900; font-size: 16px; text-transform: uppercase;">
+          ${storeProfile.name} (#${storeProfile.number})
+        </div>
+        ${storeProfile.address ? `<div style="font-size: 11px;">${storeProfile.address}</div>` : ''}
+        <div style="font-size: 12px; font-weight: bold; margin-top: 2px;">
+          SHIFT LOTTO WORKSHEET
+        </div>
+        <div style="font-size: 12px;">
+          Date: <strong>${dateStr}</strong> | ${shiftStr}<br>
+          Cashier: <strong>${cashierStr}</strong>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 6px; width: 100%;">
+        ${itemsHtml || '<div style="text-align:center; padding: 6px 0;">No active boxes assigned.</div>'}
+      </div>
+
+      <div style="border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 4px 0; font-size: 13px; font-weight: bold; line-height: 1.35; width: 100%;">
+        <div style="display: flex; justify-content: space-between;"><span>TOTAL TIX SOLD:</span><span>${totals.totalTickets} tix</span></div>
+        <div style="display: flex; justify-content: space-between;"><span>SCRATCH SALES:</span><span>$${totals.scratchSales.toFixed(2)}</span></div>
+        <div style="display: flex; justify-content: space-between;"><span>ONLINE SALES:</span><span>$${totals.onlineSales.toFixed(2)}</span></div>
+        <div style="display: flex; justify-content: space-between;"><span>SCRATCH CASHED:</span><span>-$${totals.scratchCashed.toFixed(2)}</span></div>
+        <div style="display: flex; justify-content: space-between;"><span>ONLINE CASHED:</span><span>-$${totals.onlineCashed.toFixed(2)}</span></div>
+        <div style="display: flex; justify-content: space-between; border-top: 1px dashed #000; margin-top: 2px; padding-top: 2px;"><span>EXPECTED NET:</span><span>$${totals.expectedNet.toFixed(2)}</span></div>
+        <div style="display: flex; justify-content: space-between;"><span>POS ACTUAL:</span><span>$${totals.posActual.toFixed(2)}</span></div>
+        <div style="display: flex; justify-content: space-between; font-size: 15px; font-weight: 900; border-top: 1px solid #000; margin-top: 2px; padding-top: 2px;"><span>VARIANCE:</span><span>${signPrefix}$${totals.variance.toFixed(2)}</span></div>
+      </div>
+
+      <div style="margin-top: 8px; text-align: center; width: 100%;">
+        <div style="margin-bottom: 2px;">${sigImg}</div>
+        <div style="font-size: 11px; font-weight: 900;">CASHIER SIGNATURE (${cashierStr})</div>
+        <div style="font-size: 10px; font-style: italic; margin-top: 2px;">
+          "I certify these figures are true and accurate."
+        </div>
+        <div style="font-size: 10px; margin-top: 4px; border-top: 1px dashed #000; padding-top: 2px;">
+          Printed: ${new Date().toLocaleString()}
+        </div>
+      </div>
+    </div>
+  `;
+
+  window.print();
+}
+
+// --------------------------------------------------------------------------
+// DIRECT CSS PRINT ENGINE (LETTER SIZE 8.5" x 11" — STRICT 1-PAGE FIT)
+// --------------------------------------------------------------------------
 function buildMatrixPrintHTML(repData, isFinalReport = false) {
+  let pageStyle = document.getElementById('dynamic-print-page-style');
+  if (!pageStyle) {
+    pageStyle = document.createElement('style');
+    pageStyle.id = 'dynamic-print-page-style';
+    document.head.appendChild(pageStyle);
+  }
+  pageStyle.innerHTML = `
+    @page {
+      size: letter portrait;
+      margin: 0.15in 0.2in;
+    }
+  `;
+
   const bList = Array.isArray(repData.boxesSnapshot) ? repData.boxesSnapshot : boxes;
   const t = repData.totals || {};
   const variance = Number(t.variance) || 0;
@@ -2119,10 +2288,6 @@ function buildMatrixPrintHTML(repData, isFinalReport = false) {
 
   return `
     <style>
-      @page {
-        size: letter portrait;
-        margin: 0.15in 0.2in;
-      }
       @media print {
         html, body {
           margin: 0 !important;
