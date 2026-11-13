@@ -72,7 +72,7 @@ let isDrawingSignature = false;
 let sigCanvas = null;
 let sigCtx = null;
 let lastActiveViewName = 'grid';
-let globalPrintFontSizePt = 13; // Default 13pt readable size
+let globalPrintFontSizePt = 11; // Default 11pt readable size
 const STORAGE_KEY_PRINT_FONT_SIZE = 'project_lotto_print_font_size_v1';
 
 function getDefaultRollCountForPrice(price) {
