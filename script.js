@@ -1228,22 +1228,18 @@ function printThermalReceiptDirect() {
   doc.setFontSize(basePt - 2);
   doc.text(new Date().toLocaleString(), pageWidth / 2, y, { align: 'center' });
 
-  // Generate PDF and instantly trigger print preview
+// Automatically save and download a permanent digital copy to your device with timestamp
   const pdfBlob = doc.output('blob');
   const pdfUrl = URL.createObjectURL(pdfBlob);
-  const printWindow = window.open(pdfUrl, '_blank');
-  if (printWindow) {
-    printWindow.onload = () => {
-      setTimeout(() => printWindow.print(), 250);
-    };
-  } else {
-    const downloadLink = document.createElement('a');
-    downloadLink.href = pdfUrl;
-    downloadLink.download = `LottoReceipt_${storeProfile.number}_${dateStr.replace(/[/]/g, '-')}.pdf`;
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-  }
+  
+  const timestampStr = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16);
+  const downloadLink = document.createElement('a');
+  downloadLink.href = pdfUrl;
+  downloadLink.download = `LottoReceipt_${storeProfile.number}_${timestampStr}.pdf`;
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  document.body.removeChild(downloadLink);
+  
   setTimeout(() => URL.revokeObjectURL(pdfUrl), 3000);
 }
 
