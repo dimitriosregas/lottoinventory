@@ -1086,7 +1086,7 @@ function executeUnifiedPrint(formatChoice) {
 function printThermalReceiptDirect() {
   const { jsPDF } = window.jspdf;
   if (!jsPDF) {
-    alert('jsPDF library is loading. Please try again in a moment.');
+    alert('jsPDF library is still loading. Please try again in a moment.');
     return;
   }
 
@@ -1101,7 +1101,7 @@ function printThermalReceiptDirect() {
   boxes.forEach(b => { if (b.gameNum) activeItemsCount++; });
   const dynamicHeightMm = Math.max(120, 75 + (activeItemsCount * 8) + (currentSignatureDataUrl ? 35 : 0));
 
-  // Initialize jsPDF strictly for 80mm (3 1/8") thermal roll width
+  // Initialize jsPDF strictly for 3 1/8" (80mm) thermal roll width with continuous length
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -1112,7 +1112,6 @@ function printThermalReceiptDirect() {
   let y = 6;
   const pageWidth = 80;
   const margin = 4;
-  const usableWidth = pageWidth - (margin * 2);
 
   // Store Header
   doc.setFont('Courier', 'bold');
@@ -1195,17 +1194,20 @@ function printThermalReceiptDirect() {
     y += 6;
   }
 
-  // Trigger direct PDF print / view popup
-  const pdfBlobUrl = doc.output('bloburl');
-  const printWindow = window.open(pdfBlobUrl, '_blank');
-  if (printWindow) {
-    printWindow.onload = () => {
-      printWindow.print();
-    };
-  } else {
-    // Fallback download if popup blocker stops new tab
-    doc.save(`LottoReceipt_${dateStr.replace(/[/]/g, '-')}.pdf`);
-  }
+  // Generate PDF and open in browser PDF viewer for instant printing
+  const pdfBlob = doc.output('blob');
+  const pdfUrl = URL.createObjectURL(pdfBlob);
+  
+  // Create an anchor element to trigger clean download/view without popup blocker restrictions
+  const downloadLink = document.createElement('a');
+  downloadLink.href = pdfUrl;
+  downloadLink.target = '_blank';
+  downloadLink.download = `LottoReceipt_${storeProfile.number}_${dateStr.replace(/[/]/g, '-')}.pdf`;
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  document.body.removeChild(downloadLink);
+  
+  setTimeout(() => URL.revokeObjectURL(pdfUrl), 3000);
 }
 
 function renderMainGridCashierShiftBar() {
