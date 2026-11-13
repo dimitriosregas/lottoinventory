@@ -1120,16 +1120,18 @@ function printThermalReceiptDirect() {
   printContainer.innerHTML = `
     <style>
       @media print {
+        html, body, #print-container, #print-container * {
+          font-family: 'Courier New', Courier, monospace !important;
+          font-size: ${baseSize}pt !important;
+          line-height: 1.25 !important;
+          color: #000 !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
         html, body {
           width: 80mm !important;
           margin: 0 !important;
           padding: 2mm !important;
-          font-family: monospace !important;
-          font-size: ${baseSize}pt !important;
-          font-weight: bold !important;
-          color: #000 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
         }
         body > header, body > main, body > div.fixed, #app-shell, .no-print {
           display: none !important;
@@ -1138,12 +1140,20 @@ function printThermalReceiptDirect() {
           display: block !important;
           width: 100% !important;
         }
+        .print-store-title {
+          font-size: ${storeNameSize}pt !important;
+          font-weight: 900 !important;
+        }
+        .print-variance-row {
+          font-size: ${varianceSize}pt !important;
+          font-weight: 900 !important;
+        }
       }
     </style>
-    <div style="width: 76mm; font-family: monospace; font-size: ${baseSize}pt; font-weight: bold; color: #000; line-height: 1.3; padding: 4px;">
-      <div style="text-align: center; font-weight: 900; font-size: ${storeNameSize}pt; text-transform: uppercase;">${storeProfile.name} (#${storeProfile.number})</div>
-      ${storeAddr ? `<div style="text-align: center; font-size: ${Math.round(baseSize*0.85)}pt;">${storeAddr}</div>` : ''}
-      <div style="text-align: center; border-bottom: 1.5px dashed #000; padding-bottom: 4px; margin-bottom: 6px; font-size: ${baseSize}pt;">
+    <div style="width: 76mm; font-family: monospace; color: #000; padding: 4px;">
+      <div style="text-align: center; text-transform: uppercase;" class="print-store-title">${storeProfile.name} (#${storeProfile.number})</div>
+      ${storeAddr ? `<div style="text-align: center;">${storeAddr}</div>` : ''}
+      <div style="text-align: center; border-bottom: 1.5px dashed #000; padding-bottom: 4px; margin-bottom: 6px;">
         THERMAL WORKSHEET<br>Date: ${dateStr} | ${shiftStr}<br>Cashier: ${cashierStr}
       </div>
       <div style="margin-bottom: 8px;">${itemsHtml}</div>
@@ -1151,11 +1161,11 @@ function printThermalReceiptDirect() {
         <div style="display: flex; justify-content: space-between;"><span>TOTAL SALES:</span><span>$${totals.scratchSales.toFixed(2)}</span></div>
         <div style="display: flex; justify-content: space-between;"><span>EXPECTED NET:</span><span>$${totals.expectedNet.toFixed(2)}</span></div>
         <div style="display: flex; justify-content: space-between;"><span>POS ACTUAL:</span><span>$${totals.posActual.toFixed(2)}</span></div>
-        <div style="display: flex; justify-content: space-between; font-size: ${varianceSize}pt; margin-top: 4px;"><span>VARIANCE:</span><span>$${totals.variance.toFixed(2)}</span></div>
+        <div style="display: flex; justify-content: space-between; margin-top: 4px;" class="print-variance-row"><span>VARIANCE:</span><span>$${totals.variance.toFixed(2)}</span></div>
       </div>
       <div style="margin-top: 12px; border-top: 1.5px dashed #000; padding-top: 6px; text-align: center;">
         <div style="margin-bottom: 4px;">${sigImg}</div>
-        <div style="font-size: ${baseSize}pt; font-weight: 900;">CASHIER SIGNATURE</div>
+        <div style="font-weight: 900;">CASHIER SIGNATURE</div>
       </div>
     </div>
   `;
