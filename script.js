@@ -1084,11 +1084,10 @@ function executeUnifiedPrint(formatChoice) {
 }
 
 function printThermalReceiptDirect() {
-  let printContainer = document.getElementById('print-container');
-  if (!printContainer) {
-    printContainer = document.createElement('div');
-    printContainer.id = 'print-container';
-    document.body.appendChild(printContainer);
+  const { jsPDF } = window.jspdf;
+  if (!jsPDF) {
+    alert('jsPDF library is loading. Please try again in a moment.');
+    return;
   }
 
   const totals = recalculateReconciliationTotals();
@@ -1097,87 +1096,116 @@ function printThermalReceiptDirect() {
   const cashierStr = document.getElementById('print-modal-cashier-input')?.value || 'Manager';
   const storeAddr = storeProfile.address || 'Sparta, TN 38583';
 
-  const baseSize = Number(globalPrintFontSizePt) || 13;
-  const storeNameSize = Math.round(baseSize * 1.35);
-  const varianceSize = Math.round(baseSize * 1.2);
+  // Calculate dynamic height based on active items so paper rolls continuously without cutting off
+  let activeItemsCount = 0;
+  boxes.forEach(b => { if (b.gameNum) activeItemsCount++; });
+  const dynamicHeightMm = Math.max(120, 75 + (activeItemsCount * 8) + (currentSignatureDataUrl ? 35 : 0));
 
-  let itemsHtml = '';
+  // Initialize jsPDF strictly for 80mm (3 1/8") thermal roll width
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: [80, dynamicHeightMm]
+  });
+
+  const basePt = Number(globalPrintFontSizePt) || 13;
+  let y = 6;
+  const pageWidth = 80;
+  const margin = 4;
+  const usableWidth = pageWidth - (margin * 2);
+
+  // Store Header
+  doc.setFont('Courier', 'bold');
+  doc.setFontSize(basePt + 3);
+  doc.text(`${storeProfile.name} (#${storeProfile.number})`, pageWidth / 2, y, { align: 'center' });
+  y += 5;
+
+  if (storeAddr) {
+    doc.setFontSize(basePt - 2);
+    doc.text(storeAddr, pageWidth / 2, y, { align: 'center' });
+    y += 4;
+  }
+
+  doc.setFontSize(basePt);
+  doc.text('THERMAL WORKSHEET', pageWidth / 2, y, { align: 'center' });
+  y += 4;
+
+  doc.setFontSize(basePt - 1);
+  doc.text(`Date: ${dateStr} | ${shiftStr}`, pageWidth / 2, y, { align: 'center' });
+  y += 4;
+  doc.text(`Cashier: ${cashierStr}`, pageWidth / 2, y, { align: 'center' });
+  y += 3;
+
+  doc.setLineDash([0.5, 0.5], 0);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 5;
+
+  // Active Boxes & Sales Items
+  doc.setFontSize(basePt - 1);
   boxes.forEach((box) => {
     const m = calculateBoxMetrics(box);
     if (box.gameNum) {
-      itemsHtml += `
-        <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #000; padding: 4px 0;">
-          <span>B#${box.boxNumber} (#${box.gameNum})</span>
-          <span>${m.ticketsSold} tix = $${m.dollarSales.toFixed(2)}</span>
-        </div>
-      `;
+      const lineText = `B#${box.boxNumber} (#${box.gameNum})`;
+      const salesText = `${m.ticketsSold} tix = $${m.dollarSales.toFixed(2)}`;
+      doc.text(lineText, margin, y);
+      doc.text(salesText, pageWidth - margin, y, { align: 'right' });
+      y += 6;
     }
   });
 
-  const sigImg = currentSignatureDataUrl ? `<img src="${currentSignatureDataUrl}" style="max-height: 45px; max-width: 180px; display: block; margin: 4px auto;" />` : `___________________________`;
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 5;
 
-  printContainer.innerHTML = `
-    <style>
-      @page {
-        size: 80mm auto;
-        margin: 0mm;
-      }
-      @media print {
-        html, body {
-          width: 80mm !important;
-          min-width: 80mm !important;
-          max-width: 80mm !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          background: #fff !important;
-        }
-        body > header, body > main, body > div.fixed, #app-shell, .no-print {
-          display: none !important;
-        }
-        #print-container {
-          display: block !important;
-          width: 76mm !important;
-          margin: 0 auto !important;
-          padding: 2mm !important;
-        }
-        #print-container *, #print-container div, #print-container span {
-          font-family: 'Courier New', Courier, monospace !important;
-          font-size: ${baseSize}pt !important;
-          line-height: 1.3 !important;
-          color: #000 !important;
-          -webkit-print-color-adjust: exact !important;
-          print-color-adjust: exact !important;
-        }
-        .print-store-title {
-          font-size: ${storeNameSize}pt !important;
-          font-weight: 900 !important;
-        }
-        .print-variance-row {
-          font-size: ${varianceSize}pt !important;
-          font-weight: 900 !important;
-        }
-      }
-    </style>
-    <div style="width: 76mm; font-family: monospace; color: #000; padding: 2mm;">
-      <div style="text-align: center; text-transform: uppercase;" class="print-store-title">${storeProfile.name} (#${storeProfile.number})</div>
-      ${storeAddr ? `<div style="text-align: center;">${storeAddr}</div>` : ''}
-      <div style="text-align: center; border-bottom: 1.5px dashed #000; padding-bottom: 4px; margin-bottom: 6px;">
-        THERMAL WORKSHEET<br>Date: ${dateStr} | ${shiftStr}<br>Cashier: ${cashierStr}
-      </div>
-      <div style="margin-bottom: 8px;">${itemsHtml}</div>
-      <div style="border-top: 2px solid #000; padding-top: 6px; font-weight: 900;">
-        <div style="display: flex; justify-content: space-between;"><span>TOTAL SALES:</span><span>$${totals.scratchSales.toFixed(2)}</span></div>
-        <div style="display: flex; justify-content: space-between;"><span>EXPECTED NET:</span><span>$${totals.expectedNet.toFixed(2)}</span></div>
-        <div style="display: flex; justify-content: space-between;"><span>POS ACTUAL:</span><span>$${totals.posActual.toFixed(2)}</span></div>
-        <div style="display: flex; justify-content: space-between; margin-top: 4px;" class="print-variance-row"><span>VARIANCE:</span><span>$${totals.variance.toFixed(2)}</span></div>
-      </div>
-      <div style="margin-top: 12px; border-top: 1.5px dashed #000; padding-top: 6px; text-align: center;">
-        <div style="margin-bottom: 4px;">${sigImg}</div>
-        <div style="font-weight: 900;">CASHIER SIGNATURE</div>
-      </div>
-    </div>
-  `;
-  window.print();
+  // Totals & Variance
+  doc.setFont('Courier', 'bold');
+  doc.setFontSize(basePt);
+  
+  const drawTotalLine = (label, val) => {
+    doc.text(label, margin, y);
+    doc.text(val, pageWidth - margin, y, { align: 'right' });
+    y += 5;
+  };
+
+  drawTotalLine('TOTAL SALES:', `$${totals.scratchSales.toFixed(2)}`);
+  drawTotalLine('EXPECTED NET:', `$${totals.expectedNet.toFixed(2)}`);
+  drawTotalLine('POS ACTUAL:', `$${totals.posActual.toFixed(2)}`);
+  
+  doc.setFontSize(basePt + 2);
+  drawTotalLine('VARIANCE:', `$${totals.variance.toFixed(2)}`);
+  y += 4;
+
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 6;
+
+  // Signature Block
+  doc.setFontSize(basePt);
+  doc.text('CASHIER SIGNATURE', pageWidth / 2, y, { align: 'center' });
+  y += 4;
+
+  if (currentSignatureDataUrl) {
+    try {
+      doc.addImage(currentSignatureDataUrl, 'PNG', (pageWidth - 40) / 2, y, 40, 15);
+      y += 18;
+    } catch (e) {
+      doc.text('___________________________', pageWidth / 2, y, { align: 'center' });
+      y += 6;
+    }
+  } else {
+    doc.text('___________________________', pageWidth / 2, y, { align: 'center' });
+    y += 6;
+  }
+
+  // Trigger direct PDF print / view popup
+  const pdfBlobUrl = doc.output('bloburl');
+  const printWindow = window.open(pdfBlobUrl, '_blank');
+  if (printWindow) {
+    printWindow.onload = () => {
+      printWindow.print();
+    };
+  } else {
+    // Fallback download if popup blocker stops new tab
+    doc.save(`LottoReceipt_${dateStr.replace(/[/]/g, '-')}.pdf`);
+  }
 }
 
 function renderMainGridCashierShiftBar() {
