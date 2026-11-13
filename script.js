@@ -1087,12 +1087,12 @@ function getFormattedStoreAddress() {
   }
   return 'Sparta, TN 38583';
 }
-
 function printThermalReceiptDirect() {
   const totals = recalculateReconciliationTotals();
-  const dateStr = document.getElementById('rec-report-date')?.value || new Date().toLocaleDateString();
-  const shiftStr = document.getElementById('rec-shift-type')?.value || 'Shift 1';
-  const cashierStr = document.getElementById('print-modal-cashier-input')?.value || 'Manager';
+  const dateStr = document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10);
+  const shiftStr = document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
+  const cashierOut = document.getElementById('print-modal-cashier-input')?.value?.trim() || document.getElementById('rec-cashier-out')?.value?.trim() || 'Unspecified';
+  const cashierIn = document.getElementById('rec-cashier-in')?.value?.trim() || '-';
   const storeAddr = getFormattedStoreAddress();
 
   let itemsHtml = '';
@@ -1103,16 +1103,22 @@ function printThermalReceiptDirect() {
 
     if (hasGame) {
       const startNum = box.startTicket !== '' && box.startTicket !== undefined ? box.startTicket : 0;
-      const endNum = box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '-';
+      const hasEnd = box.endTicket !== '' && box.endTicket !== undefined && box.endTicket !== null;
+      const endDisplay = hasEnd ? box.endTicket : '____';
+      const soldDisplay = hasEnd
+        ? `${m.ticketsSold}${roCount > 0 ? '*' : ''} Sold ($${m.dollarSales.toFixed(2)})`
+        : 'Sold:____';
+      const gName = (box.gameName || 'GAME #' + box.gameNum).slice(0, 18);
+
       itemsHtml += `
-        <div class="item-row">
-          <div class="row-flex box-line">
-            <span>BOX ${box.boxNumber} • #${box.gameNum} ($${box.price})</span>
-            <span>$${m.dollarSales.toFixed(2)}</span>
+        <div class="box-item">
+          <div class="row-line top-line">
+            <span>[BOX ${box.boxNumber}] #${box.gameNum} ${gName}</span>
+            <span>$${box.price}</span>
           </div>
-          <div class="row-flex detail-line">
-            <span class="game-title">${box.gameName || 'GAME #' + box.gameNum}</span>
-            <span>#${startNum}→#${endNum} (${m.ticketsSold}${roCount > 0 ? '*' : ''} tix)</span>
+          <div class="row-line bot-line">
+            <span>Start:${startNum} &nbsp;End:${endDisplay}</span>
+            <span>${soldDisplay}</span>
           </div>
         </div>
       `;
@@ -1120,22 +1126,21 @@ function printThermalReceiptDirect() {
   });
 
   const sigImg = currentSignatureDataUrl
-    ? `<img src="${currentSignatureDataUrl}" style="max-height: 60px; max-width: 92%; object-fit: contain; display: block; margin: 0 auto;" />`
-    : `<div style="height: 38px; border-bottom: 2px solid #000; width: 92%; margin: 0 auto;"></div>`;
+    ? `<img src="${currentSignatureDataUrl}" style="max-height: 55px; max-width: 90%; object-fit: contain; display: block; margin: 4px auto;" />`
+    : `<div style="height: 36px;"></div>`;
 
-  const signPrefix = totals.variance > 0 ? '+' : '';
+  const varianceVal = Number(totals.variance) || 0;
+  const varianceDisplay = varianceVal < 0 ? `$-${Math.abs(varianceVal).toFixed(2)}` : `$${varianceVal.toFixed(2)}`;
 
   const receiptHtml = `
     <!DOCTYPE html>
     <html>
     <head>
       <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Lotto_80mm_Receipt_${dateStr.replace(/[^a-zA-Z0-9_-]/g, '-')}</title>
+      <title>Lotto_Count_Worksheet_${dateStr}</title>
       <style>
         @page {
-          size: auto;
-          margin: 0mm !important;
+          margin: 0;
         }
         * {
           box-sizing: border-box;
@@ -1146,13 +1151,12 @@ function printThermalReceiptDirect() {
         }
         html, body {
           width: 100%;
-          max-width: 100%;
           margin: 0;
-          padding: 4px 6px 14px 6px;
+          padding: 2mm 2.5mm 8mm 2.5mm;
           background: #fff;
           color: #000;
-          font-family: Arial, Helvetica, sans-serif;
-          font-size: 12pt;
+          font-family: 'Courier New', Courier, monospace;
+          font-size: 16px;
           font-weight: 700;
           line-height: 1.3;
         }
@@ -1166,9 +1170,9 @@ function printThermalReceiptDirect() {
         .btn {
           flex: 1;
           padding: 10px 6px;
-          font-family: sans-serif;
+          font-family: Arial, sans-serif;
           font-weight: 900;
-          font-size: 12pt;
+          font-size: 14px;
           border: none;
           border-radius: 6px;
           cursor: pointer;
@@ -1180,88 +1184,108 @@ function printThermalReceiptDirect() {
           .no-print-bar { display: none !important; }
           html, body {
             width: 100% !important;
-            max-width: 100% !important;
             margin: 0 !important;
-            padding: 1mm 1.5mm 8mm 1.5mm !important;
+            padding: 1mm 2mm 6mm 2mm !important;
           }
         }
-        .header {
+        .header-center {
           text-align: center;
-          border-bottom: 2.5px solid #000;
-          padding-bottom: 6px;
           margin-bottom: 6px;
-          width: 100%;
         }
-        .store-title {
+        .store-name {
+          font-size: 22px;
           font-weight: 900;
-          font-size: 16pt;
+          letter-spacing: 0.5px;
           text-transform: uppercase;
-          line-height: 1.15;
         }
-        .store-address {
-          font-size: 12pt;
-          font-weight: 700;
+        .store-num {
+          font-size: 16px;
+          font-weight: 900;
+          margin-top: 2px;
+          text-transform: uppercase;
+        }
+        .store-addr {
+          font-size: 15px;
+          font-weight: 800;
           margin-top: 2px;
         }
-        .report-subtitle {
-          font-size: 13pt;
+        .worksheet-banner {
+          font-size: 15px;
           font-weight: 900;
           margin-top: 4px;
-          text-transform: uppercase;
         }
-        .meta-info {
-          font-size: 12pt;
-          font-weight: 700;
-          margin-top: 3px;
-          line-height: 1.25;
+        .meta-block {
+          border-top: 1.5px dashed #000;
+          border-bottom: 2px solid #000;
+          padding: 5px 0;
+          margin-bottom: 4px;
+          font-size: 15.5px;
+          font-weight: 800;
+          line-height: 1.3;
         }
-        .item-row {
+        .meta-row {
+          display: flex;
+        }
+        .meta-label {
+          width: 72px;
+          flex-shrink: 0;
+        }
+        .box-item {
           border-bottom: 1.5px dashed #000;
           padding: 5px 0;
           width: 100%;
         }
-        .row-flex {
+        .row-line {
           display: flex;
           justify-content: space-between;
           align-items: baseline;
           width: 100%;
         }
-        .box-line {
+        .top-line {
+          font-size: 16px;
           font-weight: 900;
-          font-size: 13pt;
         }
-        .detail-line {
-          font-size: 12pt;
+        .bot-line {
+          font-size: 15.5px;
           font-weight: 700;
           margin-top: 2px;
         }
-        .game-title {
-          max-width: 55%;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        .totals-box {
-          border-top: 2.5px solid #000;
-          border-bottom: 2.5px solid #000;
-          padding: 6px 0;
-          margin-top: 6px;
-          font-size: 12.5pt;
+        .totals-section {
+          border-top: 2px solid #000;
+          padding-top: 6px;
+          margin-top: 4px;
+          font-size: 16px;
           font-weight: 800;
           line-height: 1.4;
-          width: 100%;
         }
-        .variance-line {
-          font-size: 15pt;
+        .net-section {
+          border-top: 1.5px dashed #000;
+          border-bottom: 1.5px dashed #000;
+          padding: 5px 0;
+          margin: 5px 0;
+        }
+        .variance-row {
+          font-size: 19px;
           font-weight: 900;
-          border-top: 2px solid #000;
-          margin-top: 4px;
-          padding-top: 4px;
+          padding-top: 2px;
         }
-        .footer {
-          margin-top: 10px;
+        .sig-section {
+          margin-top: 18px;
           text-align: center;
-          width: 100%;
+        }
+        .sig-line {
+          border-top: 1.5px solid #000;
+          width: 88%;
+          margin: 0 auto;
+          padding-top: 4px;
+          font-size: 14px;
+          font-weight: 900;
+          text-transform: uppercase;
+        }
+        .timestamp {
+          font-size: 13.5px;
+          font-weight: 700;
+          margin-top: 6px;
         }
       </style>
     </head>
@@ -1271,37 +1295,46 @@ function printThermalReceiptDirect() {
         <button class="btn btn-close" onclick="window.close()">✕ Close</button>
       </div>
 
-      <div class="header">
-        <div class="store-title">${storeProfile.name} (#${storeProfile.number})</div>
-        <div class="store-address">${storeAddr}</div>
-        <div class="report-subtitle">SHIFT LOTTO WORKSHEET</div>
-        <div class="meta-info">
-          Date: <strong>${dateStr}</strong><br>
-          Shift: <strong>${shiftStr}</strong><br>
-          Cashier: <strong>${cashierStr}</strong>
-        </div>
+      <div class="header-center">
+        <div class="store-name">${storeProfile.name}</div>
+        <div class="store-num">STORE #${storeProfile.number}</div>
+        <div class="store-addr">${storeAddr}</div>
+        <div class="worksheet-banner">*** LOTTO COUNT WORKSHEET ***</div>
+      </div>
+
+      <div class="meta-block">
+        <div class="meta-row"><span class="meta-label">DATE:</span><span>${dateStr}</span></div>
+        <div class="meta-row"><span class="meta-label">SHIFT:</span><span>${shiftStr}</span></div>
+        <div class="meta-row"><span class="meta-label">OUT:</span><span>${cashierOut}</span></div>
+        <div class="meta-row"><span class="meta-label">IN:</span><span>${cashierIn}</span></div>
       </div>
 
       <div>
-        ${itemsHtml || '<div style="text-align:center; padding: 10px 0; font-size: 12pt;">No active boxes assigned.</div>'}
+        ${itemsHtml || '<div style="text-align:center; padding: 10px 0;">No active boxes assigned.</div>'}
       </div>
 
-      <div class="totals-box">
-        <div class="row-flex"><span>TOTAL TIX SOLD:</span><span>${totals.totalTickets} tix</span></div>
-        <div class="row-flex"><span>SCRATCH SALES:</span><span>$${totals.scratchSales.toFixed(2)}</span></div>
-        <div class="row-flex"><span>ONLINE SALES:</span><span>$${totals.onlineSales.toFixed(2)}</span></div>
-        <div class="row-flex"><span>SCRATCH CASHED:</span><span>-$${totals.scratchCashed.toFixed(2)}</span></div>
-        <div class="row-flex"><span>ONLINE CASHED:</span><span>-$${totals.onlineCashed.toFixed(2)}</span></div>
-        <div class="row-flex" style="border-top: 1.5px dashed #000; margin-top: 3px; padding-top: 3px;"><span>EXPECTED NET:</span><span>$${totals.expectedNet.toFixed(2)}</span></div>
-        <div class="row-flex"><span>POS ACTUAL:</span><span>$${totals.posActual.toFixed(2)}</span></div>
-        <div class="row-flex variance-line"><span>VARIANCE:</span><span>${signPrefix}$${totals.variance.toFixed(2)}</span></div>
+      <div class="totals-section">
+        <div class="row-line"><span>TOTAL TICKETS SOLD:</span><span>${totals.totalTickets}</span></div>
+        <div class="row-line"><span>SCRATCH SALES:</span><span>$${totals.scratchSales.toFixed(2)}</span></div>
+        <div class="row-line"><span>ONLINE SALES:</span><span>$${totals.onlineSales.toFixed(2)}</span></div>
+        <div class="row-line"><span>SCRATCH CASHED:</span><span>-$${totals.scratchCashed.toFixed(2)}</span></div>
+        <div class="row-line"><span>ONLINE CASHED:</span><span>-$${totals.onlineCashed.toFixed(2)}</span></div>
+
+        <div class="net-section">
+          <div class="row-line"><span>EXPECTED NET:</span><span>$${totals.expectedNet.toFixed(2)}</span></div>
+          <div class="row-line"><span>POS ACTUAL:</span><span>$${totals.posActual.toFixed(2)}</span></div>
+        </div>
+
+        <div class="row-line variance-row">
+          <span>VARIANCE:</span>
+          <span>${varianceDisplay}</span>
+        </div>
       </div>
 
-      <div class="footer">
-        <div style="margin-bottom: 4px;">${sigImg}</div>
-        <div style="font-size: 12pt; font-weight: 900;">CASHIER SIGNATURE (${cashierStr})</div>
-        <div style="font-size: 10.5pt; font-style: italic; margin-top: 4px;">"I certify these figures are true, complete, and accurate."</div>
-        <div style="font-size: 10.5pt; margin-top: 6px; border-top: 1.5px dashed #000; padding-top: 4px;">Printed: ${new Date().toLocaleString()}</div>
+      <div class="sig-section">
+        ${sigImg}
+        <div class="sig-line">CASHIER SIGNATURE (${cashierOut})</div>
+        <div class="timestamp">${new Date().toLocaleString()}</div>
       </div>
 
       <script>
@@ -1316,16 +1349,15 @@ function printThermalReceiptDirect() {
     </html>
   `;
 
-  const printWin = window.open('', '_blank', 'width=420,height=760,scrollbars=yes');
+  const printWin = window.open('', '_blank', 'width=420,height=780,scrollbars=yes');
   if (printWin) {
     printWin.document.open();
     printWin.document.write(receiptHtml);
     printWin.document.close();
   } else {
-    alert('Please allow pop-ups for this site so the 80mm PDF/Thermal receipt window can open.');
+    alert('Please allow pop-ups for this site so the 80mm receipt window can open.');
   }
 }
-
 function renderMainGridCashierShiftBar() {
   let bar = document.getElementById('main-grid-cashier-shift-bar');
   if (!bar) {
