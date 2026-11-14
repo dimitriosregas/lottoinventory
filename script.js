@@ -781,6 +781,9 @@ function renderDispenserGrid() {
   const container = document.getElementById('dispenser-grid-container');
   if (!container) return;
 
+  const lockAttr = (typeof isBoxEditUnlocked !== 'undefined' && isBoxEditUnlocked) ? '' : 'readonly';
+  const lockStyle = lockAttr ? 'bg-slate-100 text-slate-500 cursor-pointer' : 'bg-white';
+
   if (currentDispenserView === 'list') {
     const rowsHtml = boxes.map((box, idx) => {
       const m = calculateBoxMetrics(box);
@@ -803,7 +806,13 @@ function renderDispenserGrid() {
             ${box.boxNumber || (idx + 1)}
           </td>
           <td style="padding: 6px 8px; text-align: center; font-family: monospace; font-weight: bold;">
-            <input type="text" tabindex="${tabGame}" enterkeyhint="next" id="list-input-gameNum-${idx}" value="${box.gameNum || ''}" oninput="updateBoxFieldDirect(${idx}, 'gameNum', this.value)" onkeydown="handleGameNumKeydown(event, ${idx})" placeholder="Game#" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input font-bold" />
+            <input type="text" ${lockAttr} tabindex="${tabGame}" enterkeyhint="next"
+              id="list-input-gameNum-${idx}" value="${box.gameNum || ''}"
+              onclick="if(!isBoxEditUnlocked) requestBoxEditUnlock(this)"
+              oninput="resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'gameNum', this.value)"
+              onkeydown="handleGameNumKeydown(event, ${idx})"
+              placeholder="Game#"
+              class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input font-bold ${lockStyle}" />
           </td>
           <td id="list-gamename-${idx}" style="padding: 6px 8px; font-weight: 600;">
             <div>${hasGame ? `<strong>#${box.gameNum}</strong> ${box.gameName || ''}` + (box.needsNewGameEntry ? ` <button type="button" tabindex="-1" onclick="openQuickGameModal(${idx})" class="ml-1 text-[10px] font-extrabold underline text-blue-700">+ Register</button>` : '') : '<span class="text-slate-400 italic">Empty Box</span>'}</div>
@@ -811,10 +820,21 @@ function renderDispenserGrid() {
           </td>
           <td id="list-price-${idx}" style="padding: 6px 8px; text-align: center; font-weight: bold; color: #047857;">${hasGame && box.price ? '$' + box.price : '-'}</td>
           <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
-            <input type="number" tabindex="${tabStart}" enterkeyhint="next" id="list-input-startTicket-${idx}" value="${box.startTicket !== '' && box.startTicket !== undefined ? box.startTicket : 0}" oninput="updateBoxFieldDirect(${idx}, 'startTicket', this.value)" onkeydown="handleStartKeydown(event, ${idx})" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input" />
+            <input type="number" ${lockAttr} tabindex="${tabStart}" enterkeyhint="next"
+              id="list-input-startTicket-${idx}" value="${box.startTicket !== '' && box.startTicket !== undefined ? box.startTicket : 0}"
+              onclick="if(!isBoxEditUnlocked) requestBoxEditUnlock(this)"
+              oninput="resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'startTicket', this.value)"
+              onkeydown="handleStartKeydown(event, ${idx})"
+              class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input ${lockStyle}" />
           </td>
           <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
-            <input type="number" tabindex="${tabEnd}" enterkeyhint="next" id="list-input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}" oninput="updateBoxEndTicketLive(${idx}, this.value)" onchange="commitBoxEndTicket(${idx}, this.value)" onkeydown="handleGridEnter(event, ${idx})" placeholder="End#" class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono font-bold lotto-input" />
+            <input type="number" tabindex="${tabEnd}" enterkeyhint="next"
+              id="list-input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}"
+              oninput="updateBoxEndTicketLive(${idx}, this.value)"
+              onchange="commitBoxEndTicket(${idx}, this.value)"
+              onkeydown="handleGridEnter(event, ${idx})"
+              placeholder="End#"
+              class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono font-bold lotto-input" />
           </td>
           <td id="list-sold-${idx}" style="padding: 6px 8px; text-align: center; font-weight: bold;">${m.ticketsSold}${rollovers.length > 0 ? ' *' : ''}</td>
           <td id="list-sales-${idx}" style="padding: 6px 8px; text-align: right; font-family: monospace; font-weight: 900; color: #047857;">$${m.dollarSales.toFixed(2)}</td>
@@ -892,7 +912,12 @@ function renderDispenserGrid() {
         <div class="space-y-2 mb-2">
           <div class="flex items-center gap-2">
             <label class="text-[10px] font-bold text-slate-500 uppercase w-12">Game #:</label>
-            <input type="text" tabindex="${tabGame}" enterkeyhint="next" id="input-gameNum-${idx}" value="${box.gameNum || ''}" placeholder="e.g. 1005" oninput="updateBoxFieldDirect(${idx}, 'gameNum', this.value)" onkeydown="handleGameNumKeydown(event, ${idx})" class="flex-1 text-xs font-mono font-bold border border-slate-300 rounded px-2 py-1 lotto-input" />
+            <input type="text" ${lockAttr} tabindex="${tabGame}" enterkeyhint="next"
+              id="input-gameNum-${idx}" value="${box.gameNum || ''}" placeholder="e.g. 1005"
+              onclick="if(!isBoxEditUnlocked) requestBoxEditUnlock(this)"
+              oninput="resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'gameNum', this.value)"
+              onkeydown="handleGameNumKeydown(event, ${idx})"
+              class="flex-1 text-xs font-mono font-bold border border-slate-300 rounded px-2 py-1 lotto-input ${lockStyle}" />
           </div>
           <div id="box-unknown-wrap-${idx}" class="${box.needsNewGameEntry ? '' : 'hidden'} p-1.5 bg-red-50 border border-red-200 rounded text-[10px] text-red-700 flex items-center justify-between">
             <span>Unknown Game #</span>
@@ -901,11 +926,21 @@ function renderDispenserGrid() {
           <div class="grid grid-cols-2 gap-2 pt-1">
             <div>
               <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Start #</label>
-              <input type="number" tabindex="${tabStart}" enterkeyhint="next" id="input-startTicket-${idx}" value="${box.startTicket !== undefined ? box.startTicket : 0}" oninput="updateBoxFieldDirect(${idx}, 'startTicket', this.value)" onkeydown="handleStartKeydown(event, ${idx})" placeholder="000" class="w-full text-center font-mono font-bold text-xs border border-slate-300 rounded p-1.5 lotto-input" />
+              <input type="number" ${lockAttr} tabindex="${tabStart}" enterkeyhint="next"
+                id="input-startTicket-${idx}" value="${box.startTicket !== undefined ? box.startTicket : 0}"
+                onclick="if(!isBoxEditUnlocked) requestBoxEditUnlock(this)"
+                oninput="resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'startTicket', this.value)"
+                onkeydown="handleStartKeydown(event, ${idx})" placeholder="000"
+                class="w-full text-center font-mono font-bold text-xs border border-slate-300 rounded p-1.5 lotto-input ${lockStyle}" />
             </div>
             <div>
               <label class="block text-[10px] font-bold text-blue-700 uppercase mb-0.5">End #</label>
-              <input type="number" tabindex="${tabEnd}" enterkeyhint="next" id="input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}" oninput="updateBoxEndTicketLive(${idx}, this.value)" onchange="commitBoxEndTicket(${idx}, this.value)" onkeydown="handleGridEnter(event, ${idx})" placeholder="000" class="w-full text-center font-mono font-bold text-xs border-2 border-blue-400 rounded p-1.5 lotto-input" />
+              <input type="number" tabindex="${tabEnd}" enterkeyhint="next"
+                id="input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}"
+                oninput="updateBoxEndTicketLive(${idx}, this.value)"
+                onchange="commitBoxEndTicket(${idx}, this.value)"
+                onkeydown="handleGridEnter(event, ${idx})" placeholder="000"
+                class="w-full text-center font-mono font-bold text-xs border-2 border-blue-400 rounded p-1.5 lotto-input" />
             </div>
           </div>
         </div>
@@ -1256,6 +1291,15 @@ function renderMainGridCashierShiftBar() {
 
   const currentCashier = document.getElementById('rec-cashier-out')?.value || '';
   const currentShift = document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
+  const isUnlocked = (typeof isBoxEditUnlocked !== 'undefined' && isBoxEditUnlocked);
+
+  const lockBtnHtml = isUnlocked
+    ? `<button type="button" onclick="lockBoxEditsImmediately()" class="bg-amber-500 hover:bg-amber-600 text-white font-extrabold px-3 py-1.5 rounded-lg shadow-sm transition animate-pulse">
+         🔓 Editing (${boxEditCurrentCashier}) — Click to Lock Now
+       </button>`
+    : `<span class="bg-slate-100 text-slate-600 border border-slate-300 font-bold px-2.5 py-1.5 rounded-lg">
+         🔒 Game# & Start# Locked
+       </span>`;
 
   bar.innerHTML = `
     <div class="flex items-center gap-3 flex-1 min-w-[280px]">
@@ -1273,6 +1317,7 @@ function renderMainGridCashierShiftBar() {
       </div>
     </div>
     <div class="flex items-center gap-2">
+      ${lockBtnHtml}
       <button type="button" onclick="openWorksheetPrintChoiceModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-3 py-1.5 rounded-lg shadow-sm transition">
         🖨 Print Worksheet...
       </button>
@@ -3352,3 +3397,83 @@ function generateProLottoAppIcon() {
 window.addEventListener('DOMContentLoaded', () => {
   generateProLottoAppIcon();
 });
+/* ==========================================================================
+   SECURE EDIT LOCK: GAME # & START # (5-MINUTE TIMEOUT + MANUAL LOCK)
+   ========================================================================== */
+
+let isBoxEditUnlocked = false;
+let boxEditUnlockTimer = null;
+let boxEditCurrentCashier = '';
+
+function requestBoxEditUnlock(targetInputElem) {
+  if (isBoxEditUnlocked) {
+    resetBoxEditTimeout();
+    return;
+  }
+
+  const targetId = targetInputElem ? targetInputElem.id : null;
+  const cashierName = prompt('🔒 Game # and Start # are Locked\n\nPlease enter your Name to unlock Game # and Start # for 5 minutes:');
+  if (!cashierName || !cashierName.trim()) {
+    if (targetInputElem) targetInputElem.blur();
+    return;
+  }
+
+  boxEditCurrentCashier = cashierName.trim();
+  isBoxEditUnlocked = true;
+
+  // Also sync the name into the Cashier bar if it's currently blank
+  const gridCashier = document.getElementById('grid-cashier-input');
+  if (gridCashier && !gridCashier.value.trim()) {
+    gridCashier.value = boxEditCurrentCashier;
+    syncMainGridCashier(boxEditCurrentCashier);
+  }
+
+  renderDispenserGrid();
+  renderMainGridCashierShiftBar();
+  startBoxEditTimeout();
+
+  alert(`✔ Unlocked for ${boxEditCurrentCashier}. You have up to 5 minutes to make changes, or click "Lock Now" in the top bar when finished.`);
+
+  if (targetId) {
+    setTimeout(() => {
+      const el = document.getElementById(targetId);
+      if (el) {
+        el.focus();
+        el.select();
+      }
+    }, 50);
+  }
+}
+
+function lockBoxEditsImmediately() {
+  if (boxEditUnlockTimer) {
+    clearTimeout(boxEditUnlockTimer);
+    boxEditUnlockTimer = null;
+  }
+  isBoxEditUnlocked = false;
+  boxEditCurrentCashier = '';
+  renderDispenserGrid();
+  renderMainGridCashierShiftBar();
+  alert('🔒 Changes confirmed. Game # and Start # are now locked.');
+}
+
+function startBoxEditTimeout() {
+  if (boxEditUnlockTimer) clearTimeout(boxEditUnlockTimer);
+
+  // 5 Minutes (300,000 ms)
+  boxEditUnlockTimer = setTimeout(() => {
+    const isDone = confirm(`⏱ 5 minutes have passed (${boxEditCurrentCashier}).\n\nAre you done making changes to Game # and Start #?\n\n• Click OK to confirm and LOCK the boxes.\n• Click Cancel if you need 5 more minutes.`);
+    if (isDone) {
+      lockBoxEditsImmediately();
+    } else {
+      isBoxEditUnlocked = true;
+      startBoxEditTimeout();
+    }
+  }, 300000);
+}
+
+function resetBoxEditTimeout() {
+  if (isBoxEditUnlocked) {
+    startBoxEditTimeout();
+  }
+}
