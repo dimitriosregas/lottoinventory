@@ -2642,3 +2642,497 @@ window.addEventListener('DOMContentLoaded', () => {
   loadPrintFontSizeSetting();
   initScreenKeepAwakeSystem();
 });
+/* ==========================================================================
+   UNIVERSAL PRINT MODAL ENGINE (80MM THERMAL & LEGAL FOR ALL VIEWS)
+   ========================================================================== */
+
+let activePrintContextMode = 'current'; // 'current' | 'archived' | 'summary'
+let activeArchivedReportToPrint = null;
+
+function openWorksheetPrintChoiceModal(mode = 'current', archivedRep = null) {
+  activePrintContextMode = mode;
+  activeArchivedReportToPrint = archivedRep;
+
+  const modal =
+    document.getElementById('modal-print-worksheet-choice') ||
+    createPrintChoiceModalDOM();
+
+  handleCashierInputAutocomplete(
+    'print-modal-cashier-input',
+    'cashier-datalist-print'
+  );
+
+  const cashierInp = document.getElementById('print-modal-cashier-input');
+  const shiftSel = document.getElementById('print-modal-shift-select');
+
+  if (mode === 'archived' && archivedRep) {
+    if (cashierInp) cashierInp.value = archivedRep.cashierOut || 'Manager';
+    if (shiftSel && archivedRep.shiftType) {
+      shiftSel.value = archivedRep.shiftType;
+    }
+  } else {
+    const activeCashier =
+      document.getElementById('rec-cashier-out')?.value ||
+      document.getElementById('grid-cashier-input')?.value ||
+      '';
+    if (cashierInp && !cashierInp.value) cashierInp.value = activeCashier;
+    const activeShift = document.getElementById('rec-shift-type')?.value;
+    if (shiftSel && activeShift) shiftSel.value = activeShift;
+  }
+
+  modal.classList.remove('hidden');
+  setTimeout(() => initPrintModalSignaturePad(), 100);
+}
+
+function printArchivedSingleReport(reportId) {
+  const history = getLocationHistoricalReports(activeLocationId);
+  const found = history.find(r => r.reportId === reportId);
+  if (!found) {
+    alert('Archived report not found.');
+    return;
+  }
+  openWorksheetPrintChoiceModal('archived', found);
+}
+
+function printFilteredReportSummary() {
+  openWorksheetPrintChoiceModal('summary', null);
+}
+
+function executeUnifiedPrint(formatChoice) {
+  const cashierVal =
+    document.getElementById('print-modal-cashier-input')?.value?.trim() ||
+    'Unspecified';
+  const shiftVal =
+    document.getElementById('print-modal-shift-select')?.value ||
+    'Shift 1 (Morning)';
+
+  document
+    .getElementById('modal-print-worksheet-choice')
+    .classList.add('hidden');
+
+  if (activePrintContextMode === 'archived' && activeArchivedReportToPrint) {
+    const repCopy = JSON.parse(JSON.stringify(activeArchivedReportToPrint));
+    if (cashierVal && cashierVal !== 'Unspecified') {
+      repCopy.cashierOut = cashierVal;
+    }
+    if (printModalSigDataUrl) {
+      repCopy.signatureDataUrl = printModalSigDataUrl;
+    }
+    if (formatChoice === 'thermal') {
+      printThermalReceiptFromData(repCopy, false);
+    } else {
+      let printContainer = document.getElementById('print-container');
+      if (!printContainer) {
+        printContainer = document.createElement('div');
+        printContainer.id = 'print-container';
+        document.body.appendChild(printContainer);
+      }
+      printContainer.innerHTML = buildMatrixPrintHTML(repCopy, true);
+      window.print();
+    }
+    return;
+  }
+
+  if (activePrintContextMode === 'summary') {
+    if (formatChoice === 'thermal') {
+      printFilteredSummaryThermal(cashierVal);
+    } else {
+      printFilteredSummaryLegal(cashierVal);
+    }
+    return;
+  }
+
+  // Default: Current Active Shift Worksheet / Final Report
+  const recCashier = document.getElementById('rec-cashier-out');
+  if (recCashier) recCashier.value = cashierVal;
+  const gridCashier = document.getElementById('grid-cashier-input');
+  if (gridCashier) gridCashier.value = cashierVal;
+  const recShift = document.getElementById('rec-shift-type');
+  if (recShift) recShift.value = shiftVal;
+  if (printModalSigDataUrl) currentSignatureDataUrl = printModalSigDataUrl;
+
+  const currentRepData = {
+    storeName: storeProfile.name,
+    storeNumber: storeProfile.number,
+    date:
+      document.getElementById('rec-report-date')?.value ||
+      new Date().toISOString().slice(0, 10),
+    shiftType: shiftVal,
+    cashierOut: cashierVal,
+    cashierIn:
+      document.getElementById('rec-cashier-in')?.value?.trim() || '-',
+    totals: recalculateReconciliationTotals(),
+    signatureDataUrl: currentSignatureDataUrl,
+    boxesSnapshot: boxes
+  };
+
+  if (formatChoice === 'thermal') {
+    printThermalReceiptFromData(currentRepData, true);
+  } else {
+    printWorksheetDirect();
+  }
+
+  downloadFullTabletBackup(true);
+
+  setTimeout(() => {
+    if (
+      confirm(
+        'Worksheet printed and system backed up in the background!\n\n' +
+          'Would you like to end the shift and start a new shift now?'
+      )
+    ) {
+      advanceEndToStartForNewShift();
+    } else {
+      switchMainView(lastActiveViewName || 'grid');
+    }
+  }, 600);
+}
+
+function build80mmThermalHTML(repData) {
+  const bList = Array.isArray(repData.boxesSnapshot)
+    ? repData.boxesSnapshot
+    : boxes;
+  const totals = repData.totals || recalculateReconciliationTotals();
+  const basePt = Number(globalPrintFontSizePt) || 11;
+  const storeAddr = storeProfile.address || 'Sparta, TN 38583';
+
+  let itemsHtml = '';
+  bList.forEach(box => {
+    if (box.gameNum) {
+      const m = calculateBoxMetrics(box);
+      const gName = String(
+        box.gameName || 'GAME #' + box.gameNum
+      ).toUpperCase();
+      const endDisp =
+        box.endTicket !== '' && box.endTicket !== undefined
+          ? box.endTicket
+          : '____';
+      const startDisp =
+        box.startTicket !== '' && box.startTicket !== undefined
+          ? box.startTicket
+          : 0;
+
+      itemsHtml += `
+        <div style="border-bottom: 1px dashed #000; padding: 3px 0;">
+          <div style="display:flex; justify-content:space-between; font-weight:bold;">
+            <span>[BOX ${box.boxNumber}] #${box.gameNum} ${gName}</span>
+            <span>$${box.price}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span>Start:${startDisp}  End:${endDisp}</span>
+            <span style="font-weight:bold;">
+              ${m.ticketsSold} Sold ($${m.dollarSales.toFixed(2)})
+            </span>
+          </div>
+        </div>
+      `;
+    }
+  });
+
+  const sigHtml = repData.signatureDataUrl
+    ? `<img src="${repData.signatureDataUrl}" style="max-height:42px; max-width:180px; margin:4px auto; display:block;" />`
+    : `<div style="margin:14px 0 4px; border-bottom:1px solid #000;"></div>`;
+
+  return `
+    <style>
+      @page {
+        size: 80mm auto;
+        margin: 2mm;
+      }
+      @media print {
+        html, body {
+          width: 76mm !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: #fff !important;
+          color: #000 !important;
+        }
+        #app-shell, .no-print { display: none !important; }
+        #print-container {
+          display: block !important;
+          width: 76mm !important;
+        }
+      }
+    </style>
+    <div style="width:74mm; font-family:'Courier New', monospace; font-size:${basePt}pt; line-height:1.25; color:#000;">
+      <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:4px; margin-bottom:4px;">
+        <div style="font-size:${basePt + 2}pt; font-weight:900;">
+          ${repData.storeName || storeProfile.name}
+        </div>
+        <div style="font-weight:bold;">
+          STORE #${repData.storeNumber || storeProfile.number}
+        </div>
+        <div style="font-size:${basePt - 2}pt;">${storeAddr}</div>
+        <div style="font-weight:bold; margin-top:2px;">
+          *** LOTTO COUNT WORKSHEET ***
+        </div>
+      </div>
+
+      <div style="border-bottom:1px dashed #000; padding-bottom:4px; margin-bottom:4px; font-weight:bold;">
+        <div>DATE: ${repData.date}</div>
+        <div>SHIFT: ${repData.shiftType}</div>
+        <div>OUT: ${repData.cashierOut || '-'}</div>
+        <div>IN: ${repData.cashierIn || '-'}</div>
+      </div>
+
+      <div>${itemsHtml}</div>
+
+      <div style="border-top:2px solid #000; border-bottom:2px solid #000; padding:4px 0; margin:6px 0; font-weight:bold;">
+        <div style="display:flex; justify-content:space-between;">
+          <span>TOTAL TICKETS SOLD:</span>
+          <span>${totals.totalTickets || 0}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span>SCRATCH SALES:</span>
+          <span>$${Number(totals.scratchSales || 0).toFixed(2)}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span>ONLINE SALES:</span>
+          <span>$${Number(totals.onlineSales || 0).toFixed(2)}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span>SCRATCH CASHED:</span>
+          <span>-$${Number(totals.scratchCashed || 0).toFixed(2)}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span>ONLINE CASHED:</span>
+          <span>-$${Number(totals.onlineCashed || 0).toFixed(2)}</span>
+        </div>
+        <div style="border-top:1px dashed #000; margin-top:3px; padding-top:3px; display:flex; justify-content:space-between;">
+          <span>EXPECTED NET:</span>
+          <span>$${Number(totals.expectedNet || 0).toFixed(2)}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between;">
+          <span>POS ACTUAL:</span>
+          <span>$${Number(totals.posActual || 0).toFixed(2)}</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:${basePt + 1}pt; font-weight:900;">
+          <span>VARIANCE:</span>
+          <span>$${Number(totals.variance || 0).toFixed(2)}</span>
+        </div>
+      </div>
+
+      <div style="text-align:center; padding-top:4px;">
+        <div style="font-weight:bold;">CASHIER SIGNATURE</div>
+        ${sigHtml}
+        <div style="font-size:${basePt - 3}pt; margin-top:4px;">
+          "I certify that the ticket counts and shift totals recorded are true and accurate."
+        </div>
+        <div style="font-size:${basePt - 3}pt; margin-top:4px;">
+          ${new Date().toLocaleString()}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function printThermalReceiptFromData(repData, alsoSavePdf = false) {
+  let printContainer = document.getElementById('print-container');
+  if (!printContainer) {
+    printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    document.body.appendChild(printContainer);
+  }
+  printContainer.innerHTML = build80mmThermalHTML(repData);
+  window.print();
+
+  if (alsoSavePdf && window.jspdf) {
+    try {
+      printThermalReceiptDirect();
+    } catch (e) {}
+  }
+}
+
+function getCurrentlyFilteredReportsForPrint() {
+  const mode = document.getElementById('report-filter-mode')?.value || 'daily';
+  const filterDate =
+    document.getElementById('report-filter-date')?.value ||
+    new Date().toISOString().slice(0, 10);
+  const filterMonth =
+    document.getElementById('report-filter-month')?.value ||
+    new Date().toISOString().slice(0, 7);
+  const filterShift =
+    document.getElementById('report-filter-shift-type')?.value || 'ALL';
+
+  const allHistory = getLocationHistoricalReports(activeLocationId);
+  let filtered = [];
+  if (mode === 'monthly') {
+    filtered = allHistory.filter(
+      r => (r.monthKey || r.date?.slice(0, 7)) === filterMonth
+    );
+  } else if (mode === 'shift') {
+    filtered = allHistory.filter(
+      r =>
+        r.date === filterDate &&
+        (filterShift === 'ALL' || r.shiftType === filterShift)
+    );
+  } else {
+    filtered = allHistory.filter(r => r.date === filterDate);
+  }
+  filtered.sort((a, b) => (a.shiftSequence || 1) - (b.shiftSequence || 1));
+  return { filtered, mode, filterDate, filterMonth };
+}
+
+function printFilteredSummaryThermal(cashierName) {
+  const { filtered, mode, filterDate, filterMonth } =
+    getCurrentlyFilteredReportsForPrint();
+  const basePt = Number(globalPrintFontSizePt) || 11;
+  const periodLabel = mode === 'monthly' ? filterMonth : filterDate;
+
+  let sumTickets = 0,
+    sumScratch = 0,
+    sumOnline = 0,
+    sumExp = 0,
+    sumPos = 0,
+    sumVar = 0;
+
+  const rowsHtml = filtered
+    .map(r => {
+      const t = r.totals || {};
+      sumTickets += Number(t.totalTickets) || 0;
+      sumScratch += Number(t.scratchSales) || 0;
+      sumOnline += Number(t.onlineSales) || 0;
+      sumExp += Number(t.expectedNet) || 0;
+      sumPos += Number(t.posActual) || 0;
+      sumVar += Number(t.variance) || 0;
+
+      return `
+        <div style="border-bottom:1px dashed #000; padding:3px 0;">
+          <div style="font-weight:bold;">${r.date} — ${r.shiftType}</div>
+          <div>Cashier: ${r.cashierOut || '-'} | Tix: ${t.totalTickets || 0}</div>
+          <div style="display:flex; justify-content:space-between;">
+            <span>Scratch: $${Number(t.scratchSales || 0).toFixed(2)}</span>
+            <span>Var: $${Number(t.variance || 0).toFixed(2)}</span>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  let printContainer = document.getElementById('print-container');
+  if (!printContainer) {
+    printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    document.body.appendChild(printContainer);
+  }
+
+  printContainer.innerHTML = `
+    <style>
+      @page { size: 80mm auto; margin: 2mm; }
+      @media print {
+        html, body { width: 76mm !important; margin: 0 !important; padding: 0 !important; }
+        #app-shell, .no-print { display: none !important; }
+        #print-container { display: block !important; width: 76mm !important; }
+      }
+    </style>
+    <div style="width:74mm; font-family:'Courier New', monospace; font-size:${basePt}pt; color:#000;">
+      <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:4px; margin-bottom:4px;">
+        <div style="font-weight:900;">${storeProfile.name} (#${storeProfile.number})</div>
+        <div style="font-weight:bold;">*** HISTORICAL AUDIT SUMMARY ***</div>
+        <div>Period: ${periodLabel} (${filtered.length} Shifts)</div>
+      </div>
+      ${rowsHtml || '<div>No shift records found.</div>'}
+      <div style="border-top:2px solid #000; margin-top:6px; padding-top:4px; font-weight:bold;">
+        <div style="display:flex; justify-content:space-between;"><span>TOTAL TICKETS:</span><span>${sumTickets}</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>SCRATCH SALES:</span><span>$${sumScratch.toFixed(2)}</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>ONLINE SALES:</span><span>$${sumOnline.toFixed(2)}</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>EXPECTED NET:</span><span>$${sumExp.toFixed(2)}</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>POS ACTUAL:</span><span>$${sumPos.toFixed(2)}</span></div>
+        <div style="display:flex; justify-content:space-between;"><span>NET VARIANCE:</span><span>$${sumVar.toFixed(2)}</span></div>
+      </div>
+      <div style="text-align:center; margin-top:8px; font-size:${basePt - 2}pt;">
+        Printed by ${cashierName} • ${new Date().toLocaleString()}
+      </div>
+    </div>
+  `;
+  window.print();
+}
+
+function printFilteredSummaryLegal(cashierName) {
+  const { filtered, mode, filterDate, filterMonth } =
+    getCurrentlyFilteredReportsForPrint();
+  const periodLabel = mode === 'monthly' ? filterMonth : filterDate;
+
+  let sumTickets = 0,
+    sumScratch = 0,
+    sumOnline = 0,
+    sumExp = 0,
+    sumPos = 0,
+    sumVar = 0;
+
+  const rowsHtml = filtered
+    .map(r => {
+      const t = r.totals || {};
+      sumTickets += Number(t.totalTickets) || 0;
+      sumScratch += Number(t.scratchSales) || 0;
+      sumOnline += Number(t.onlineSales) || 0;
+      sumExp += Number(t.expectedNet) || 0;
+      sumPos += Number(t.posActual) || 0;
+      sumVar += Number(t.variance) || 0;
+
+      return `
+        <tr style="border-bottom:1px solid #cbd5e1; font-size:9px;">
+          <td style="padding:4px; text-align:center;">${r.date}</td>
+          <td style="padding:4px; font-weight:bold;">${r.shiftType}</td>
+          <td style="padding:4px;">${r.cashierOut || '-'}</td>
+          <td style="padding:4px; text-align:center;">${t.totalTickets || 0}</td>
+          <td style="padding:4px; text-align:right;">$${Number(t.scratchSales || 0).toFixed(2)}</td>
+          <td style="padding:4px; text-align:right;">$${Number(t.onlineSales || 0).toFixed(2)}</td>
+          <td style="padding:4px; text-align:right;">$${Number(t.expectedNet || 0).toFixed(2)}</td>
+          <td style="padding:4px; text-align:right;">$${Number(t.posActual || 0).toFixed(2)}</td>
+          <td style="padding:4px; text-align:right; font-weight:bold;">$${Number(t.variance || 0).toFixed(2)}</td>
+        </tr>
+      `;
+    })
+    .join('');
+
+  let printContainer = document.getElementById('print-container');
+  if (!printContainer) {
+    printContainer = document.createElement('div');
+    printContainer.id = 'print-container';
+    document.body.appendChild(printContainer);
+  }
+
+  printContainer.innerHTML = `
+    <style>
+      @page { size: letter portrait; margin: 0.25in; }
+      @media print {
+        #app-shell, .no-print { display: none !important; }
+        #print-container { display: block !important; width: 100% !important; }
+      }
+    </style>
+    <div style="font-family:Arial, sans-serif; color:#000;">
+      <h2 style="margin:0 0 4px; font-size:14px; text-transform:uppercase;">
+        ${storeProfile.name} (#${storeProfile.number}) — Historical Shift Audit Summary (${periodLabel})
+      </h2>
+      <table style="width:100%; border-collapse:collapse; margin-top:8px;">
+        <thead>
+          <tr style="background:#e2e8f0; border-bottom:2px solid #000; font-size:9px; text-transform:uppercase;">
+            <th style="padding:4px;">Date</th>
+            <th style="padding:4px; text-align:left;">Shift</th>
+            <th style="padding:4px; text-align:left;">Cashier</th>
+            <th style="padding:4px;">Tickets</th>
+            <th style="padding:4px; text-align:right;">Scratch $</th>
+            <th style="padding:4px; text-align:right;">Online $</th>
+            <th style="padding:4px; text-align:right;">Expected Net</th>
+            <th style="padding:4px; text-align:right;">POS Actual</th>
+            <th style="padding:4px; text-align:right;">Variance</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+        <tfoot>
+          <tr style="border-top:2px solid #000; font-weight:bold; font-size:10px; background:#f8fafc;">
+            <td colspan="3" style="padding:5px;">TOTALS (${filtered.length} Shifts)</td>
+            <td style="padding:5px; text-align:center;">${sumTickets}</td>
+            <td style="padding:5px; text-align:right;">$${sumScratch.toFixed(2)}</td>
+            <td style="padding:5px; text-align:right;">$${sumOnline.toFixed(2)}</td>
+            <td style="padding:5px; text-align:right;">$${sumExp.toFixed(2)}</td>
+            <td style="padding:5px; text-align:right;">$${sumPos.toFixed(2)}</td>
+            <td style="padding:5px; text-align:right;">$${sumVar.toFixed(2)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  `;
+  window.print();
+}
