@@ -3579,11 +3579,13 @@ window.requestBoxEditUnlock = function(targetInputElem) {
   var gridCashier = document.getElementById('grid-cashier-input');
   if (gridCashier && !gridCashier.value.trim()) {
     gridCashier.value = window.boxEditCurrentCashier;
-    syncMainGridCashier(window.boxEditCurrentCashier);
+    if (typeof syncMainGridCashier === 'function') {
+      syncMainGridCashier(window.boxEditCurrentCashier);
+    }
   }
 
-  renderDispenserGrid();
-  renderMainGridCashierShiftBar();
+  if (typeof renderDispenserGrid === 'function') renderDispenserGrid();
+  if (typeof renderMainGridCashierShiftBar === 'function') renderMainGridCashierShiftBar();
   window.startBoxEditTimeout();
 
   alert('✔ Unlocked for ' + window.boxEditCurrentCashier + '. You have up to 5 minutes to make changes, or click "Lock Now" in the top bar when finished.');
@@ -3592,10 +3594,11 @@ window.requestBoxEditUnlock = function(targetInputElem) {
     setTimeout(function() {
       var el = document.getElementById(targetId);
       if (el) {
+        el.removeAttribute('readonly');
         el.focus();
         el.select();
       }
-    }, 50);
+    }, 100);
   }
 };
 
@@ -3606,8 +3609,8 @@ window.lockBoxEditsImmediately = function() {
   }
   window.isBoxEditUnlocked = false;
   window.boxEditCurrentCashier = '';
-  renderDispenserGrid();
-  renderMainGridCashierShiftBar();
+  if (typeof renderDispenserGrid === 'function') renderDispenserGrid();
+  if (typeof renderMainGridCashierShiftBar === 'function') renderMainGridCashierShiftBar();
   alert('🔒 Changes confirmed. Game # and Start # are now locked.');
 };
 
