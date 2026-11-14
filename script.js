@@ -597,7 +597,7 @@ function calculateBoxMetrics(box) {
   if (end >= start) {
     ticketsSold = (end - start);
   } else {
-    // Handles roll-overs crossing ticket number resets (e.g. going from high number back to 000)
+    // Handles roll-overs crossing ticket number resets (e.g. going from high number back to 0)
     ticketsSold = (rollCount - start) + end;
   }
 
@@ -650,7 +650,6 @@ function calculateBoxMetrics(box) {
   const endVal = box.endTicket;
   const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
   const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(price);
-  const maxTicketAllowed = Math.max(0, rollCount - 1);
 
   if (endVal === '' || endVal === undefined || endVal === null) {
     let roSoldOnly = 0;
@@ -661,23 +660,27 @@ function calculateBoxMetrics(box) {
   const end = Number(endVal);
   let ticketsSold = 0;
 
-  if (rollovers.length > 0) {
-    rollovers.forEach(ro => { ticketsSold += Number(ro.ticketsSold) || 0; });
-    if (end >= start) { ticketsSold += (end - start); }
+  if (end >= start) {
+    ticketsSold = (end - start);
   } else {
-    if (end >= start) { ticketsSold = end - start; }
-    else { ticketsSold = 0; }
+    // Handles roll-overs crossing ticket number resets (e.g. going from high number back to 0)
+    ticketsSold = (rollCount - start) + end;
   }
 
-  ticketsSold = Math.max(0, ticketsSold);
-  const dollarSales = ticketsSold * price;
+  // Add any prior completed rollovers in this box slot
+  let rolloverSold = 0;
+  rollovers.forEach(ro => { rolloverSold += Number(ro.ticketsSold) || 0; });
+  
+  const totalTicketsSold = Math.max(0, ticketsSold + rolloverSold);
+  const dollarSales = totalTicketsSold * price;
 
-  let status = 'complete';
+  let status = 'active';
+  if (totalTicketsSold >= rollCount) status = 'complete';
   if (rollovers.length > 0) status = 'rollover';
-  else if (ticketsSold === 0 && end === start) status = 'pending';
 
-  return { ticketsSold, dollarSales, status, hasRollover: rollovers.length > 0, activeTicket: end };
+  return { ticketsSold: totalTicketsSold, dollarSales, status, hasRollover: rollovers.length > 0, activeTicket: end };
 }
+
 /* ==========================================================================
    PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 4 OF 7)
    ========================================================================== */
