@@ -3188,3 +3188,86 @@ function resetBoxEditTimeout() {
     startBoxEditTimeout(); // Refresh the 5-minute timer on activity
   }
 }
+/* ==========================================================================
+   HIGH-RESOLUTION SCRATCH-OFF LOTTO APP ICON GENERATOR
+   ========================================================================== */
+function generateProLottoAppIcon() {
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // 1. Rounded Royal Blue Background (#1e3a8a)
+    ctx.fillStyle = '#1e3a8a';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, 512, 512, 96);
+    ctx.fill();
+
+    // 2. Inner Golden Border
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 12;
+    ctx.stroke();
+
+    // 3. Top Title Text: "UR LOTTO" & "AUDIT"
+    ctx.fillStyle = '#fef08a';
+    ctx.font = '900 54px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('UR LOTTO', 256, 110);
+    ctx.fillText('AUDIT', 256, 175);
+
+    // 4. Render Scratch-Off Ticket Graphic Illustration
+    ctx.save();
+    ctx.translate(256, 320);
+    ctx.rotate(-0.12);
+
+    // Ticket Base (Gold/Bronze foil card)
+    ctx.fillStyle = '#d97706';
+    ctx.beginPath();
+    ctx.roundRect(-160, -90, 320, 180, 20);
+    ctx.fill();
+    ctx.strokeStyle = '#fde68a';
+    ctx.lineWidth = 6;
+    ctx.stroke();
+
+    // Silver Scratch Panel Box
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(-135, -45, 270, 115);
+
+    // Winning Scratch Area ("WIN!")
+    ctx.fillStyle = '#b91c1c';
+    ctx.font = '900 48px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('WIN!', 0, 32);
+
+    // Scratch off foil texture lines across the top
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 4;
+    for (let i = -120; i < 120; i += 16) {
+      ctx.beginPath();
+      ctx.moveTo(i, -45);
+      ctx.lineTo(i + 35, -15);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+
+    // Convert canvas to permanent PNG Data URL
+    const iconDataUrl = canvas.toDataURL('image/png');
+
+    // Inject into document header links
+    document.querySelectorAll("link[rel*='icon']").forEach(link => {
+      link.type = 'image/png';
+      link.href = iconDataUrl;
+    });
+    const touchIcon = document.getElementById('app-touch-icon');
+    if (touchIcon) touchIcon.href = iconDataUrl;
+  } catch (e) {
+    console.error('Icon generator error:', e);
+  }
+}
+
+// Automatically trigger icon generation on load
+window.addEventListener('DOMContentLoaded', () => {
+  generateProLottoAppIcon();
+});
