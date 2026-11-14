@@ -1,20 +1,6 @@
 /* ==========================================================================
    PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 1 OF 7)
    ========================================================================== */
-// 1. Force default view to 'list' immediately in localStorage if not set
-if (!localStorage.getItem('user_dispenser_view')) {
-  localStorage.setItem('user_dispenser_view', 'list');
-}
-let currentDispenserView = localStorage.getItem('user_dispenser_view');
-
-// 2. On DOM load, render list view directly instead of grid
-document.addEventListener('DOMContentLoaded', () => {
-  if (currentDispenserView === 'grid' && typeof renderDispenserGrid === 'function') {
-    renderDispenserGrid();
-  } else if (typeof renderDispenserList === 'function') {
-    renderDispenserList();
-  }
-});
 
 const STORAGE_KEY_LOCATIONS = 'project_lotto_locations_v1';
 const STORAGE_KEY_ACTIVE_LOC = 'project_lotto_active_loc_id_v1';
