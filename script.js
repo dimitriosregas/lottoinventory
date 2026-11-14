@@ -925,6 +925,7 @@ function renderDispenserGrid() {
             <input type="text" inputmode="numeric" ${lockAttr} tabindex="${tabGame}" enterkeyhint="next"
               id="list-input-gameNum-${idx}" value="${box.gameNum || ''}"
               onclick="requestBoxEditUnlock(this)"
+              onfocus="this.select()"
               oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'gameNum', this.value)"
               onkeydown="handleGameNumKeydown(event, ${idx})"
               placeholder="Game#"
@@ -939,6 +940,7 @@ function renderDispenserGrid() {
             <input type="number" inputmode="numeric" ${lockAttr} tabindex="${tabStart}" enterkeyhint="next"
               id="list-input-startTicket-${idx}" value="${box.startTicket !== '' && box.startTicket !== undefined ? box.startTicket : 0}"
               onclick="requestBoxEditUnlock(this)"
+              onfocus="this.select()"
               oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'startTicket', this.value)"
               onkeydown="handleStartKeydown(event, ${idx})"
               class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input ${lockStyle}" />
@@ -946,6 +948,7 @@ function renderDispenserGrid() {
           <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
             <input type="number" inputmode="numeric" tabindex="${tabEnd}" enterkeyhint="next"
               id="list-input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}"
+              onfocus="this.select()"
               oninput="updateBoxEndTicketLive(${idx}, this.value)"
               onchange="commitBoxEndTicket(${idx}, this.value)"
               onkeydown="handleGridEnter(event, ${idx})"
@@ -1031,6 +1034,7 @@ function renderDispenserGrid() {
             <input type="text" inputmode="numeric" ${lockAttr} tabindex="${tabGame}" enterkeyhint="next"
               id="input-gameNum-${idx}" value="${box.gameNum || ''}" placeholder="e.g. 1005"
               onclick="requestBoxEditUnlock(this)"
+              onfocus="this.select()"
               oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'gameNum', this.value)"
               onkeydown="handleGameNumKeydown(event, ${idx})"
               class="flex-1 text-xs font-mono font-bold border border-slate-300 rounded px-2 py-1 lotto-input ${lockStyle}" />
@@ -1045,6 +1049,7 @@ function renderDispenserGrid() {
               <input type="number" inputmode="numeric" ${lockAttr} tabindex="${tabStart}" enterkeyhint="next"
                 id="input-startTicket-${idx}" value="${box.startTicket !== undefined ? box.startTicket : 0}"
                 onclick="requestBoxEditUnlock(this)"
+                onfocus="this.select()"
                 oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'startTicket', this.value)"
                 onkeydown="handleStartKeydown(event, ${idx})" placeholder="000"
                 class="w-full text-center font-mono font-bold text-xs border border-slate-300 rounded p-1.5 lotto-input ${lockStyle}" />
@@ -1053,6 +1058,7 @@ function renderDispenserGrid() {
               <label class="block text-[10px] font-bold text-blue-700 uppercase mb-0.5">End #</label>
               <input type="number" inputmode="numeric" tabindex="${tabEnd}" enterkeyhint="next"
                 id="input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}"
+                onfocus="this.select()"
                 oninput="updateBoxEndTicketLive(${idx}, this.value)"
                 onchange="commitBoxEndTicket(${idx}, this.value)"
                 onkeydown="handleGridEnter(event, ${idx})" placeholder="000"
