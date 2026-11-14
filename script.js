@@ -892,7 +892,7 @@ function renderDispenserGrid() {
         <div class="space-y-2 mb-2">
           <div class="flex items-center gap-2">
             <label class="text-[10px] font-bold text-slate-500 uppercase w-12">Game #:</label>
-            <input type="text" tabindex="${tabGame}" enterkeyhint="next" id="input-gameNum-${idx}" value="${box.gameNum || ''}" placeholder="e.g. 1005" oninput="updateBoxFieldDirect(${idx}, 'gameNum', this.value)" onkeydown="handleGameNumKeydown(event, this.value)" class="flex-1 text-xs font-mono font-bold border border-slate-300 rounded px-2 py-1 lotto-input" />
+            <input type="text" tabindex="${tabGame}" enterkeyhint="next" id="input-gameNum-${idx}" value="${box.gameNum || ''}" placeholder="e.g. 1005" oninput="updateBoxFieldDirect(${idx}, 'gameNum', this.value)" onkeydown="handleGameNumKeydown(event, ${idx})" class="flex-1 text-xs font-mono font-bold border border-slate-300 rounded px-2 py-1 lotto-input" />
           </div>
           <div id="box-unknown-wrap-${idx}" class="${box.needsNewGameEntry ? '' : 'hidden'} p-1.5 bg-red-50 border border-red-200 rounded text-[10px] text-red-700 flex items-center justify-between">
             <span>Unknown Game #</span>
@@ -901,11 +901,11 @@ function renderDispenserGrid() {
           <div class="grid grid-cols-2 gap-2 pt-1">
             <div>
               <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Start #</label>
-              <input type="number" tabindex="${tabStart}" enterkeyhint="next" id="input-startTicket-${idx}" value="${box.startTicket !== undefined ? box.startTicket : 0}" oninput="updateBoxFieldDirect(${idx}, 'startTicket', this.value)" onkeydown="handleStartKeydown(event, this.value)" placeholder="000" class="w-full text-center font-mono font-bold text-xs border border-slate-300 rounded p-1.5 lotto-input" />
+              <input type="number" tabindex="${tabStart}" enterkeyhint="next" id="input-startTicket-${idx}" value="${box.startTicket !== undefined ? box.startTicket : 0}" oninput="updateBoxFieldDirect(${idx}, 'startTicket', this.value)" onkeydown="handleStartKeydown(event, ${idx})" placeholder="000" class="w-full text-center font-mono font-bold text-xs border border-slate-300 rounded p-1.5 lotto-input" />
             </div>
             <div>
               <label class="block text-[10px] font-bold text-blue-700 uppercase mb-0.5">End #</label>
-              <input type="number" tabindex="${tabEnd}" enterkeyhint="next" id="input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}" oninput="updateBoxEndTicketLive(${idx}, this.value)" onchange="commitBoxEndTicket(${idx}, this.value)" onkeydown="handleGridEnter(event, this.value)" placeholder="000" class="w-full text-center font-mono font-bold text-xs border-2 border-blue-400 rounded p-1.5 lotto-input" />
+              <input type="number" tabindex="${tabEnd}" enterkeyhint="next" id="input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}" oninput="updateBoxEndTicketLive(${idx}, this.value)" onchange="commitBoxEndTicket(${idx}, this.value)" onkeydown="handleGridEnter(event, ${idx})" placeholder="000" class="w-full text-center font-mono font-bold text-xs border-2 border-blue-400 rounded p-1.5 lotto-input" />
             </div>
           </div>
         </div>
@@ -2377,4 +2377,268 @@ window.addEventListener('DOMContentLoaded', () => {
   initSignaturePad();
   executeReportLookup();
   startTwiceDailyBackupScheduler();
+});
+/* ==========================================================================
+   SCREEN WAKE LOCK (KEEP SCREEN ON) & MISSING HELPER FUNCTIONS
+   ========================================================================== */
+
+const STORAGE_KEY_WAKELOCK_MINS = 'project_lotto_wakelock_mins_v1';
+let screenWakeLockSentinel = null;
+let screenWakeLockTimeoutId = null;
+let screenWakeLockMinutes = 10; // Default 10 mins
+
+function initScreenKeepAwakeSystem() {
+  try {
+    const savedMins = localStorage.getItem(STORAGE_KEY_WAKELOCK_MINS);
+    if (savedMins !== null) {
+      screenWakeLockMinutes = Number(savedMins);
+    }
+  } catch (e) {}
+
+  injectHeaderWakeLockControl();
+  syncWakeLockSelectUI();
+
+  const activityEvents = ['pointerdown', 'keydown', 'touchstart'];
+  let lastActivityReset = 0;
+
+  activityEvents.forEach(evt => {
+    window.addEventListener(evt, () => {
+      const now = Date.now();
+      if (now - lastActivityReset > 5000 && screenWakeLockMinutes > 0) {
+        lastActivityReset = now;
+        requestScreenWakeLock();
+      }
+    }, { passive: true });
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      releaseScreenWakeLock(false);
+    } else if (
+      document.visibilityState === 'visible' &&
+      screenWakeLockMinutes > 0
+    ) {
+      requestScreenWakeLock();
+    }
+  });
+
+  window.addEventListener('pagehide', () => releaseScreenWakeLock(false));
+  window.addEventListener('beforeunload', () => releaseScreenWakeLock(false));
+
+  if (screenWakeLockMinutes > 0) {
+    requestScreenWakeLock();
+  }
+}
+
+function injectHeaderWakeLockControl() {
+  const headerBar = document.querySelector('header .max-w-7xl');
+  if (!headerBar || document.getElementById('header-wakelock-select')) return;
+
+  const firstGroup = headerBar.children[0];
+  if (!firstGroup) return;
+
+  const wrap = document.createElement('div');
+  wrap.className =
+    'flex items-center bg-slate-800 border border-slate-600 ' +
+    'rounded-lg px-2 py-1 gap-1.5';
+
+  wrap.innerHTML = `
+    <span id="header-wakelock-dot"
+      class="w-2 h-2 rounded-full bg-amber-400"
+      title="Screen Wake Lock Status"></span>
+    <span class="text-[11px] font-bold text-slate-300 uppercase">
+      Screen:
+    </span>
+    <select
+      id="header-wakelock-select"
+      onchange="setScreenKeepAwakeMinutes(this.value)"
+      class="bg-slate-900 text-emerald-300 font-bold text-xs rounded px-1.5 py-1 border border-slate-700"
+    >
+      <option value="0">Normal</option>
+      <option value="5">5 Min</option>
+      <option value="10">10 Min</option>
+      <option value="15">15 Min</option>
+      <option value="30">30 Min</option>
+    </select>
+  `;
+  firstGroup.appendChild(wrap);
+}
+
+function setScreenKeepAwakeMinutes(minsVal) {
+  screenWakeLockMinutes = Math.max(0, Number(minsVal) || 0);
+  try {
+    localStorage.setItem(
+      STORAGE_KEY_WAKELOCK_MINS,
+      String(screenWakeLockMinutes)
+    );
+  } catch (e) {}
+
+  syncWakeLockSelectUI();
+
+  if (screenWakeLockMinutes > 0) {
+    requestScreenWakeLock();
+  } else {
+    releaseScreenWakeLock(true);
+  }
+}
+
+function syncWakeLockSelectUI() {
+  const headerSel = document.getElementById('header-wakelock-select');
+  if (headerSel) headerSel.value = String(screenWakeLockMinutes);
+  const adminSel = document.getElementById('admin-wakelock-select');
+  if (adminSel) adminSel.value = String(screenWakeLockMinutes);
+}
+
+async function requestScreenWakeLock() {
+  if (screenWakeLockTimeoutId) {
+    clearTimeout(screenWakeLockTimeoutId);
+    screenWakeLockTimeoutId = null;
+  }
+
+  if (screenWakeLockMinutes <= 0) {
+    releaseScreenWakeLock(true);
+    return;
+  }
+
+  screenWakeLockTimeoutId = setTimeout(() => {
+    releaseScreenWakeLock(false);
+  }, screenWakeLockMinutes * 60 * 1000);
+
+  if (!('wakeLock' in navigator)) {
+    updateWakeLockIndicatorUI(false, 'Browser Unsupported');
+    return;
+  }
+
+  try {
+    if (!screenWakeLockSentinel || screenWakeLockSentinel.released) {
+      screenWakeLockSentinel = await navigator.wakeLock.request('screen');
+      screenWakeLockSentinel.addEventListener('release', () => {
+        updateWakeLockIndicatorUI(false);
+      });
+    }
+    updateWakeLockIndicatorUI(true);
+  } catch (err) {
+    updateWakeLockIndicatorUI(false);
+  }
+}
+
+async function releaseScreenWakeLock(clearTimer = true) {
+  if (clearTimer && screenWakeLockTimeoutId) {
+    clearTimeout(screenWakeLockTimeoutId);
+    screenWakeLockTimeoutId = null;
+  }
+  if (screenWakeLockSentinel) {
+    try {
+      await screenWakeLockSentinel.release();
+    } catch (e) {}
+    screenWakeLockSentinel = null;
+  }
+  updateWakeLockIndicatorUI(false);
+}
+
+function updateWakeLockIndicatorUI(isActive, customText = '') {
+  const dot = document.getElementById('header-wakelock-dot');
+  if (dot) {
+    dot.className = isActive
+      ? 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse'
+      : 'w-2 h-2 rounded-full bg-slate-500';
+  }
+  const adminBadge = document.getElementById('admin-wakelock-status');
+  if (adminBadge) {
+    adminBadge.textContent =
+      customText ||
+      (isActive ? `Active (${screenWakeLockMinutes}m Timer)` : 'Normal Sleep');
+    adminBadge.className = isActive
+      ? 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800'
+      : 'text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600';
+  }
+}
+
+function savePrintFontSizeSetting(val) {
+  const parsed = Math.min(36, Math.max(8, Number(val) || 13));
+  globalPrintFontSizePt = parsed;
+  try {
+    localStorage.setItem(STORAGE_KEY_PRINT_FONT_SIZE, String(parsed));
+  } catch (e) {}
+}
+
+function loadPrintFontSizeSetting() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_PRINT_FONT_SIZE);
+    if (saved) {
+      globalPrintFontSizePt = Math.min(36, Math.max(8, Number(saved) || 13));
+    }
+  } catch (e) {}
+  const inp = document.getElementById('admin-print-fontsize-input');
+  if (inp) inp.value = String(globalPrintFontSizePt);
+}
+
+function autoFillNewGameRollCount() {
+  const priceInp = document.getElementById('new-game-price');
+  const countInp = document.getElementById('new-game-count');
+  if (priceInp && countInp && priceInp.value) {
+    countInp.value = getDefaultRollCountForPrice(Number(priceInp.value));
+  }
+}
+
+function autoFillQuickGameRollCount() {
+  const priceInp = document.getElementById('quick-game-price');
+  const countInp = document.getElementById('quick-game-count');
+  if (priceInp && countInp && priceInp.value) {
+    countInp.value = getDefaultRollCountForPrice(Number(priceInp.value));
+  }
+}
+
+function exportMasterGamesUniversal() {
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    gamesCount: masterGames.length,
+    masterGames: sanitizeMasterGamesList(masterGames)
+  };
+  const blob = new Blob(
+    [JSON.stringify(payload, null, 2)],
+    { type: 'application/json' }
+  );
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dt = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `ProjectLotto_MasterGames_${dt}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+function importMasterGamesUniversal(event) {
+  const file = event?.target?.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      const incoming = Array.isArray(parsed)
+        ? parsed
+        : (Array.isArray(parsed.masterGames) ? parsed.masterGames : []);
+      if (incoming.length === 0) {
+        alert('No valid games found in the selected JSON file.');
+        return;
+      }
+      masterGames = sanitizeMasterGamesList([...masterGames, ...incoming]);
+      saveGamesState();
+      loadActiveStoreData();
+      renderAdminGamesTable();
+      renderDispenserGrid();
+      recalculateReconciliationTotals();
+      alert(`Merged ${incoming.length} games into Master Catalog!`);
+    } catch (err) {
+      alert('Invalid JSON file. Could not import games.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  loadPrintFontSizeSetting();
+  initScreenKeepAwakeSystem();
 });
