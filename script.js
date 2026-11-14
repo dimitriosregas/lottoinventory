@@ -618,6 +618,16 @@ function calculateBoxMetrics(box) {
 
 function updateBoxFieldDirect(idx, field, val) {
   if (!boxes[idx]) return;
+
+  if ((field === 'gameNum' || field === 'startTicket') && typeof isBoxEditUnlocked !== 'undefined' && !isBoxEditUnlocked) {
+    renderDispenserGrid();
+    return;
+  }
+
+  if (typeof resetBoxEditTimeout === 'function') {
+    resetBoxEditTimeout();
+  }
+
   const cleanVal = String(val).trim();
   boxes[idx][field] = cleanVal === '' ? '' : (field === 'gameNum' ? cleanVal : val);
 
@@ -757,7 +767,7 @@ function updateBoxMetricsDisplay(idx) {
   const listSales = document.getElementById(`list-sales-${idx}`);
 
   if (listName) {
-    const roHistoryHtml = rollovers.map((ro, roIdx) =>
+    const roHistoryHtml = rollovers.map(ro =>
       `<div class="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1 flex items-center justify-between">
         <span>Prev #${ro.gameNum} (${ro.gameName || 'Pack'}): #${ro.startTicket}→#${ro.finishedTicket} (${ro.ticketsSold} sold = $${Number(ro.salesAmount || 0).toFixed(2)})</span>
         <button type="button" onclick="undoLastRolloverInBox(${idx})" class="text-red-700 underline ml-2 hover:text-red-900">Undo Rollover</button>
@@ -781,7 +791,6 @@ function renderDispenserGrid() {
   const container = document.getElementById('dispenser-grid-container');
   if (!container) return;
 
-  // Self-healing fallback: guarantee the 40 boxes exist if array is empty
   if (!Array.isArray(boxes) || boxes.length === 0) {
     boxes = createDefault40Boxes();
   }
