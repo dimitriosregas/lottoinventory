@@ -3405,13 +3405,14 @@ function generateProLottoAppIcon() {
 window.addEventListener('DOMContentLoaded', () => {
   generateProLottoAppIcon();
 });
+
 /* ==========================================================================
    SECURE EDIT LOCK: GAME # & START # (5-MINUTE TIMEOUT + MANUAL LOCK)
    ========================================================================== */
 
-let isBoxEditUnlocked = false;
-let boxEditUnlockTimer = null;
-let boxEditCurrentCashier = '';
+var isBoxEditUnlocked = false;
+var boxEditUnlockTimer = null;
+var boxEditCurrentCashier = '';
 
 function requestBoxEditUnlock(targetInputElem) {
   if (isBoxEditUnlocked) {
@@ -3419,8 +3420,8 @@ function requestBoxEditUnlock(targetInputElem) {
     return;
   }
 
-  const targetId = targetInputElem ? targetInputElem.id : null;
-  const cashierName = prompt('🔒 Game # and Start # are Locked\n\nPlease enter your Name to unlock Game # and Start # for 5 minutes:');
+  var targetId = targetInputElem ? targetInputElem.id : null;
+  var cashierName = prompt('🔒 Game # and Start # are Locked\n\nPlease enter your Name to unlock Game # and Start # for 5 minutes:');
   if (!cashierName || !cashierName.trim()) {
     if (targetInputElem) targetInputElem.blur();
     return;
@@ -3429,8 +3430,7 @@ function requestBoxEditUnlock(targetInputElem) {
   boxEditCurrentCashier = cashierName.trim();
   isBoxEditUnlocked = true;
 
-  // Also sync the name into the Cashier bar if it's currently blank
-  const gridCashier = document.getElementById('grid-cashier-input');
+  var gridCashier = document.getElementById('grid-cashier-input');
   if (gridCashier && !gridCashier.value.trim()) {
     gridCashier.value = boxEditCurrentCashier;
     syncMainGridCashier(boxEditCurrentCashier);
@@ -3440,11 +3440,11 @@ function requestBoxEditUnlock(targetInputElem) {
   renderMainGridCashierShiftBar();
   startBoxEditTimeout();
 
-  alert(`✔ Unlocked for ${boxEditCurrentCashier}. You have up to 5 minutes to make changes, or click "Lock Now" in the top bar when finished.`);
+  alert('✔ Unlocked for ' + boxEditCurrentCashier + '. You have up to 5 minutes to make changes, or click "Lock Now" in the top bar when finished.');
 
   if (targetId) {
-    setTimeout(() => {
-      const el = document.getElementById(targetId);
+    setTimeout(function() {
+      var el = document.getElementById(targetId);
       if (el) {
         el.focus();
         el.select();
@@ -3468,9 +3468,8 @@ function lockBoxEditsImmediately() {
 function startBoxEditTimeout() {
   if (boxEditUnlockTimer) clearTimeout(boxEditUnlockTimer);
 
-  // 5 Minutes (300,000 ms)
-  boxEditUnlockTimer = setTimeout(() => {
-    const isDone = confirm(`⏱ 5 minutes have passed (${boxEditCurrentCashier}).\n\nAre you done making changes to Game # and Start #?\n\n• Click OK to confirm and LOCK the boxes.\n• Click Cancel if you need 5 more minutes.`);
+  boxEditUnlockTimer = setTimeout(function() {
+    var isDone = confirm('⏱ 5 minutes have passed (' + boxEditCurrentCashier + ').\n\nAre you done making changes to Game # and Start #?\n\n• Click OK to confirm and LOCK the boxes.\n• Click Cancel if you need 5 more minutes.');
     if (isDone) {
       lockBoxEditsImmediately();
     } else {
