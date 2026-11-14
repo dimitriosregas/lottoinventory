@@ -3189,7 +3189,7 @@ function resetBoxEditTimeout() {
   }
 }
 /* ==========================================================================
-   HIGH-RESOLUTION SCRATCH-OFF LOTTO APP ICON GENERATOR
+   HIGH-RESOLUTION SCRATCH-OFF LOTTO APP ICON GENERATOR (ICON ONLY)
    ========================================================================== */
 function generateProLottoAppIcon() {
   try {
@@ -3198,61 +3198,93 @@ function generateProLottoAppIcon() {
     canvas.height = 512;
     const ctx = canvas.getContext('2d');
 
-    // 1. Rounded Royal Blue Background (#1e3a8a)
-    ctx.fillStyle = '#1e3a8a';
+    // 1. Deep Rich Royal Blue Gradient Background
+    const bgGrad = ctx.createLinearGradient(0, 0, 512, 512);
+    bgGrad.addColorStop(0, '#1e3a8a');
+    bgGrad.addColorStop(1, '#0f172a');
+    ctx.fillStyle = bgGrad;
     ctx.beginPath();
-    ctx.roundRect(0, 0, 512, 512, 96);
+    ctx.roundRect(0, 0, 512, 512, 112);
     ctx.fill();
 
-    // 2. Inner Golden Border
-    ctx.strokeStyle = '#fbbf24';
-    ctx.lineWidth = 12;
+    // 2. Outer Gold Foil Bevel Border
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 14;
     ctx.stroke();
 
-    // 3. Top Title Text: "UR LOTTO" & "AUDIT"
-    ctx.fillStyle = '#fef08a';
-    ctx.font = '900 54px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('UR LOTTO', 256, 110);
-    ctx.fillText('AUDIT', 256, 175);
-
-    // 4. Render Scratch-Off Ticket Graphic Illustration
+    // 3. Render Professional Scratch-Off Ticket Graphic (Centered & Scaled)
     ctx.save();
-    ctx.translate(256, 320);
-    ctx.rotate(-0.12);
+    ctx.translate(256, 256);
+    ctx.rotate(-0.06);
 
-    // Ticket Base (Gold/Bronze foil card)
-    ctx.fillStyle = '#d97706';
+    // Ticket Outer Gold Foil Body
+    const ticketGrad = ctx.createLinearGradient(-190, -110, 190, 110);
+    ticketGrad.addColorStop(0, '#d97706');
+    ticketGrad.addColorStop(0.5, '#fbbf24');
+    ticketGrad.addColorStop(1, '#b45309');
+    ctx.fillStyle = ticketGrad;
     ctx.beginPath();
-    ctx.roundRect(-160, -90, 320, 180, 20);
+    ctx.roundRect(-190, -110, 380, 220, 28);
     ctx.fill();
-    ctx.strokeStyle = '#fde68a';
-    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#fef3c7';
+    ctx.lineWidth = 7;
     ctx.stroke();
 
-    // Silver Scratch Panel Box
-    ctx.fillStyle = '#e2e8f0';
-    ctx.fillRect(-135, -45, 270, 115);
+    // Silver Scratch Panel Area
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillRect(-160, -60, 320, 140);
 
-    // Winning Scratch Area ("WIN!")
-    ctx.fillStyle = '#b91c1c';
-    ctx.font = '900 48px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('WIN!', 0, 32);
-
-    // Scratch off foil texture lines across the top
+    // Scratch off foil texture lines
     ctx.strokeStyle = '#cbd5e1';
-    ctx.lineWidth = 4;
-    for (let i = -120; i < 120; i += 16) {
+    ctx.lineWidth = 5;
+    for (let i = -140; i <= 140; i += 20) {
       ctx.beginPath();
-      ctx.moveTo(i, -45);
-      ctx.lineTo(i + 35, -15);
+      ctx.moveTo(i, -60);
+      ctx.lineTo(i + 45, -10);
       ctx.stroke();
     }
 
+    // Bold Red "WIN!" Badge on Ticket
+    ctx.fillStyle = '#dc2626';
+    ctx.font = '900 68px Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('WIN!', 0, 10);
+
     ctx.restore();
 
-    // Convert canvas to permanent PNG Data URL
+    // 4. Sparkling Golden Stars & Accents in Corners
+    const drawStar = (cx, cy, spikes, outerRadius, innerRadius) => {
+      let rot = (Math.PI / 2) * 3;
+      let x = cx;
+      let y = cy;
+      let step = Math.PI / spikes;
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - outerRadius);
+      for (let i = 0; i < spikes; i++) {
+        x = cx + Math.cos(rot) * outerRadius;
+        y = cy + Math.sin(rot) * outerRadius;
+        ctx.lineTo(x, y);
+        rot += step;
+
+        x = cx + Math.cos(rot) * innerRadius;
+        y = cy + Math.sin(rot) * innerRadius;
+        ctx.lineTo(x, y);
+        rot += step;
+      }
+      ctx.lineTo(cx, cy - outerRadius);
+      ctx.closePath();
+      ctx.fillStyle = '#fde047';
+      ctx.fill();
+    };
+
+    drawStar(75, 95, 4, 20, 8);
+    drawStar(435, 80, 4, 26, 10);
+    drawStar(85, 420, 4, 18, 7);
+    drawStar(420, 415, 4, 22, 9);
+
+    // Convert canvas to permanent high-res PNG Data URL
     const iconDataUrl = canvas.toDataURL('image/png');
 
     // Inject into document header links
