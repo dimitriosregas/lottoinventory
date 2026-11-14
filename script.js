@@ -739,10 +739,10 @@ function updateBoxEndTicketLive(idx, val) {
   const endNum = Number(clean);
   const startNum = Number(box.startTicket) || 0;
   const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(box.price);
-  const maxAllowed = Math.max(0, rollCount - 1);
+  const maxAllowed = Math.max(1, rollCount); // Full pack count (e.g. 20 for $30, 30 for $10)
 
   if (endNum > maxAllowed) {
-    alert(`Invalid ticket number! Ticket cannot exceed the maximum roll limit (${maxAllowed}).`);
+    alert(`Invalid ticket number! Ticket cannot exceed the roll total (${maxAllowed}).`);
     box.endTicket = maxAllowed;
     const inp = document.getElementById(`input-endTicket-${idx}`) || document.getElementById(`list-input-endTicket-${idx}`);
     if (inp) inp.value = maxAllowed;
@@ -756,6 +756,43 @@ function updateBoxEndTicketLive(idx, val) {
     updateHeaderTotalsUI();
     recalculateReconciliationTotals();
   }
+}
+
+function commitBoxEndTicket(idx, val) {
+  if (!boxes[idx]) return;
+  const box = boxes[idx];
+  const clean = String(val).trim();
+
+  if (clean === '') {
+    box.endTicket = '';
+    saveBoxesState();
+    updateBoxMetricsDisplay(idx);
+    updateHeaderTotalsUI();
+    recalculateReconciliationTotals();
+    return;
+  }
+
+  const endNum = Number(clean);
+  const startNum = Number(box.startTicket) || 0;
+  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(box.price);
+  const maxAllowed = Math.max(1, rollCount); // Full pack count (e.g. 20 for $30, 30 for $10)
+
+  if (endNum > maxAllowed) {
+    box.endTicket = maxAllowed;
+  } else if (endNum === startNum) {
+    box.endTicket = endNum;
+  } else if (endNum < startNum) {
+    box.endTicket = endNum;
+    openRolloverDecisionModal(idx, endNum);
+    return;
+  } else {
+    box.endTicket = endNum;
+  }
+
+  saveBoxesState();
+  updateBoxMetricsDisplay(idx);
+  updateHeaderTotalsUI();
+  recalculateReconciliationTotals();
 }
 
 function commitBoxEndTicket(idx, val) {
