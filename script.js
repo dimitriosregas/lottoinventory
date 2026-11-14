@@ -3354,7 +3354,7 @@ window.requestBoxEditUnlock = function(targetInputElem) {
 
   alert('✔ Unlocked for ' + window.boxEditCurrentCashier + '. You have up to 5 minutes to make changes, or click "Lock Now" in the top bar when finished.');
 
-  // Focus the tapped input and open the numeric keypad
+  // Focus the tapped input and open the numeric keypad with auto-highlight
   if (targetId) {
     setTimeout(function() {
       var el = document.getElementById(targetId);
