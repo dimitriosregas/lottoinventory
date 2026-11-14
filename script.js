@@ -3310,249 +3310,6 @@ function printFilteredSummaryLegal(cashierName) {
   window.print();
 }
 /* ==========================================================================
-   SECURE BOX EDIT LOCK & 5-MINUTE TIMEOUT SYSTEM
-   ========================================================================== */
-
-let isBoxEditUnlocked = false;
-let boxEditUnlockTimer = null;
-let boxEditCurrentCashier = '';
-
-window.requestBoxEditUnlock = function(targetInputElem) {
-  if (window.isBoxEditUnlocked) {
-    window.resetBoxEditTimeout();
-    return;
-  }
-
-  var targetId = targetInputElem ? targetInputElem.id : null;
-  var cashierName = prompt('🔒 Game # and Start # are Locked\n\nPlease enter your Name to unlock Game # and Start # for 5 minutes:');
-  if (!cashierName || !cashierName.trim()) {
-    if (targetInputElem) targetInputElem.blur();
-    return;
-  }
-
-  window.boxEditCurrentCashier = cashierName.trim();
-  window.isBoxEditUnlocked = true;
-
-  var gridCashier = document.getElementById('grid-cashier-input');
-  if (gridCashier && !gridCashier.value.trim()) {
-    gridCashier.value = window.boxEditCurrentCashier;
-    syncMainGridCashier(window.boxEditCurrentCashier);
-  }
-
-  // Instantly force-remove readonly from all Game# and Start# inputs on screen
-  document.querySelectorAll('input[id*="gameNum"], input[id*="startTicket"]').forEach(inp => {
-    inp.removeAttribute('readonly');
-    inp.classList.remove('bg-slate-100', 'text-slate-500', 'cursor-pointer');
-    inp.classList.add('bg-white');
-  });
-
-  renderDispenserGrid();
-  renderMainGridCashierShiftBar();
-  window.startBoxEditTimeout();
-
-  alert('✔ Unlocked for ' + window.boxEditCurrentCashier + '. You have up to 5 minutes to make changes, or click "Lock Now" in the top bar when finished.');
-
-  if (targetId) {
-    setTimeout(function() {
-      var el = document.getElementById(targetId);
-      if (el) {
-        el.removeAttribute('readonly');
-        el.focus();
-        el.select();
-      }
-    }, 50);
-  }
-};
-
-function startBoxEditTimeout() {
-  if (boxEditUnlockTimer) clearTimeout(boxEditUnlockTimer);
-  
-  // 5 Minutes timeout (5 * 60 * 1000 ms)
-  boxEditUnlockTimer = setTimeout(() => {
-    isBoxEditUnlocked = false;
-    
-    const needMore = confirm(`⏱ Edit session expired after 5 minutes of inactivity for ${boxEditCurrentCashier}.\n\nDo you need more time to edit these settings?`);
-    if (needMore) {
-      isBoxEditUnlocked = true;
-      startBoxEditTimeout();
-    } else {
-      boxEditCurrentCashier = '';
-      alert('🔒 Box settings are now securely locked again.');
-    }
-  }, 300000); 
-}
-
-function resetBoxEditTimeout() {
-  if (isBoxEditUnlocked) {
-    startBoxEditTimeout(); // Refresh the 5-minute timer on activity
-  }
-}
-/* ==========================================================================
-   HIGH-RESOLUTION SCRATCH-OFF LOTTO APP ICON GENERATOR (PLAYFUL TICKET V3)
-   ========================================================================== */
-function generateProLottoAppIcon() {
-  try {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d');
-
-    // 1. Dark Navy Gradient Background & Rounded Borders
-    const bgGrad = ctx.createLinearGradient(0, 0, 512, 512);
-    bgGrad.addColorStop(0, '#0f172a');
-    bgGrad.addColorStop(1, '#020617');
-    ctx.fillStyle = bgGrad;
-    ctx.beginPath();
-    ctx.roundRect(0, 0, 512, 512, 112);
-    ctx.fill();
-
-    // 2. Bright Orange-to-Yellow Glowing Border
-    const borderGrad = ctx.createLinearGradient(0, 0, 512, 512);
-    borderGrad.addColorStop(0, '#f97316');
-    borderGrad.addColorStop(1, '#eab308');
-    ctx.strokeStyle = borderGrad;
-    ctx.lineWidth = 14;
-    ctx.stroke();
-
-    // 3. Draw Ticket Graphic
-    ctx.save();
-    ctx.translate(256, 256);
-    ctx.rotate(-0.16);
-
-    // Dynamic Ticket shadow
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
-    ctx.shadowBlur = 24;
-    ctx.shadowOffsetY = 12;
-
-    // Ticket Background (Warm Orange-Gold & Beveled edges)
-    const ticketGrad = ctx.createLinearGradient(-150, -180, 150, 180);
-    ticketGrad.addColorStop(0, '#fed7aa');
-    ticketGrad.addColorStop(0.5, '#f97316');
-    ticketGrad.addColorStop(1, '#c2410c');
-    ctx.fillStyle = ticketGrad;
-    ctx.beginPath();
-    // Rough-edged scratch ticket borders (scalloped perforated look on ends)
-    ctx.roundRect(-135, -200, 270, 400, 8);
-    ctx.fill();
-    ctx.shadowColor = 'transparent'; // Reset shadow
-
-    ctx.strokeStyle = '#fffbeb';
-    ctx.lineWidth = 4;
-    ctx.stroke();
-
-    // Ticket header label
-    ctx.fillStyle = '#0f172a';
-    ctx.font = '900 44px Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('LOTTERY', 0, -145);
-
-    // Header underscore accent
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(-90, -125, 180, 5);
-
-    // Outer play panel boundary (dark borders)
-    ctx.fillStyle = '#1e3a8a';
-    ctx.beginPath();
-    ctx.roundRect(-100, -100, 200, 205, 12);
-    ctx.fill();
-
-    // Inner colorful game symbols / Scratch-reveal area
-    ctx.fillStyle = '#6366f1';
-    ctx.beginPath();
-    ctx.roundRect(-92, -92, 184, 189, 8);
-    ctx.fill();
-
-    // Colorful Star game symbols under the scratch pattern
-    const drawTicketStars = (sx, sy, size, color) => {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(sx, sy, size, 0, Math.PI * 2);
-      ctx.fill();
-    };
-    drawTicketStars(-50, -50, 18, '#fb7185');
-    drawTicketStars(50, -50, 15, '#38bdf8');
-    drawTicketStars(-50, 50, 14, '#fbbf24');
-    drawTicketStars(50, 50, 16, '#4ade80');
-    drawTicketStars(0, 0, 20, '#e879f9');
-
-    // Multi-color scratch & glitter visual effects overlapping
-    ctx.strokeStyle = '#f8fafc';
-    ctx.lineWidth = 8;
-    ctx.beginPath();
-    ctx.moveTo(-75, 20);
-    ctx.lineTo(45, -60);
-    ctx.stroke();
-
-    ctx.strokeStyle = '#cbd5e1';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(-65, 45);
-    ctx.lineTo(25, -45);
-    ctx.stroke();
-
-    // Playful Barcode Pattern
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(-105, 125, 210, 55);
-    ctx.fillStyle = '#0f172a';
-    for (let bar = -95; bar <= 85; bar += 14) {
-      ctx.fillRect(bar, 130, 4, 45);
-      ctx.fillRect(bar + 7, 130, 2, 45);
-    }
-
-    ctx.restore();
-
-    // 4. Sparkling Multi-Colored Stars around the base (Visual Glow)
-    const drawAccentStar = (cx, cy, spikes, outerRadius, innerRadius, color) => {
-      let rot = (Math.PI / 2) * 3;
-      let x = cx;
-      let y = cy;
-      let step = Math.PI / spikes;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - outerRadius);
-      for (let i = 0; i < spikes; i++) {
-        x = cx + Math.cos(rot) * outerRadius;
-        y = cy + Math.sin(rot) * outerRadius;
-        ctx.lineTo(x, y);
-        rot += step;
-        x = cx + Math.cos(rot) * innerRadius;
-        y = cy + Math.sin(rot) * innerRadius;
-        ctx.lineTo(x, y);
-        rot += step;
-      }
-      ctx.lineTo(cx, cy - outerRadius);
-      ctx.closePath();
-      ctx.fillStyle = color;
-      ctx.fill();
-    };
-
-    drawAccentStar(150, 120, 4, 30, 12, '#fb7185'); // Large peach star
-    drawAccentStar(110, 185, 4, 20, 8, '#38bdf8'); // Sky blue star
-    drawAccentStar(340, 395, 4, 28, 11, '#fde047'); // Star near scratch corner
-    drawAccentStar(405, 240, 4, 15, 6, '#38bdf8'); // Cyan star
-    drawAccentStar(400, 310, 4, 18, 7, '#c084fc'); // Purple star
-    drawAccentStar(115, 260, 4, 15, 6, '#fde047'); // Tiny yellow star
-
-    // Convert canvas to permanent high-res PNG Data URL
-    const iconDataUrl = canvas.toDataURL('image/png');
-
-    // Inject into document header links
-    document.querySelectorAll("link[rel*='icon']").forEach(link => {
-      link.type = 'image/png';
-      link.href = iconDataUrl;
-    });
-    const touchIcon = document.getElementById('app-touch-icon');
-    if (touchIcon) touchIcon.href = iconDataUrl;
-  } catch (e) {
-    console.error('Icon generator error:', e);
-  }
-}
-
-// Automatically trigger icon generation on load
-window.addEventListener('DOMContentLoaded', () => {
-  generateProLottoAppIcon();
-});
-
-/* ==========================================================================
    SECURE EDIT LOCK: GAME # & START # (5-MINUTE TIMEOUT + MANUAL LOCK)
    ========================================================================== */
 
@@ -3562,12 +3319,18 @@ window.boxEditCurrentCashier = '';
 
 window.requestBoxEditUnlock = function(targetInputElem) {
   if (window.isBoxEditUnlocked) {
-    window.resetBoxEditTimeout();
+    if (targetInputElem) {
+      targetInputElem.removeAttribute('readonly');
+      targetInputElem.focus();
+      targetInputElem.select();
+    }
+    if (typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout();
     return;
   }
 
   var targetId = targetInputElem ? targetInputElem.id : null;
   var cashierName = prompt('🔒 Game # and Start # are Locked\n\nPlease enter your Name to unlock Game # and Start # for 5 minutes:');
+  
   if (!cashierName || !cashierName.trim()) {
     if (targetInputElem) targetInputElem.blur();
     return;
@@ -3584,12 +3347,14 @@ window.requestBoxEditUnlock = function(targetInputElem) {
     }
   }
 
+  // Re-render grid/list to strip readonly across all boxes
   if (typeof renderDispenserGrid === 'function') renderDispenserGrid();
   if (typeof renderMainGridCashierShiftBar === 'function') renderMainGridCashierShiftBar();
-  window.startBoxEditTimeout();
+  if (typeof startBoxEditTimeout === 'function') startBoxEditTimeout();
 
   alert('✔ Unlocked for ' + window.boxEditCurrentCashier + '. You have up to 5 minutes to make changes, or click "Lock Now" in the top bar when finished.');
 
+  // Focus the tapped input and open the numeric keypad
   if (targetId) {
     setTimeout(function() {
       var el = document.getElementById(targetId);
