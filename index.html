@@ -649,7 +649,33 @@
               </div>
             </div>
           </div>
-
+<!-- SCREEN WAKE LOCK / KEEP SCREEN ON CONTROL -->
+<div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-2">
+  <div class="flex items-center justify-between">
+    <label class="block text-xs font-extrabold text-slate-800 uppercase tracking-wider">
+      ☀️ Keep Screen On (Wake Lock Timer)
+    </label>
+    <span id="admin-wakelock-status" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+      Normal Sleep
+    </span>
+  </div>
+  <p class="text-[11px] text-slate-500">
+    Keeps the screen awake for the selected time after any tap or keypress, then returns to normal sleep when closed or idle.
+  </p>
+  <div class="flex flex-wrap items-center gap-3 pt-1">
+    <select
+      id="admin-wakelock-select"
+      onchange="setScreenKeepAwakeMinutes(this.value)"
+      class="border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold lotto-input bg-white"
+    >
+      <option value="0">Off (Device Default)</option>
+      <option value="5">5 Minutes</option>
+      <option value="10" selected>10 Minutes (Recommended)</option>
+      <option value="15">15 Minutes</option>
+      <option value="30">30 Minutes</option>
+    </select>
+  </div>
+</div>
           <!-- MASTER GAMES CATALOG -->
           <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <div class="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
