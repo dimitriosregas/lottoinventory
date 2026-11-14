@@ -3317,26 +3317,52 @@ let isBoxEditUnlocked = false;
 let boxEditUnlockTimer = null;
 let boxEditCurrentCashier = '';
 
-function requestBoxEditUnlock(targetInputElem, callbackOnSuccess) {
-  if (isBoxEditUnlocked) {
-    resetBoxEditTimeout();
-    if (typeof callbackOnSuccess === 'function') callbackOnSuccess();
+window.requestBoxEditUnlock = function(targetInputElem) {
+  if (window.isBoxEditUnlocked) {
+    window.resetBoxEditTimeout();
     return;
   }
 
-  const cashierName = prompt('🔒 Sensitive Setting Locked\n\nEnter Cashier Name to unlock Box#, Game#, and Start# edits for 5 minutes:');
+  var targetId = targetInputElem ? targetInputElem.id : null;
+  var cashierName = prompt('🔒 Game # and Start # are Locked\n\nPlease enter your Name to unlock Game # and Start # for 5 minutes:');
   if (!cashierName || !cashierName.trim()) {
     if (targetInputElem) targetInputElem.blur();
     return;
   }
 
-  boxEditCurrentCashier = cashierName.trim();
-  isBoxEditUnlocked = true;
-  startBoxEditTimeout();
+  window.boxEditCurrentCashier = cashierName.trim();
+  window.isBoxEditUnlocked = true;
 
-  alert(`✔ Unlocked successfully for ${boxEditCurrentCashier}. You have 5 minutes to make changes.`);
-  if (typeof callbackOnSuccess === 'function') callbackOnSuccess();
-}
+  var gridCashier = document.getElementById('grid-cashier-input');
+  if (gridCashier && !gridCashier.value.trim()) {
+    gridCashier.value = window.boxEditCurrentCashier;
+    syncMainGridCashier(window.boxEditCurrentCashier);
+  }
+
+  // Instantly force-remove readonly from all Game# and Start# inputs on screen
+  document.querySelectorAll('input[id*="gameNum"], input[id*="startTicket"]').forEach(inp => {
+    inp.removeAttribute('readonly');
+    inp.classList.remove('bg-slate-100', 'text-slate-500', 'cursor-pointer');
+    inp.classList.add('bg-white');
+  });
+
+  renderDispenserGrid();
+  renderMainGridCashierShiftBar();
+  window.startBoxEditTimeout();
+
+  alert('✔ Unlocked for ' + window.boxEditCurrentCashier + '. You have up to 5 minutes to make changes, or click "Lock Now" in the top bar when finished.');
+
+  if (targetId) {
+    setTimeout(function() {
+      var el = document.getElementById(targetId);
+      if (el) {
+        el.removeAttribute('readonly');
+        el.focus();
+        el.select();
+      }
+    }, 50);
+  }
+};
 
 function startBoxEditTimeout() {
   if (boxEditUnlockTimer) clearTimeout(boxEditUnlockTimer);
