@@ -82,7 +82,7 @@ function getDefaultRollCountForPrice(price) {
   if (p === 3) return 100;
   if (p === 5) return 60;
   if (p === 10) return 30;
-  if (p === 15) return 30;  // Fallback for $15 tier if applicable
+  if (p === 15) return 20;  // Fallback for $15 tier if applicable
   if (p === 20) return 15;
   if (p === 25) return 24;
   if (p === 30) return 20;
@@ -584,7 +584,6 @@ function calculateBoxMetrics(box) {
   const endVal = box.endTicket;
   const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
   const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(price);
-  const maxTicketAllowed = Math.max(1, rollCount); // Full roll count is end of pack
 
   if (endVal === '' || endVal === undefined || endVal === null) {
     let roSoldOnly = 0;
@@ -592,25 +591,28 @@ function calculateBoxMetrics(box) {
     return { ticketsSold: roSoldOnly, dollarSales: roSoldOnly * price, status: 'pending', hasRollover: rollovers.length > 0, activeTicket: start };
   }
 
-  const end = Math.min(Number(endVal), maxTicketAllowed);
+  const end = Number(endVal);
   let ticketsSold = 0;
 
-  if (rollovers.length > 0) {
-    rollovers.forEach(ro => { ticketsSold += Number(ro.ticketsSold) || 0; });
-    if (end >= start) { ticketsSold += (end - start); }
+  if (end >= start) {
+    ticketsSold = (end - start);
   } else {
-    if (end >= start) { ticketsSold = end - start; }
-    else { ticketsSold = 0; }
+    // Handles roll-overs crossing ticket number resets (e.g. going from high number back to 000)
+    ticketsSold = (rollCount - start) + end;
   }
 
-  ticketsSold = Math.max(0, ticketsSold);
-  const dollarSales = ticketsSold * price;
+  // Add any prior completed rollovers in this box slot
+  let rolloverSold = 0;
+  rollovers.forEach(ro => { rolloverSold += Number(ro.ticketsSold) || 0; });
+  
+  const totalTicketsSold = Math.max(0, ticketsSold + rolloverSold);
+  const dollarSales = totalTicketsSold * price;
 
-  let status = 'complete';
+  let status = 'active';
+  if (totalTicketsSold >= rollCount) status = 'complete';
   if (rollovers.length > 0) status = 'rollover';
-  else if (ticketsSold === 0 && end === start) status = 'pending';
 
-  return { ticketsSold, dollarSales, status, hasRollover: rollovers.length > 0, activeTicket: end };
+  return { ticketsSold: totalTicketsSold, dollarSales, status, hasRollover: rollovers.length > 0, activeTicket: end };
 }
 
 function undoLastRolloverInBox(idx) {
