@@ -922,9 +922,9 @@ function renderDispenserGrid() {
             ${box.boxNumber || (idx + 1)}
           </td>
           <td style="padding: 6px 8px; text-align: center; font-family: monospace; font-weight: bold;">
-            <input type="text" ${lockAttr} tabindex="${tabGame}" enterkeyhint="next"
+            <input type="text" inputmode="numeric" ${lockAttr} tabindex="${tabGame}" enterkeyhint="next"
               id="list-input-gameNum-${idx}" value="${box.gameNum || ''}"
-              onclick="if(typeof isBoxEditUnlocked === 'undefined' || !isBoxEditUnlocked) requestBoxEditUnlock(this)"
+              onclick="requestBoxEditUnlock(this)"
               oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'gameNum', this.value)"
               onkeydown="handleGameNumKeydown(event, ${idx})"
               placeholder="Game#"
@@ -936,15 +936,15 @@ function renderDispenserGrid() {
           </td>
           <td id="list-price-${idx}" style="padding: 6px 8px; text-align: center; font-weight: bold; color: #047857;">${hasGame && box.price ? '$' + box.price : '-'}</td>
           <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
-            <input type="number" ${lockAttr} tabindex="${tabStart}" enterkeyhint="next"
+            <input type="number" inputmode="numeric" ${lockAttr} tabindex="${tabStart}" enterkeyhint="next"
               id="list-input-startTicket-${idx}" value="${box.startTicket !== '' && box.startTicket !== undefined ? box.startTicket : 0}"
-              onclick="if(typeof isBoxEditUnlocked === 'undefined' || !isBoxEditUnlocked) requestBoxEditUnlock(this)"
+              onclick="requestBoxEditUnlock(this)"
               oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'startTicket', this.value)"
               onkeydown="handleStartKeydown(event, ${idx})"
               class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input ${lockStyle}" />
           </td>
           <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
-            <input type="number" tabindex="${tabEnd}" enterkeyhint="next"
+            <input type="number" inputmode="numeric" tabindex="${tabEnd}" enterkeyhint="next"
               id="list-input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}"
               oninput="updateBoxEndTicketLive(${idx}, this.value)"
               onchange="commitBoxEndTicket(${idx}, this.value)"
@@ -1028,9 +1028,9 @@ function renderDispenserGrid() {
         <div class="space-y-2 mb-2">
           <div class="flex items-center gap-2">
             <label class="text-[10px] font-bold text-slate-500 uppercase w-12">Game #:</label>
-            <input type="text" ${lockAttr} tabindex="${tabGame}" enterkeyhint="next"
+            <input type="text" inputmode="numeric" ${lockAttr} tabindex="${tabGame}" enterkeyhint="next"
               id="input-gameNum-${idx}" value="${box.gameNum || ''}" placeholder="e.g. 1005"
-              onclick="if(typeof isBoxEditUnlocked === 'undefined' || !isBoxEditUnlocked) requestBoxEditUnlock(this)"
+              onclick="requestBoxEditUnlock(this)"
               oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'gameNum', this.value)"
               onkeydown="handleGameNumKeydown(event, ${idx})"
               class="flex-1 text-xs font-mono font-bold border border-slate-300 rounded px-2 py-1 lotto-input ${lockStyle}" />
@@ -1042,16 +1042,16 @@ function renderDispenserGrid() {
           <div class="grid grid-cols-2 gap-2 pt-1">
             <div>
               <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Start #</label>
-              <input type="number" ${lockAttr} tabindex="${tabStart}" enterkeyhint="next"
+              <input type="number" inputmode="numeric" ${lockAttr} tabindex="${tabStart}" enterkeyhint="next"
                 id="input-startTicket-${idx}" value="${box.startTicket !== undefined ? box.startTicket : 0}"
-                onclick="if(typeof isBoxEditUnlocked === 'undefined' || !isBoxEditUnlocked) requestBoxEditUnlock(this)"
+                onclick="requestBoxEditUnlock(this)"
                 oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'startTicket', this.value)"
                 onkeydown="handleStartKeydown(event, ${idx})" placeholder="000"
                 class="w-full text-center font-mono font-bold text-xs border border-slate-300 rounded p-1.5 lotto-input ${lockStyle}" />
             </div>
             <div>
               <label class="block text-[10px] font-bold text-blue-700 uppercase mb-0.5">End #</label>
-              <input type="number" tabindex="${tabEnd}" enterkeyhint="next"
+              <input type="number" inputmode="numeric" tabindex="${tabEnd}" enterkeyhint="next"
                 id="input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}"
                 oninput="updateBoxEndTicketLive(${idx}, this.value)"
                 onchange="commitBoxEndTicket(${idx}, this.value)"
