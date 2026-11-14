@@ -830,3 +830,22 @@
   <script src="./script.js"></script>
 </body>
 </html>
+window.addEventListener('DOMContentLoaded', () => {
+  // Force List View on startup if toggle or container exists
+  setTimeout(() => {
+    if (typeof currentDispenserView !== 'undefined') {
+      currentDispenserView = 'list';
+    }
+    if (typeof toggleDispenserView === 'function' && document.getElementById('dispenser-grid-container')) {
+      // Check if grid is currently active, then toggle to list
+      const gridContainer = document.getElementById('dispenser-grid-container');
+      if (gridContainer && gridContainer.classList.contains('grid-mode')) {
+        toggleDispenserView();
+      }
+    }
+    // Re-render the grid/list in list mode
+    if (typeof renderDispenserGrid === 'function') {
+      renderDispenserGrid();
+    }
+  }, 100);
+});
