@@ -3136,3 +3136,55 @@ function printFilteredSummaryLegal(cashierName) {
   `;
   window.print();
 }
+/* ==========================================================================
+   SECURE BOX EDIT LOCK & 5-MINUTE TIMEOUT SYSTEM
+   ========================================================================== */
+
+let isBoxEditUnlocked = false;
+let boxEditUnlockTimer = null;
+let boxEditCurrentCashier = '';
+
+function requestBoxEditUnlock(targetInputElem, callbackOnSuccess) {
+  if (isBoxEditUnlocked) {
+    resetBoxEditTimeout();
+    if (typeof callbackOnSuccess === 'function') callbackOnSuccess();
+    return;
+  }
+
+  const cashierName = prompt('🔒 Sensitive Setting Locked\n\nEnter Cashier Name to unlock Box#, Game#, and Start# edits for 5 minutes:');
+  if (!cashierName || !cashierName.trim()) {
+    if (targetInputElem) targetInputElem.blur();
+    return;
+  }
+
+  boxEditCurrentCashier = cashierName.trim();
+  isBoxEditUnlocked = true;
+  startBoxEditTimeout();
+
+  alert(`✔ Unlocked successfully for ${boxEditCurrentCashier}. You have 5 minutes to make changes.`);
+  if (typeof callbackOnSuccess === 'function') callbackOnSuccess();
+}
+
+function startBoxEditTimeout() {
+  if (boxEditUnlockTimer) clearTimeout(boxEditUnlockTimer);
+  
+  // 5 Minutes timeout (5 * 60 * 1000 ms)
+  boxEditUnlockTimer = setTimeout(() => {
+    isBoxEditUnlocked = false;
+    
+    const needMore = confirm(`⏱ Edit session expired after 5 minutes of inactivity for ${boxEditCurrentCashier}.\n\nDo you need more time to edit these settings?`);
+    if (needMore) {
+      isBoxEditUnlocked = true;
+      startBoxEditTimeout();
+    } else {
+      boxEditCurrentCashier = '';
+      alert('🔒 Box settings are now securely locked again.');
+    }
+  }, 300000); 
+}
+
+function resetBoxEditTimeout() {
+  if (isBoxEditUnlocked) {
+    startBoxEditTimeout(); // Refresh the 5-minute timer on activity
+  }
+}
