@@ -1300,43 +1300,53 @@ function renderMainGridCashierShiftBar() {
     if (!container) return;
     bar = document.createElement('div');
     bar.id = 'main-grid-cashier-shift-bar';
-    bar.className = 'bg-white rounded-xl shadow-sm border border-slate-200 p-3 mb-4 flex flex-wrap items-center justify-between gap-3 text-xs';
+    bar.className = 'bg-white rounded-xl shadow-sm border border-slate-200 p-3 mb-4 space-y-2.5 text-xs';
     container.insertBefore(bar, container.firstChild);
   }
 
   const currentCashier = document.getElementById('rec-cashier-out')?.value || '';
   const currentShift = document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
-  const isUnlocked = (typeof isBoxEditUnlocked !== 'undefined' && isBoxEditUnlocked);
+  const isUnlocked = (typeof window.isBoxEditUnlocked !== 'undefined' && window.isBoxEditUnlocked);
 
-  const lockBtnHtml = isUnlocked
-    ? `<button type="button" onclick="lockBoxEditsImmediately()" class="bg-amber-500 hover:bg-amber-600 text-white font-extrabold px-3 py-1.5 rounded-lg shadow-sm transition animate-pulse">
-         🔓 Editing (${boxEditCurrentCashier}) — Click to Lock Now
-       </button>`
-    : `<span class="bg-slate-100 text-slate-600 border border-slate-300 font-bold px-2.5 py-1.5 rounded-lg">
-         🔒 Game# & Start# Locked
-       </span>`;
+  const lockBannerHtml = isUnlocked
+    ? `<div class="pt-2 border-t border-slate-100 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+         <span class="font-bold text-amber-900">
+           🔓 <strong>Game # & Start # Unlocked</strong> by ${window.boxEditCurrentCashier || 'Cashier'} (5-Min Timer Active)
+         </span>
+         <button type="button" onclick="window.lockBoxEditsImmediately()" class="bg-amber-600 hover:bg-amber-700 text-white font-extrabold px-3 py-1 rounded-lg shadow-sm transition">
+           🔒 Done Editing — Lock Now
+         </button>
+       </div>`
+    : `<div class="pt-2 border-t border-slate-100 flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5 text-slate-600">
+         <span>💡 <strong>Tip:</strong> Game # and Start # boxes are locked to prevent accidental edits. Tap any Game # or Start # box to unlock.</span>
+         <span class="bg-slate-200 text-slate-700 font-extrabold px-2.5 py-1 rounded text-[11px] whitespace-nowrap ml-2">
+           🔒 Game# & Start# Locked
+         </span>
+       </div>`;
 
   bar.innerHTML = `
-    <div class="flex items-center gap-3 flex-1 min-w-[280px]">
-      <div class="flex items-center gap-1.5 flex-1">
-        <label class="font-bold text-slate-600 uppercase text-[10px]">Cashier:</label>
-        <input type="text" id="grid-cashier-input" value="${currentCashier}" placeholder="Select or type cashier..." oninput="syncMainGridCashier(this.value)" class="flex-1 border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-xs bg-slate-50 focus:bg-white" />
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3 flex-1 min-w-[280px]">
+        <div class="flex items-center gap-1.5 flex-1">
+          <label class="font-bold text-slate-600 uppercase text-[10px]">Cashier:</label>
+          <input type="text" id="grid-cashier-input" value="${currentCashier}" placeholder="Select or type cashier..." oninput="syncMainGridCashier(this.value)" class="flex-1 border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-xs bg-slate-50 focus:bg-white" />
+        </div>
+        <div class="flex items-center gap-1.5">
+          <label class="font-bold text-slate-600 uppercase text-[10px]">Shift:</label>
+          <select id="grid-shift-select" onchange="syncMainGridShift(this.value)" class="border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-xs bg-white">
+            <option value="Shift 1 (Morning)" ${currentShift.includes('Morning') || currentShift.includes('1') ? 'selected' : ''}>Shift 1 (Morning)</option>
+            <option value="Shift 2 (Evening)" ${currentShift.includes('Evening') || currentShift.includes('2') ? 'selected' : ''}>Shift 2 (Evening)</option>
+            <option value="Shift 3 (Night)" ${currentShift.includes('Night') || currentShift.includes('3') ? 'selected' : ''}>Shift 3 (Night)</option>
+          </select>
+        </div>
       </div>
-      <div class="flex items-center gap-1.5">
-        <label class="font-bold text-slate-600 uppercase text-[10px]">Shift:</label>
-        <select id="grid-shift-select" onchange="syncMainGridShift(this.value)" class="border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-xs bg-white">
-          <option value="Shift 1 (Morning)" ${currentShift.includes('Morning') || currentShift.includes('1') ? 'selected' : ''}>Shift 1 (Morning)</option>
-          <option value="Shift 2 (Evening)" ${currentShift.includes('Evening') || currentShift.includes('2') ? 'selected' : ''}>Shift 2 (Evening)</option>
-          <option value="Shift 3 (Night)" ${currentShift.includes('Night') || currentShift.includes('3') ? 'selected' : ''}>Shift 3 (Night)</option>
-        </select>
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="openWorksheetPrintChoiceModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-3 py-1.5 rounded-lg shadow-sm transition">
+          🖨 Print Worksheet...
+        </button>
       </div>
     </div>
-    <div class="flex items-center gap-2">
-      ${lockBtnHtml}
-      <button type="button" onclick="openWorksheetPrintChoiceModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-3 py-1.5 rounded-lg shadow-sm transition">
-        🖨 Print Worksheet...
-      </button>
-    </div>
+    ${lockBannerHtml}
   `;
   handleCashierInputAutocomplete('grid-cashier-input', 'cashier-datalist-grid');
 }
