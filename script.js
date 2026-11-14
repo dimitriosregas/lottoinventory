@@ -74,7 +74,6 @@ let sigCtx = null;
 let lastActiveViewName = 'grid';
 let globalPrintFontSizePt = 11; // Default 11pt readable size
 const STORAGE_KEY_PRINT_FONT_SIZE = 'project_lotto_print_font_size_v1';
-
 function getDefaultRollCountForPrice(price) {
   const p = Number(price);
   if (!p || p <= 0) return 300;
@@ -83,6 +82,7 @@ function getDefaultRollCountForPrice(price) {
   if (p === 3) return 100;
   if (p === 5) return 60;
   if (p === 10) return 30;
+  if (p === 15) return 30;  // Fallback for $15 tier if applicable
   if (p === 20) return 15;
   if (p === 25) return 24;
   if (p === 30) return 20;
