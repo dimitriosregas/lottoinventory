@@ -504,10 +504,10 @@ function finalizeRolloverAction(idx, finalGameNum) {
   const pendingEnd = document.getElementById('modal-roll-pending-end').value;
   const price = Number(box.price) || 0;
   const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(price);
-  const maxTicket = Math.max(0, rollCount - 1);
+  const maxTicket = Math.max(1, rollCount); // Full roll count (e.g. 30, 60, 150, 300)
   const start = Number(box.startTicket) || 0;
   
-  const oldPackSold = (maxTicket >= start) ? ((maxTicket - start) + 1) : 0;
+  const oldPackSold = (maxTicket >= start) ? (maxTicket - start) : 0;
   const oldPackSales = oldPackSold * price;
 
   if (!Array.isArray(box.rollovers)) box.rollovers = [];
@@ -547,6 +547,70 @@ function finalizeRolloverAction(idx, finalGameNum) {
   cancelRolloverModal();
   renderDispenserGrid();
   recalculateReconciliationTotals();
+}
+
+function undoLastRolloverInBox(idx) {
+  const box = boxes[idx];
+  if (!box || !Array.isArray(box.rollovers) || box.rollovers.length === 0) {
+    alert('No rollovers to undo for this box.');
+    return;
+  }
+  if (!confirm(`Are you sure you want to undo the last rollover for Box ${box.boxNumber}? This will restore the previous roll state.`)) return;
+
+  const lastRo = box.rollovers.pop();
+  box.gameNum = lastRo.gameNum;
+  box.gameName = lastRo.gameName;
+  box.price = lastRo.price;
+  box.startTicket = lastRo.startTicket;
+  box.endTicket = lastRo.finishedTicket;
+
+  saveBoxesState();
+  renderDispenserGrid();
+  recalculateReconciliationTotals();
+  alert('Rollover successfully undone and restored!');
+}
+
+function cancelRolloverModal() {
+  document.getElementById('modal-box-rollover').classList.add('hidden');
+}
+
+function calculateBoxMetrics(box) {
+  if (!box || !box.gameNum) {
+    return { ticketsSold: 0, dollarSales: 0, status: 'empty', hasRollover: false, activeTicket: '-' };
+  }
+
+  const price = Number(box.price) || 0;
+  const start = Number(box.startTicket) || 0;
+  const endVal = box.endTicket;
+  const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
+  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(price);
+  const maxTicketAllowed = Math.max(1, rollCount); // Full roll count is end of pack
+
+  if (endVal === '' || endVal === undefined || endVal === null) {
+    let roSoldOnly = 0;
+    rollovers.forEach(ro => { roSoldOnly += Number(ro.ticketsSold) || 0; });
+    return { ticketsSold: roSoldOnly, dollarSales: roSoldOnly * price, status: 'pending', hasRollover: rollovers.length > 0, activeTicket: start };
+  }
+
+  const end = Math.min(Number(endVal), maxTicketAllowed);
+  let ticketsSold = 0;
+
+  if (rollovers.length > 0) {
+    rollovers.forEach(ro => { ticketsSold += Number(ro.ticketsSold) || 0; });
+    if (end >= start) { ticketsSold += (end - start); }
+  } else {
+    if (end >= start) { ticketsSold = end - start; }
+    else { ticketsSold = 0; }
+  }
+
+  ticketsSold = Math.max(0, ticketsSold);
+  const dollarSales = ticketsSold * price;
+
+  let status = 'complete';
+  if (rollovers.length > 0) status = 'rollover';
+  else if (ticketsSold === 0 && end === start) status = 'pending';
+
+  return { ticketsSold, dollarSales, status, hasRollover: rollovers.length > 0, activeTicket: end };
 }
 
 function undoLastRolloverInBox(idx) {
@@ -1713,7 +1777,16 @@ function startTwiceDailyBackupScheduler() {
 function advanceEndToStartForNewShift() {
   boxes.forEach(b => {
     if (b.endTicket !== '' && b.endTicket !== undefined && b.endTicket !== null) {
-      b.startTicket = Number(b.endTicket);
+      const endNum = Number(b.endTicket);
+      const rollCount = Number(b.rollCount) || getDefaultRollCountForPrice(b.price);
+      const maxTicket = Math.max(1, rollCount);
+
+      // If the pack reached the end of the roll (e.g. 30 on a 30-ticket roll), reset to 0 for the new pack
+      if (b.gameNum && endNum >= maxTicket) {
+        b.startTicket = 0;
+      } else {
+        b.startTicket = endNum;
+      }
     }
     b.endTicket = '';
     b.rollovers = [];
@@ -1721,7 +1794,7 @@ function advanceEndToStartForNewShift() {
   saveBoxesState();
   renderDispenserGrid();
   recalculateReconciliationTotals();
-  alert('Shift ended successfully! Start tickets updated to previous end tickets for the new shift.');
+  alert('Shift ended successfully! Start tickets updated for the new shift (finished rolls automatically reset to 0).');
   switchMainView('grid');
 }
 
