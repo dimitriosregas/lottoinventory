@@ -3189,7 +3189,7 @@ function resetBoxEditTimeout() {
   }
 }
 /* ==========================================================================
-   HIGH-RESOLUTION SCRATCH-OFF LOTTO APP ICON GENERATOR (ICON ONLY)
+   HIGH-RESOLUTION SCRATCH-OFF LOTTO APP ICON GENERATOR (PLAYFUL TICKET V3)
    ========================================================================== */
 function generateProLottoAppIcon() {
   try {
@@ -3198,68 +3198,116 @@ function generateProLottoAppIcon() {
     canvas.height = 512;
     const ctx = canvas.getContext('2d');
 
-    // 1. Deep Rich Royal Blue Gradient Background
+    // 1. Dark Navy Gradient Background & Rounded Borders
     const bgGrad = ctx.createLinearGradient(0, 0, 512, 512);
-    bgGrad.addColorStop(0, '#1e3a8a');
-    bgGrad.addColorStop(1, '#0f172a');
+    bgGrad.addColorStop(0, '#0f172a');
+    bgGrad.addColorStop(1, '#020617');
     ctx.fillStyle = bgGrad;
     ctx.beginPath();
     ctx.roundRect(0, 0, 512, 512, 112);
     ctx.fill();
 
-    // 2. Outer Gold Foil Bevel Border
-    ctx.strokeStyle = '#f59e0b';
+    // 2. Bright Orange-to-Yellow Glowing Border
+    const borderGrad = ctx.createLinearGradient(0, 0, 512, 512);
+    borderGrad.addColorStop(0, '#f97316');
+    borderGrad.addColorStop(1, '#eab308');
+    ctx.strokeStyle = borderGrad;
     ctx.lineWidth = 14;
     ctx.stroke();
 
-    // 3. Render Professional Scratch-Off Ticket Graphic (Centered & Scaled)
+    // 3. Draw Ticket Graphic
     ctx.save();
     ctx.translate(256, 256);
-    ctx.rotate(-0.06);
+    ctx.rotate(-0.16);
 
-    // Ticket Outer Gold Foil Body
-    const ticketGrad = ctx.createLinearGradient(-190, -110, 190, 110);
-    ticketGrad.addColorStop(0, '#d97706');
-    ticketGrad.addColorStop(0.5, '#fbbf24');
-    ticketGrad.addColorStop(1, '#b45309');
+    // Dynamic Ticket shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+    ctx.shadowBlur = 24;
+    ctx.shadowOffsetY = 12;
+
+    // Ticket Background (Warm Orange-Gold & Beveled edges)
+    const ticketGrad = ctx.createLinearGradient(-150, -180, 150, 180);
+    ticketGrad.addColorStop(0, '#fed7aa');
+    ticketGrad.addColorStop(0.5, '#f97316');
+    ticketGrad.addColorStop(1, '#c2410c');
     ctx.fillStyle = ticketGrad;
     ctx.beginPath();
-    ctx.roundRect(-190, -110, 380, 220, 28);
+    // Rough-edged scratch ticket borders (scalloped perforated look on ends)
+    ctx.roundRect(-135, -200, 270, 400, 8);
     ctx.fill();
-    ctx.strokeStyle = '#fef3c7';
-    ctx.lineWidth = 7;
+    ctx.shadowColor = 'transparent'; // Reset shadow
+
+    ctx.strokeStyle = '#fffbeb';
+    ctx.lineWidth = 4;
     ctx.stroke();
 
-    // Silver Scratch Panel Area
-    ctx.fillStyle = '#f1f5f9';
-    ctx.fillRect(-160, -60, 320, 140);
-
-    // Scratch off foil texture lines
-    ctx.strokeStyle = '#cbd5e1';
-    ctx.lineWidth = 5;
-    for (let i = -140; i <= 140; i += 20) {
-      ctx.beginPath();
-      ctx.moveTo(i, -60);
-      ctx.lineTo(i + 45, -10);
-      ctx.stroke();
-    }
-
-    // Bold Red "WIN!" Badge on Ticket
-    ctx.fillStyle = '#dc2626';
-    ctx.font = '900 68px Arial, sans-serif';
+    // Ticket header label
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '900 44px Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('WIN!', 0, 10);
+    ctx.fillText('LOTTERY', 0, -145);
+
+    // Header underscore accent
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(-90, -125, 180, 5);
+
+    // Outer play panel boundary (dark borders)
+    ctx.fillStyle = '#1e3a8a';
+    ctx.beginPath();
+    ctx.roundRect(-100, -100, 200, 205, 12);
+    ctx.fill();
+
+    // Inner colorful game symbols / Scratch-reveal area
+    ctx.fillStyle = '#6366f1';
+    ctx.beginPath();
+    ctx.roundRect(-92, -92, 184, 189, 8);
+    ctx.fill();
+
+    // Colorful Star game symbols under the scratch pattern
+    const drawTicketStars = (sx, sy, size, color) => {
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(sx, sy, size, 0, Math.PI * 2);
+      ctx.fill();
+    };
+    drawTicketStars(-50, -50, 18, '#fb7185');
+    drawTicketStars(50, -50, 15, '#38bdf8');
+    drawTicketStars(-50, 50, 14, '#fbbf24');
+    drawTicketStars(50, 50, 16, '#4ade80');
+    drawTicketStars(0, 0, 20, '#e879f9');
+
+    // Multi-color scratch & glitter visual effects overlapping
+    ctx.strokeStyle = '#f8fafc';
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(-75, 20);
+    ctx.lineTo(45, -60);
+    ctx.stroke();
+
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(-65, 45);
+    ctx.lineTo(25, -45);
+    ctx.stroke();
+
+    // Playful Barcode Pattern
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(-105, 125, 210, 55);
+    ctx.fillStyle = '#0f172a';
+    for (let bar = -95; bar <= 85; bar += 14) {
+      ctx.fillRect(bar, 130, 4, 45);
+      ctx.fillRect(bar + 7, 130, 2, 45);
+    }
 
     ctx.restore();
 
-    // 4. Sparkling Golden Stars & Accents in Corners
-    const drawStar = (cx, cy, spikes, outerRadius, innerRadius) => {
+    // 4. Sparkling Multi-Colored Stars around the base (Visual Glow)
+    const drawAccentStar = (cx, cy, spikes, outerRadius, innerRadius, color) => {
       let rot = (Math.PI / 2) * 3;
       let x = cx;
       let y = cy;
       let step = Math.PI / spikes;
-
       ctx.beginPath();
       ctx.moveTo(cx, cy - outerRadius);
       for (let i = 0; i < spikes; i++) {
@@ -3267,7 +3315,6 @@ function generateProLottoAppIcon() {
         y = cy + Math.sin(rot) * outerRadius;
         ctx.lineTo(x, y);
         rot += step;
-
         x = cx + Math.cos(rot) * innerRadius;
         y = cy + Math.sin(rot) * innerRadius;
         ctx.lineTo(x, y);
@@ -3275,14 +3322,16 @@ function generateProLottoAppIcon() {
       }
       ctx.lineTo(cx, cy - outerRadius);
       ctx.closePath();
-      ctx.fillStyle = '#fde047';
+      ctx.fillStyle = color;
       ctx.fill();
     };
 
-    drawStar(75, 95, 4, 20, 8);
-    drawStar(435, 80, 4, 26, 10);
-    drawStar(85, 420, 4, 18, 7);
-    drawStar(420, 415, 4, 22, 9);
+    drawAccentStar(150, 120, 4, 30, 12, '#fb7185'); // Large peach star
+    drawAccentStar(110, 185, 4, 20, 8, '#38bdf8'); // Sky blue star
+    drawAccentStar(340, 395, 4, 28, 11, '#fde047'); // Star near scratch corner
+    drawAccentStar(405, 240, 4, 15, 6, '#38bdf8'); // Cyan star
+    drawAccentStar(400, 310, 4, 18, 7, '#c084fc'); // Purple star
+    drawAccentStar(115, 260, 4, 15, 6, '#fde047'); // Tiny yellow star
 
     // Convert canvas to permanent high-res PNG Data URL
     const iconDataUrl = canvas.toDataURL('image/png');
