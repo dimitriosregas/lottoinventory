@@ -768,7 +768,7 @@ function commitBoxEndTicket(idx, val) {
   const endNum = Number(clean);
   const startNum = Number(box.startTicket) || 0;
 
-  // Directly assign the entered end number without arbitrary capping or jumping
+  // Directly assign the exact entered end number without arbitrary capping or jumping
   box.endTicket = endNum;
 
   if (endNum < startNum) {
