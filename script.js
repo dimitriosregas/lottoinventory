@@ -724,41 +724,29 @@ function updateBoxFieldDirect(idx, field, val) {
   recalculateReconciliationTotals();
 }
 
-function updateBoxEndTicketLive(idx, val) {
+window.updateBoxEndTicketLive = function(idx, val) {
   if (!boxes[idx]) return;
   const box = boxes[idx];
   const clean = String(val).trim();
 
   if (clean === '') {
     box.endTicket = '';
-    saveBoxesState();
-    updateBoxMetricsDisplay(idx);
-    updateHeaderTotalsUI();
-    recalculateReconciliationTotals();
+    if (typeof saveBoxesState === 'function') saveBoxesState();
+    if (typeof updateBoxMetricsDisplay === 'function') updateBoxMetricsDisplay(idx);
+    if (typeof updateHeaderTotalsUI === 'function') updateHeaderTotalsUI();
+    if (typeof recalculateReconciliationTotals === 'function') recalculateReconciliationTotals();
     return;
   }
 
   const endNum = Number(clean);
-  const startNum = Number(box.startTicket) || 0;
-  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(box.price);
-  const maxAllowed = Math.max(1, rollCount); // Full pack count (e.g. 20 for $30, 30 for $10)
+  // Store the raw typed value live without forcing premature alerts or jumps while typing
+  box.endTicket = endNum;
 
-  if (endNum > maxAllowed) {
-    alert(`Invalid ticket number! Ticket cannot exceed the roll total (${maxAllowed}).`);
-    box.endTicket = maxAllowed;
-    const inp = document.getElementById(`input-endTicket-${idx}`) || document.getElementById(`list-input-endTicket-${idx}`);
-    if (inp) inp.value = maxAllowed;
-  } else {
-    box.endTicket = endNum;
-  }
-
-  if (endNum >= startNum) {
-    saveBoxesState();
-    updateBoxMetricsDisplay(idx);
-    updateHeaderTotalsUI();
-    recalculateReconciliationTotals();
-  }
-}
+  if (typeof saveBoxesState === 'function') saveBoxesState();
+  if (typeof updateBoxMetricsDisplay === 'function') updateBoxMetricsDisplay(idx);
+  if (typeof updateHeaderTotalsUI === 'function') updateHeaderTotalsUI();
+  if (typeof recalculateReconciliationTotals === 'function') recalculateReconciliationTotals();
+};
 
 function commitBoxEndTicket(idx, val) {
   if (!boxes[idx]) return;
