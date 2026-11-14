@@ -781,8 +781,14 @@ function renderDispenserGrid() {
   const container = document.getElementById('dispenser-grid-container');
   if (!container) return;
 
-  const lockAttr = (typeof isBoxEditUnlocked !== 'undefined' && isBoxEditUnlocked) ? '' : 'readonly';
-  const lockStyle = lockAttr ? 'bg-slate-100 text-slate-500 cursor-pointer' : 'bg-white';
+  // Self-healing fallback: guarantee the 40 boxes exist if array is empty
+  if (!Array.isArray(boxes) || boxes.length === 0) {
+    boxes = createDefault40Boxes();
+  }
+
+  const isUnlocked = (typeof isBoxEditUnlocked !== 'undefined' && isBoxEditUnlocked);
+  const lockAttr = isUnlocked ? '' : 'readonly';
+  const lockStyle = isUnlocked ? 'bg-white' : 'bg-slate-100 text-slate-500 cursor-pointer';
 
   if (currentDispenserView === 'list') {
     const rowsHtml = boxes.map((box, idx) => {
@@ -808,8 +814,8 @@ function renderDispenserGrid() {
           <td style="padding: 6px 8px; text-align: center; font-family: monospace; font-weight: bold;">
             <input type="text" ${lockAttr} tabindex="${tabGame}" enterkeyhint="next"
               id="list-input-gameNum-${idx}" value="${box.gameNum || ''}"
-              onclick="if(!isBoxEditUnlocked) requestBoxEditUnlock(this)"
-              oninput="resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'gameNum', this.value)"
+              onclick="if(typeof isBoxEditUnlocked === 'undefined' || !isBoxEditUnlocked) requestBoxEditUnlock(this)"
+              oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'gameNum', this.value)"
               onkeydown="handleGameNumKeydown(event, ${idx})"
               placeholder="Game#"
               class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input font-bold ${lockStyle}" />
@@ -822,8 +828,8 @@ function renderDispenserGrid() {
           <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
             <input type="number" ${lockAttr} tabindex="${tabStart}" enterkeyhint="next"
               id="list-input-startTicket-${idx}" value="${box.startTicket !== '' && box.startTicket !== undefined ? box.startTicket : 0}"
-              onclick="if(!isBoxEditUnlocked) requestBoxEditUnlock(this)"
-              oninput="resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'startTicket', this.value)"
+              onclick="if(typeof isBoxEditUnlocked === 'undefined' || !isBoxEditUnlocked) requestBoxEditUnlock(this)"
+              oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'startTicket', this.value)"
               onkeydown="handleStartKeydown(event, ${idx})"
               class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input ${lockStyle}" />
           </td>
@@ -914,8 +920,8 @@ function renderDispenserGrid() {
             <label class="text-[10px] font-bold text-slate-500 uppercase w-12">Game #:</label>
             <input type="text" ${lockAttr} tabindex="${tabGame}" enterkeyhint="next"
               id="input-gameNum-${idx}" value="${box.gameNum || ''}" placeholder="e.g. 1005"
-              onclick="if(!isBoxEditUnlocked) requestBoxEditUnlock(this)"
-              oninput="resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'gameNum', this.value)"
+              onclick="if(typeof isBoxEditUnlocked === 'undefined' || !isBoxEditUnlocked) requestBoxEditUnlock(this)"
+              oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'gameNum', this.value)"
               onkeydown="handleGameNumKeydown(event, ${idx})"
               class="flex-1 text-xs font-mono font-bold border border-slate-300 rounded px-2 py-1 lotto-input ${lockStyle}" />
           </div>
@@ -928,8 +934,8 @@ function renderDispenserGrid() {
               <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Start #</label>
               <input type="number" ${lockAttr} tabindex="${tabStart}" enterkeyhint="next"
                 id="input-startTicket-${idx}" value="${box.startTicket !== undefined ? box.startTicket : 0}"
-                onclick="if(!isBoxEditUnlocked) requestBoxEditUnlock(this)"
-                oninput="resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'startTicket', this.value)"
+                onclick="if(typeof isBoxEditUnlocked === 'undefined' || !isBoxEditUnlocked) requestBoxEditUnlock(this)"
+                oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'startTicket', this.value)"
                 onkeydown="handleStartKeydown(event, ${idx})" placeholder="000"
                 class="w-full text-center font-mono font-bold text-xs border border-slate-300 rounded p-1.5 lotto-input ${lockStyle}" />
             </div>
@@ -1892,21 +1898,14 @@ function finalizeAndSaveShiftReport() {
   history.unshift(reportRecord);
   saveLocationHistoricalReports(history, activeLocationId);
 
-   const CLOUDWORKER_SYNC_URL = "https://lottoinventory.dimitriosregas.workers.dev/sync";
-
-async function syncActiveStoreToCloud() {
+  const CLOUDWORKER_SYNC_URL = "https://lottoinventory.dimitriosregas.workers.dev/sync";
   const payload = buildFullTabletBackupPayload();
-  try {
-    await fetch(`${CLOUDWORKER_SYNC_URL}?storeId=${activeLocationId}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-  } catch (err) {
-    // Fails silently offline so local device storage takes over without interruption
-  }
-}
-   
+  fetch(`${CLOUDWORKER_SYNC_URL}?storeId=${activeLocationId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  }).catch(() => {});
+
   const ind = document.getElementById('last-archived-indicator');
   if (ind) ind.textContent = `✔ Archived ${normalizedDate} (${shiftVal}) at ${new Date().toLocaleTimeString()}`;
 
