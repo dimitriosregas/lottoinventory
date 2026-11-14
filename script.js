@@ -3386,3 +3386,12 @@ window.resetBoxEditTimeout = function() {
     window.startBoxEditTimeout();
   }
 };
+// Ensure your input blur handler simply commits the clean value without re-clamping or rewriting it
+document.addEventListener('blur', function(e) {
+  if (e.target && e.target.id && e.target.id.includes('endTicket')) {
+    const idx = e.target.id.split('-').pop();
+    if (typeof commitBoxEndTicket === 'function') {
+      commitBoxEndTicket(idx, e.target.value);
+    }
+  }
+}, true);
