@@ -3353,14 +3353,12 @@ window.requestBoxEditUnlock = function(targetInputElem) {
     }
   }
 
-  // Re-render grid/list to strip readonly across all boxes
   if (typeof renderDispenserGrid === 'function') renderDispenserGrid();
   if (typeof renderMainGridCashierShiftBar === 'function') renderMainGridCashierShiftBar();
   if (typeof startBoxEditTimeout === 'function') startBoxEditTimeout();
 
   alert('✔ Unlocked for ' + window.boxEditCurrentCashier + '. You have up to 5 minutes to make changes, or click "Lock Now" in the top bar when finished.');
 
-  // Focus the tapped input and open the numeric keypad with auto-highlight
   if (targetId) {
     setTimeout(function() {
       var el = document.getElementById(targetId);
