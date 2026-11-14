@@ -764,19 +764,13 @@ function commitBoxEndTicket(idx, val) {
 
   const endNum = Number(clean);
   const startNum = Number(box.startTicket) || 0;
-  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(box.price);
-  const maxAllowed = Math.max(1, rollCount); // Full pack count (e.g. 20 for $30, 30 for $10)
 
-  if (endNum > maxAllowed) {
-    box.endTicket = maxAllowed;
-  } else if (endNum === startNum) {
-    box.endTicket = endNum;
-  } else if (endNum < startNum) {
-    box.endTicket = endNum;
+  // Directly assign the end number without forcing arbitrary caps
+  box.endTicket = endNum;
+
+  if (endNum < startNum) {
     openRolloverDecisionModal(idx, endNum);
     return;
-  } else {
-    box.endTicket = endNum;
   }
 
   saveBoxesState();
