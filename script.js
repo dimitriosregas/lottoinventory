@@ -1166,158 +1166,435 @@ function syncMainGridShift(val) {
 }
 
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 4 OF 10)
-   Box Field Updates, Live End-Ticket Handling & Metrics Display
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 6 OF 10)
+   Print Choice Modal, 80mm Thermal Receipt Generator & Multi-Store Modals
    ========================================================================== */
 
-function updateBoxFieldDirect(idx, field, val) {
-  if (!boxes[idx]) return;
+function openWorksheetPrintChoiceModal() {
+  const modal = document.getElementById('modal-print-worksheet-choice') || createPrintChoiceModalDOM();
+  handleCashierInputAutocomplete('print-modal-cashier-input', 'cashier-datalist-print');
+  const activeCashier = document.getElementById('rec-cashier-out')?.value || document.getElementById('grid-cashier-input')?.value || '';
+  
+  const cashierInp = document.getElementById('print-modal-cashier-input');
+  if (cashierInp && !cashierInp.value) cashierInp.value = activeCashier;
 
-  if ((field === 'gameNum' || field === 'startTicket') && typeof isBoxEditUnlocked !== 'undefined' && !isBoxEditUnlocked) {
-    renderDispenserGrid();
-    return;
-  }
-
-  if (typeof resetBoxEditTimeout === 'function') {
-    resetBoxEditTimeout();
-  }
-
-  const cleanVal = String(val).trim();
-  boxes[idx][field] = cleanVal === '' ? '' : (field === 'gameNum' ? cleanVal : val);
-
-  if (field === 'gameNum') {
-    boxes[idx].isBoxOut = false;
-    const found = masterGames.find(g => String(g.gameNum).trim() === cleanVal || (cleanVal !== '' && Number(g.gameNum) === Number(cleanVal)));
-    if (found) {
-      boxes[idx].gameName = found.name;
-      boxes[idx].price = Number(found.price) || 0;
-      boxes[idx].rollCount = Number(found.count) || getDefaultRollCountForPrice(boxes[idx].price);
-      boxes[idx].needsNewGameEntry = false;
-    } else if (cleanVal !== '') {
-      boxes[idx].gameName = '';
-      boxes[idx].price = 0;
-      boxes[idx].needsNewGameEntry = true;
-    } else {
-      boxes[idx].gameName = '';
-      boxes[idx].price = 0;
-      boxes[idx].rollCount = 60;
-      boxes[idx].needsNewGameEntry = false;
-    }
-  } else if (field === 'startTicket') {
-    boxes[idx].startTicket = cleanVal === '' ? 0 : Number(cleanVal);
-  }
-
-  saveBoxesState();
-  updateBoxMetricsDisplay(idx);
-  updateHeaderTotalsUI();
-  recalculateReconciliationTotals();
+  modal.classList.remove('hidden');
+  setTimeout(() => initPrintModalSignaturePad(), 100);
 }
 
-window.updateBoxEndTicketLive = function(idx, val) {
-  if (!boxes[idx]) return;
-  const box = boxes[idx];
-  const clean = String(val).trim();
+function createPrintChoiceModalDOM() {
+  let existing = document.getElementById('modal-print-worksheet-choice');
+  if (existing) return existing;
 
-  if (clean === '') {
-    box.endTicket = '';
+  const div = document.createElement('div');
+  div.id = 'modal-print-worksheet-choice';
+  div.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden';
+  div.innerHTML = `
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="font-black text-slate-900 text-base">🖨 Print Shift Worksheet & Attestation</h3>
+        <button type="button" onclick="document.getElementById('modal-print-worksheet-choice').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      </div>
+      
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Cashier Name:</label>
+          <input type="text" id="print-modal-cashier-input" placeholder="Enter cashier name..." class="w-full border border-slate-300 rounded-lg p-2 font-bold text-xs" />
+        </div>
+        <div>
+          <label class="block font-bold text-slate-700 mb-1">Shift:</label>
+          <select id="print-modal-shift-select" class="w-full border border-slate-300 rounded-lg p-2 font-bold text-xs bg-white">
+            <option value="Shift 1 (Morning)">Shift 1 (Morning)</option>
+            <option value="Shift 2 (Evening)">Shift 2 (Evening)</option>
+            <option value="Shift 3 (Night)">Shift 3 (Night)</option>
+          </select>
+        </div>
+
+        <!-- Signature Canvas ABOVE Attestation -->
+        <div class="space-y-1 pt-1">
+          <div class="flex items-center justify-between">
+            <label class="block font-bold text-slate-700">Cashier Signature (Sign below):</label>
+            <button type="button" onclick="clearPrintModalSignature()" class="text-xs text-red-600 hover:underline font-bold">Clear Sign</button>
+          </div>
+          <div class="border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 p-1 flex justify-center">
+            <canvas id="print-modal-sig-pad" width="400" height="100" class="w-full h-24 touch-none bg-white rounded-lg cursor-crosshair"></canvas>
+          </div>
+        </div>
+
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-700 leading-relaxed font-medium">
+          ⚖ <strong>Legal Attestation:</strong> "I hereby certify that the ticket counts, game numbers, and shift totals recorded are true, complete, and accurate to the best of my knowledge."
+        </div>
+      </div>
+
+      <div class="space-y-2 pt-2">
+        <button type="button" onclick="executeUnifiedPrint('thermal')" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-2.5 rounded-xl text-xs transition shadow-md">
+          📜 Print 80mm Thermal Receipt
+        </button>
+        <button type="button" onclick="executeUnifiedPrint('legal')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 rounded-xl text-xs transition shadow-md">
+          📄 Print Full Legal Paper (8.5" x 11")
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(div);
+  return div;
+}
+
+let printModalSigCanvas = null;
+let printModalSigCtx = null;
+let isDrawingPrintSig = false;
+let printModalSigDataUrl = null;
+
+function initPrintModalSignaturePad() {
+  printModalSigCanvas = document.getElementById('print-modal-sig-pad');
+  if (!printModalSigCanvas) return;
+  printModalSigCtx = printModalSigCanvas.getContext('2d');
+  printModalSigCtx.strokeStyle = '#0f172a';
+  printModalSigCtx.lineWidth = 2.2;
+  printModalSigCtx.lineCap = 'round';
+
+  const getPos = (e) => {
+    const rect = printModalSigCanvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * (printModalSigCanvas.width / rect.width),
+      y: (clientY - rect.top) * (printModalSigCanvas.height / rect.height)
+    };
+  };
+
+  const startDraw = (e) => { e.preventDefault(); isDrawingPrintSig = true; const pos = getPos(e); printModalSigCtx.beginPath(); printModalSigCtx.moveTo(pos.x, pos.y); };
+  const moveDraw = (e) => { if (!isDrawingPrintSig) return; e.preventDefault(); const pos = getPos(e); printModalSigCtx.lineTo(pos.x, pos.y); printModalSigCtx.stroke(); };
+  const endDraw = () => { if (!isDrawingPrintSig) return; isDrawingPrintSig = false; printModalSigDataUrl = printModalSigCanvas.toDataURL('image/png'); };
+
+  printModalSigCanvas.addEventListener('mousedown', startDraw);
+  printModalSigCanvas.addEventListener('mousemove', moveDraw);
+  window.addEventListener('mouseup', endDraw);
+  printModalSigCanvas.addEventListener('touchstart', startDraw, { passive: false });
+  printModalSigCanvas.addEventListener('touchmove', moveDraw, { passive: false });
+  window.addEventListener('touchend', endDraw);
+}
+
+function clearPrintModalSignature() {
+  if (!printModalSigCanvas || !printModalSigCtx) return;
+  printModalSigCtx.clearRect(0, 0, printModalSigCanvas.width, printModalSigCanvas.height);
+  printModalSigDataUrl = null;
+}
+
+function executeUnifiedPrint(formatChoice) {
+  const cashierVal = document.getElementById('print-modal-cashier-input')?.value?.trim() || 'Unspecified';
+  const shiftVal = document.getElementById('print-modal-shift-select')?.value || 'Shift 1 (Morning)';
+
+  const recCashier = document.getElementById('rec-cashier-out');
+  if (recCashier) recCashier.value = cashierVal;
+  const gridCashier = document.getElementById('grid-cashier-input');
+  if (gridCashier) gridCashier.value = cashierVal;
+  const recShift = document.getElementById('rec-shift-type');
+  if (recShift) recShift.value = shiftVal;
+  if (printModalSigDataUrl) currentSignatureDataUrl = printModalSigDataUrl;
+
+  document.getElementById('modal-print-worksheet-choice').classList.add('hidden');
+  
+  if (formatChoice === 'thermal') {
+    printThermalReceiptDirect();
   } else {
-    box.endTicket = Number(clean);
+    printWorksheetDirect();
   }
 
-  if (typeof saveBoxesState === 'function') saveBoxesState();
-  if (typeof updateBoxMetricsDisplay === 'function') updateBoxMetricsDisplay(idx);
-  if (typeof updateHeaderTotalsUI === 'function') updateHeaderTotalsUI();
-  if (typeof recalculateReconciliationTotals === 'function') recalculateReconciliationTotals();
-};
+  downloadFullTabletBackup(true);
 
-function commitBoxEndTicket(idx, val) {
-  if (!boxes[idx]) return;
-  const box = boxes[idx];
-  const clean = String(val).trim();
-
-  if (clean === '') {
-    box.endTicket = '';
-    saveBoxesState();
-    updateBoxMetricsDisplay(idx);
-    updateHeaderTotalsUI();
-    recalculateReconciliationTotals();
-    return;
-  }
-
-  const endNum = Number(clean);
-  const startNum = Number(box.startTicket) || 0;
-  const price = Number(box.price) || 0;
-  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(price);
-
-  box.endTicket = endNum;
-
-  // Trigger Rollover / Out Modal if endNum is lower than startNum OR reaches the end of the roll (e.g. 30 on a 30-ticket pack)
-  if (endNum < startNum || (box.gameNum && endNum >= rollCount)) {
-    openRolloverDecisionModal(idx, endNum);
-    return;
-  }
-
-  saveBoxesState();
-  updateBoxMetricsDisplay(idx);
-  updateHeaderTotalsUI();
-  recalculateReconciliationTotals();
+  setTimeout(() => {
+    if (confirm('Worksheet printed and system backed up successfully in the background!\n\nWould you like to end the shift and start a new shift now?')) {
+      advanceEndToStartForNewShift();
+    } else {
+      switchMainView(lastActiveViewName || 'grid');
+    }
+  }, 600);
 }
 
-function updateBoxMetricsDisplay(idx) {
+function printThermalReceiptDirect() {
+  const { jsPDF } = window.jspdf;
+  if (!jsPDF) {
+    alert('jsPDF library is still loading. Please try again in a moment.');
+    return;
+  }
+
+  const totals = recalculateReconciliationTotals();
+  const dateStr = document.getElementById('rec-report-date')?.value || new Date().toLocaleDateString();
+  const shiftStr = document.getElementById('rec-shift-type')?.value || 'Shift 1';
+  const cashierStr = document.getElementById('print-modal-cashier-input')?.value || document.getElementById('grid-cashier-input')?.value || 'Manager';
+  const storeAddr = storeProfile.address || 'Sparta, TN 38583';
+  const basePt = Number(globalPrintFontSizePt) || 13;
+  const pageWidth = 80;
+  const margin = 4;
+
+  // Helper that renders the receipt onto a jsPDF doc and returns the exact final Y (in mm)
+  const renderReceiptContent = (doc) => {
+    let y = 6;
+
+    doc.setFont('Courier', 'bold');
+    doc.setFontSize(basePt + 3);
+    doc.text(`${storeProfile.name}`, pageWidth / 2, y, { align: 'center' });
+    y += 5;
+
+    doc.setFontSize(basePt + 1);
+    doc.text(`STORE #${storeProfile.number}`, pageWidth / 2, y, { align: 'center' });
+    y += 4;
+
+    if (storeAddr) {
+      doc.setFontSize(basePt - 2);
+      doc.text(storeAddr, pageWidth / 2, y, { align: 'center' });
+      y += 4;
+    }
+
+    doc.setFontSize(basePt);
+    doc.text('*** LOTTO COUNT WORKSHEET ***', pageWidth / 2, y, { align: 'center' });
+    y += 6;
+
+    doc.setFontSize(basePt - 1);
+    doc.text(`DATE: ${dateStr}`, margin, y);
+    y += 4;
+    doc.text(`SHIFT: ${shiftStr}`, margin, y);
+    y += 4;
+    doc.text(`OUT: ${cashierStr}`, margin, y);
+    y += 4;
+    doc.text(`IN: -`, margin, y);
+    y += 5;
+
+    doc.setLineDash([0.5, 0.5], 0);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 6;
+
+    doc.setFontSize(basePt - 1);
+    boxes.forEach((box) => {
+      const m = calculateBoxMetrics(box);
+      const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
+      if (box.gameNum || rollovers.length > 0 || box.isBoxOut) {
+        const gName = box.gameNum
+          ? String(box.gameName || 'GAME #' + box.gameNum).toUpperCase()
+          : (box.isBoxOut ? 'BOX OUT (EMPTY)' : 'EMPTY');
+        const labelGameNum = box.gameNum ? `#${box.gameNum} ` : '';
+        doc.text(`[BOX ${box.boxNumber}] ${labelGameNum}${gName}`, margin, y);
+        doc.text(box.price ? `$${box.price}` : '-', pageWidth - margin, y, { align: 'right' });
+        y += 4.5;
+
+        rollovers.forEach((ro) => {
+          doc.setFontSize(Math.max(7, basePt - 3));
+          const roTag = ro.markedOut ? 'OUT' : 'ROLLED';
+          doc.text(`* ${roTag} #${ro.gameNum}: ${ro.startTicket}->${ro.finishedTicket} (${ro.ticketsSold} Sold = $${Number(ro.salesAmount || 0).toFixed(2)})`, margin, y);
+          y += 4;
+        });
+
+        doc.setFontSize(basePt - 1);
+        const endDisplay = box.isBoxOut ? 'OUT' : (box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '_____');
+        const startDisplay = box.isBoxOut ? 'OUT' : (box.startTicket !== '' ? box.startTicket : 0);
+        const soldText = `${m.ticketsSold} Sold ($${m.dollarSales.toFixed(2)})`;
+        doc.text(`Start:${startDisplay}  End:${endDisplay}`, margin, y);
+        doc.text(soldText, pageWidth - margin, y, { align: 'right' });
+        y += 4;
+
+        doc.setFontSize(basePt - 3);
+        doc.text('-----------------------------------------------------------------', pageWidth / 2, y, { align: 'center' });
+        doc.setFontSize(basePt - 1);
+        y += 5.5;
+      }
+    });
+
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 5;
+
+    doc.setFont('Courier', 'bold');
+    doc.setFontSize(basePt);
+    
+    const drawTotalLine = (label, val) => {
+      doc.text(label, margin, y);
+      doc.text(val, pageWidth - margin, y, { align: 'right' });
+      y += 5;
+    };
+
+    drawTotalLine('TOTAL TICKETS SOLD:', String(totals.totalTickets || 0));
+    drawTotalLine('SCRATCH SALES:', `$${totals.scratchSales.toFixed(2)}`);
+    drawTotalLine('ONLINE SALES:', `$${totals.onlineSales.toFixed(2)}`);
+    drawTotalLine('SCRATCH CASHED:', `-$${totals.scratchCashed.toFixed(2)}`);
+    drawTotalLine('ONLINE CASHED:', `-$${totals.onlineCashed.toFixed(2)}`);
+    
+    y += 2;
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 5;
+
+    drawTotalLine('EXPECTED NET:', `$${totals.expectedNet.toFixed(2)}`);
+    drawTotalLine('POS ACTUAL:', `$${totals.posActual.toFixed(2)}`);
+    
+    doc.setFontSize(basePt + 2);
+    drawTotalLine('VARIANCE:', `$${totals.variance.toFixed(2)}`);
+    y += 6;
+
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 6;
+    doc.setFontSize(basePt);
+    doc.text('CASHIER SIGNATURE', pageWidth / 2, y, { align: 'center' });
+    y += 4;
+
+    if (currentSignatureDataUrl) {
+      try {
+        doc.addImage(currentSignatureDataUrl, 'PNG', (pageWidth - 45) / 2, y, 45, 16);
+        y += 19;
+      } catch (e) {
+        doc.text('___________________________', pageWidth / 2, y, { align: 'center' });
+        y += 6;
+      }
+    } else {
+      doc.text('___________________________', pageWidth / 2, y, { align: 'center' });
+      y += 6;
+    }
+
+    doc.setFontSize(basePt - 2);
+    doc.text(new Date().toLocaleString(), pageWidth / 2, y, { align: 'center' });
+    y += 6; // Exact bottom cutter margin (6mm) so thermal printer cuts immediately after timestamp
+
+    return y;
+  };
+
+  // Pass 1: Measure exact content height in mm
+  const dummyDoc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [80, 500] });
+  const exactHeightMm = Math.max(85, Math.ceil(renderReceiptContent(dummyDoc)));
+
+  // Pass 2: Generate single continuous receipt page of exact height so cutter triggers at the end
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: [80, exactHeightMm]
+  });
+  renderReceiptContent(doc);
+  doc.autoPrint();
+
+  const pdfBlob = doc.output('blob');
+  const pdfUrl = URL.createObjectURL(pdfBlob);
+  const timestampStr = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16);
+  const downloadLink = document.createElement('a');
+  downloadLink.href = pdfUrl;
+  downloadLink.download = `LottoReceipt_${storeProfile.number}_${timestampStr}.pdf`;
+  document.body.appendChild(downloadLink);
+  downloadLink.click();
+  document.body.removeChild(downloadLink);
+  
+  setTimeout(() => URL.revokeObjectURL(pdfUrl), 3000);
+}
+
+function openQuickGameModal(idx) {
   const box = boxes[idx];
   if (!box) return;
-  const metrics = calculateBoxMetrics(box);
-  const hasGame = Boolean(box.gameNum);
-  const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
+  document.getElementById('quick-game-box-idx').value = idx;
+  document.getElementById('quick-game-num').value = box.gameNum;
+  document.getElementById('quick-game-name').value = '';
+  document.getElementById('quick-game-price').value = '5';
+  document.getElementById('quick-game-count').value = '60';
+  document.getElementById('modal-quick-game').classList.remove('hidden');
+}
 
-  const card = document.getElementById(`dispenser-card-${idx}`);
-  const soldBadge = document.getElementById(`box-sold-badge-${idx}`);
-  const salesBadge = document.getElementById(`box-sales-badge-${idx}`);
-  const titleEl = document.getElementById(`box-title-${idx}`);
-  const subEl = document.getElementById(`box-sub-${idx}`);
-  const unknownWrap = document.getElementById(`box-unknown-wrap-${idx}`);
+function closeQuickGameModal() {
+  document.getElementById('modal-quick-game').classList.add('hidden');
+}
 
-  if (soldBadge) soldBadge.textContent = `${metrics.ticketsSold} Sold`;
-  if (salesBadge) salesBadge.textContent = `$${metrics.dollarSales.toFixed(2)}`;
-  if (titleEl) {
-    titleEl.innerHTML = hasGame
-      ? (box.gameName || 'Game #' + box.gameNum)
-      : (box.isBoxOut ? '<span class="text-red-600 font-extrabold">BOX OUT</span>' : '<span class="text-slate-400 italic">Empty Box</span>');
+function saveQuickRegisteredGame() {
+  const idx = Number(document.getElementById('quick-game-box-idx').value);
+  if (isNaN(idx) || !boxes[idx]) return;
+  const gNum = document.getElementById('quick-game-num').value.trim();
+  const gName = (document.getElementById('quick-game-name').value.trim() || `GAME #${gNum}`).toUpperCase();
+  const price = Number(document.getElementById('quick-game-price').value) || 1;
+  const count = Number(document.getElementById('quick-game-count').value) || getDefaultRollCountForPrice(price);
+
+  const newEntry = { gameNum: gNum, name: gName, price, count };
+  const existIdx = masterGames.findIndex(g => String(g.gameNum).trim() === gNum);
+  if (existIdx >= 0) masterGames[existIdx] = newEntry;
+  else masterGames.push(newEntry);
+
+  masterGames = sanitizeMasterGamesList(masterGames);
+  saveGamesState();
+
+  boxes[idx].gameName = gName;
+  boxes[idx].price = price;
+  boxes[idx].rollCount = count;
+  boxes[idx].needsNewGameEntry = false;
+  saveBoxesState();
+
+  closeQuickGameModal();
+  renderAdminGamesTable();
+  renderDispenserGrid();
+  recalculateReconciliationTotals();
+}
+
+function openMultiStoreManagerModal() {
+  renderMultiStoreModalList();
+  document.getElementById('modal-multi-store').classList.remove('hidden');
+}
+
+function closeMultiStoreManagerModal() {
+  document.getElementById('modal-multi-store').classList.add('hidden');
+}
+
+function renderMultiStoreModalList() {
+  const tbody = document.getElementById('multi-store-list-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = locations.map(loc => {
+    const isCurrent = loc.id === activeLocationId;
+    return `
+      <tr class="${isCurrent ? 'bg-blue-50/70' : 'hover:bg-slate-50'}">
+        <td class="p-2.5 space-y-0.5">
+          <div class="font-extrabold text-slate-900">${loc.name} (#${loc.number})</div>
+          <div class="text-[11px] text-slate-600">${loc.address || 'No address set'}</div>
+        </td>
+        <td class="p-2.5 text-center">
+          ${isCurrent ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800">Active</span>' : '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Standby</span>'}
+        </td>
+        <td class="p-2.5 text-right space-x-1">
+          ${!isCurrent ? `<button type="button" onclick="switchStoreFromModal('${loc.id}')" class="bg-blue-600 text-white text-[11px] px-2.5 py-1 rounded">Switch</button>` : ''}
+          <button type="button" onclick="exportSpecificLocationBackup('${loc.id}')" class="bg-slate-700 text-white text-[11px] px-2.5 py-1 rounded">⬇ Store</button>
+          <button type="button" onclick="deleteStoreLocation('${loc.id}')" class="bg-red-100 text-red-700 text-[11px] px-2 py-1 rounded">Delete</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function switchStoreFromModal(locId) {
+  handleLocationSwitch(locId);
+  populateLocationSwitcherDropdown();
+  renderMultiStoreModalList();
+}
+
+function createNewStoreLocation() {
+  const name = document.getElementById('new-location-name-input')?.value?.trim();
+  const number = document.getElementById('new-location-num-input')?.value?.trim() || '100';
+  const address = document.getElementById('new-location-address-input')?.value?.trim() || '';
+
+  if (!name) { alert('Please enter a store name.'); return; }
+  const cleanSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const newId = `loc-${cleanSlug}-${Date.now().toString().slice(-4)}`;
+  locations.push({ id: newId, name, number, address, email: 'dimitriosregas@gmail.com' });
+  saveLocationsRegistry();
+
+  localStorage.setItem(getStoreProfileStorageKey(newId), JSON.stringify({ name, number, address, email: 'dimitriosregas@gmail.com' }));
+  localStorage.setItem(getStoreBoxesStorageKey(newId), JSON.stringify(createDefault40Boxes()));
+  localStorage.setItem(getStoreHistoryStorageKey(newId), JSON.stringify([]));
+
+  handleLocationSwitch(newId);
+  renderMultiStoreModalList();
+  alert(`Created and switched to new store: ${name}`);
+}
+
+function deleteStoreLocation(locId) {
+  if (locations.length <= 1) { alert('You must keep at least one store location.'); return; }
+  if (!confirm('Are you sure you want to delete this store location?')) return;
+  locations = locations.filter(l => l.id !== locId);
+  saveLocationsRegistry();
+  if (activeLocationId === locId) {
+    activeLocationId = locations[0].id;
+    localStorage.setItem(STORAGE_KEY_ACTIVE_LOC, activeLocationId);
+    loadActiveStoreData();
   }
-  if (subEl) subEl.textContent = hasGame ? `$${box.price} • ${box.rollCount} tix/pk` : (box.isBoxOut ? 'No active roll loaded' : 'Assign game below');
-  if (unknownWrap) {
-    if (box.needsNewGameEntry) unknownWrap.classList.remove('hidden');
-    else unknownWrap.classList.add('hidden');
-  }
-
-  if (card) {
-    card.classList.remove('status-complete', 'status-rollover', 'status-pending', 'status-alert');
-    if (box.isBoxOut) card.classList.add('status-alert');
-    else if (metrics.status === 'complete') card.classList.add('status-complete');
-    else if (metrics.status === 'rollover') card.classList.add('status-rollover');
-    else card.classList.add('status-pending');
-  }
-
-  const listName = document.getElementById(`list-gamename-${idx}`);
-  const listPrice = document.getElementById(`list-price-${idx}`);
-  const listSold = document.getElementById(`list-sold-${idx}`);
-  const listSales = document.getElementById(`list-sales-${idx}`);
-
-  if (listName) {
-    const roHistoryHtml = rollovers.map(ro =>
-      `<div class="text-[10px] font-bold ${ro.markedOut ? 'text-red-800 bg-red-50 border-red-200' : 'text-amber-800 bg-amber-50 border-amber-200'} border rounded px-1.5 py-0.5 mt-1 flex items-center justify-between">
-        <span>${ro.markedOut ? '🚫 OUT' : 'Prev'} #${ro.gameNum} (${ro.gameName || 'Pack'}): #${ro.startTicket}→#${ro.finishedTicket} (${ro.ticketsSold} sold = $${Number(ro.salesAmount || 0).toFixed(2)})</span>
-        <button type="button" onclick="undoLastRolloverInBox(${idx})" class="text-red-700 underline ml-2 hover:text-red-900">Undo Rollover</button>
-      </div>`
-    ).join('');
-    const titleHtml = hasGame
-      ? `<strong>#${box.gameNum}</strong> ${box.gameName || ''}`
-      : (box.isBoxOut ? '<span class="text-red-600 font-extrabold">🚫 BOX OUT (Empty)</span>' : '<span class="text-slate-400 italic">Empty Box</span>');
-    listName.innerHTML = titleHtml + roHistoryHtml;
-  }
-  if (listPrice) listPrice.textContent = hasGame && box.price ? '$' + box.price : '-';
-  if (listSold) listSold.textContent = `${metrics.ticketsSold}${rollovers.length > 0 ? ' *' : ''}`;
-  if (listSales) listSales.textContent = `$${metrics.dollarSales.toFixed(2)}`;
+  renderMultiStoreModalList();
+  populateLocationSwitcherDropdown();
 }
 
 /* ==========================================================================
@@ -1558,7 +1835,6 @@ function advanceEndToStartForNewShift() {
     const gridInp = document.getElementById(`input-endTicket-${idx}`);
     const genericInp = document.querySelector(`input[id$="endTicket-${idx}"]`) || document.querySelector(`input[name*="endTicket-${idx}"]`);
 
-    // Prioritize whichever input actually holds a non-empty typed value
     let rawVal = '';
     if (listInp && String(listInp.value).trim() !== '') {
       rawVal = String(listInp.value).trim();
@@ -1594,14 +1870,66 @@ function advanceEndToStartForNewShift() {
     b.endTicket = '';
     b.rollovers = [];
 
-    // Clear live DOM inputs immediately so old End # values don't stay on screen
     const listInp = document.getElementById(`list-input-endTicket-${idx}`);
     const gridInp = document.getElementById(`input-endTicket-${idx}`);
     if (listInp) listInp.value = '';
     if (gridInp) gridInp.value = '';
   });
 
-  // 3. Save state and refresh all views & totals
+  // 3. Check for any boxes with an empty Game # and prompt user (Still Out vs. Enter Game #)
+  const emptyBoxes = boxes.filter(b => !b.gameNum || String(b.gameNum).trim() === '');
+  if (emptyBoxes.length > 0) {
+    const emptyNumbersList = emptyBoxes.map(b => b.boxNumber).join(', ');
+    const reviewEmpty = confirm(
+      `⚠️ Empty / Out Boxes Detected: Box ${emptyNumbersList}\n\n` +
+      `Click OK to review each empty box (enter a new Game # or leave it OUT), or click Cancel to keep all of them marked OUT for this shift.`
+    );
+
+    if (reviewEmpty) {
+      emptyBoxes.forEach(b => {
+        const enteredGame = prompt(
+          `Box #${b.boxNumber} is currently EMPTY / OUT.\n\n` +
+          `• If a new roll was loaded, enter the Game # below:\n` +
+          `• If Box #${b.boxNumber} is STILL OUT, leave blank and click OK (or Cancel):`,
+          ''
+        );
+
+        const cleanGame = enteredGame ? String(enteredGame).trim() : '';
+        if (cleanGame !== '' && cleanGame.toUpperCase() !== 'OUT') {
+          b.gameNum = cleanGame;
+          b.isBoxOut = false;
+          b.startTicket = 0;
+          b.endTicket = '';
+          const matched = masterGames.find(g => String(g.gameNum).trim() === cleanGame || Number(g.gameNum) === Number(cleanGame));
+          if (matched) {
+            b.gameName = matched.name;
+            b.price = Number(matched.price) || 0;
+            b.rollCount = Number(matched.count) || getDefaultRollCountForPrice(b.price);
+            b.needsNewGameEntry = false;
+          } else {
+            b.gameName = '';
+            b.price = 0;
+            b.rollCount = 60;
+            b.needsNewGameEntry = true;
+          }
+        } else {
+          b.gameNum = '';
+          b.gameName = '';
+          b.price = 0;
+          b.startTicket = 0;
+          b.endTicket = '';
+          b.isBoxOut = true;
+          b.needsNewGameEntry = false;
+        }
+      });
+    } else {
+      emptyBoxes.forEach(b => {
+        b.isBoxOut = true;
+      });
+    }
+  }
+
+  // 4. Save state and refresh all views & totals
   saveBoxesState();
   renderDispenserGrid();
   updateHeaderTotalsUI();
@@ -1760,7 +2088,6 @@ function saveLocationHistoricalReports(reportsArr, locId = activeLocationId) {
 }
 
 function finalizeAndSaveShiftReport() {
-  // Force scrape all active end ticket inputs before finalizing and archiving
   boxes.forEach((b, idx) => {
     const activeInput = document.getElementById(`list-input-endTicket-${idx}`) ||
                         document.getElementById(`input-endTicket-${idx}`) ||
