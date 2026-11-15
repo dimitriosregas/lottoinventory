@@ -259,9 +259,9 @@
       </div>
     </header>
 
-    <!-- MAIN APP VIEWS -->
+<!-- MAIN APP VIEWS -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-3 py-4">
-<!-- VIEW 1: GRID -->
+      <!-- VIEW 1: GRID -->
       <section id="view-grid" class="space-y-4">
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-3 flex flex-wrap items-center justify-between gap-3">
           <div class="flex flex-wrap items-center gap-2">
@@ -274,7 +274,7 @@
             </button>
             <button
               type="button"
-              onclick="switchMainView('reconcile')"
+              onclick="advanceEndToStartForNewShift()"
               class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm"
             >
               ⏭ Roll End → Start (Next Shift)
@@ -342,6 +342,7 @@
               </button>
             </div>
           </div>
+      
 <!-- Multi-Shift Scratch Sales & Daily Total Inputs -->
 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3 mb-4">
   <h4 class="font-bold text-slate-900 text-sm border-b pb-2">📊 Shift Scratch Sales & Multi-Shift Breakdown</h4>
