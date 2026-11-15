@@ -788,6 +788,13 @@ function commitBoxEndTicket(idx, val) {
   const box = boxes[idx];
   const clean = String(val).trim();
 
+  if (clean.toUpperCase() === 'OUT') {
+    if (typeof markBoxSoldOutDirect === 'function') {
+      markBoxSoldOutDirect(idx);
+    }
+    return;
+  }
+
   if (clean === '') {
     box.endTicket = '';
     saveBoxesState();
@@ -804,7 +811,7 @@ function commitBoxEndTicket(idx, val) {
 
   box.endTicket = endNum;
 
-  // Trigger Rollover / Out Modal if endNum is lower than startNum OR reaches the end of the roll (e.g. 30 on a 30-ticket pack)
+  // Trigger Rollover / Out Modal if endNum is lower than startNum OR reaches the full roll count (e.g. 30 on a 30-ticket pack)
   if (endNum < startNum || (box.gameNum && endNum >= rollCount)) {
     openRolloverDecisionModal(idx, endNum);
     return;
