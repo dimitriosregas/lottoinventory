@@ -1711,24 +1711,34 @@ function startTwiceDailyBackupScheduler() {
    ========================================================================== */
 
 function advanceEndToStartForNewShift() {
-  // 1. Aggressively force-scrape active input values from ANY view (grid, list, or card)
+  // 1. Force-scrape active input values from ANY rendered view (List, Grid, or Generic)
   boxes.forEach((b, idx) => {
     const listInp = document.getElementById(`list-input-endTicket-${idx}`);
     const gridInp = document.getElementById(`input-endTicket-${idx}`);
     const genericInp = document.querySelector(`input[id$="endTicket-${idx}"]`) || document.querySelector(`input[name*="endTicket-${idx}"]`);
-    
-    const activeVal = listInp?.value ?? gridInp?.value ?? genericInp?.value;
-    
-    if (activeVal !== undefined && activeVal !== null && String(activeVal).trim() !== '') {
-      b.endTicket = Number(activeVal);
+
+    // Prioritize whichever input actually holds a non-empty typed value
+    let rawVal = '';
+    if (listInp && String(listInp.value).trim() !== '') {
+      rawVal = String(listInp.value).trim();
+    } else if (gridInp && String(gridInp.value).trim() !== '') {
+      rawVal = String(gridInp.value).trim();
+    } else if (genericInp && String(genericInp.value).trim() !== '') {
+      rawVal = String(genericInp.value).trim();
+    }
+
+    if (rawVal !== '' && !isNaN(Number(rawVal))) {
+      b.endTicket = Number(rawVal);
     }
   });
 
   let rolledCount = 0;
 
-  boxes.forEach(b => {
-    const endNum = Number(b.endTicket);
-    if (b.endTicket !== '' && b.endTicket !== undefined && b.endTicket !== null && !isNaN(endNum)) {
+  // 2. Roll End # into Start # and clear End # for the new shift
+  boxes.forEach((b, idx) => {
+    const rawEnd = b.endTicket;
+    if (rawEnd !== '' && rawEnd !== undefined && rawEnd !== null && !isNaN(Number(rawEnd))) {
+      const endNum = Number(rawEnd);
       const rollCount = Number(b.rollCount) || getDefaultRollCountForPrice(b.price);
       const maxTicket = Math.max(1, rollCount);
 
@@ -1739,14 +1749,23 @@ function advanceEndToStartForNewShift() {
       }
       rolledCount++;
     }
+
     b.endTicket = '';
     b.rollovers = [];
+
+    // Clear live DOM inputs immediately so old End # values don't stay on screen
+    const listInp = document.getElementById(`list-input-endTicket-${idx}`);
+    const gridInp = document.getElementById(`input-endTicket-${idx}`);
+    if (listInp) listInp.value = '';
+    if (gridInp) gridInp.value = '';
   });
-  
+
+  // 3. Save state and refresh all views & totals
   saveBoxesState();
   renderDispenserGrid();
+  updateHeaderTotalsUI();
   recalculateReconciliationTotals();
-  
+
   alert(`Shift ended successfully! Rolled over ${rolledCount} active boxes. Start tickets have been updated for the new shift.`);
   switchMainView('grid');
 }
