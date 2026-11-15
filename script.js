@@ -1836,13 +1836,6 @@ function startTwiceDailyBackupScheduler() {
    ========================================================================== */
 
 function advanceEndToStartForNewShift() {
-  // Prompt to print thermal shift report before rolling over to the new shift
-  if (confirm('🖨 Would you like to print the 80mm thermal shift report before ending this shift?')) {
-    if (typeof printThermalReceiptDirect === 'function') {
-      printThermalReceiptDirect();
-    }
-  }
-
   // 1. Force-scrape active input values from ANY rendered view (List, Grid, or Generic)
   boxes.forEach((b, idx) => {
     const listInp = document.getElementById(`list-input-endTicket-${idx}`);
