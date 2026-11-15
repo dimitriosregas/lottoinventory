@@ -1,23 +1,27 @@
+<!-- ==========================================================================
+     PART 1 OF 4: DOCUMENT HEAD, STYLES, TOP NAVIGATION BAR & VIEW 1 (GRID/LIST)
+     ========================================================================== -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>UR Lotto Audit — Enterprise Multi-Store Inventory & Audit System</title>
-<link id="app-favicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231e3a8a'/><path d='M25 65 L65 35 L75 45 L35 75 Z' fill='%23fbbf24'/><circle cx='65' cy='45' r='12' fill='%23f59e0b'/><text x='50' y='64' font-family='Arial' font-size='38' font-weight='900' fill='white' text-anchor='middle'>UR</text></svg>" />
-<link id="app-touch-icon" rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231e3a8a'/><path d='M25 65 L65 35 L75 45 L35 75 Z' fill='%23fbbf24'/><circle cx='65' cy='45' r='12' fill='%23f59e0b'/><text x='50' y='64' font-family='Arial' font-size='38' font-weight='900' fill='white' text-anchor='middle'>UR</text></svg>" />
-    <meta name="apple-mobile-web-app-title" content="UR Lotto Audit">
-    <meta name="application-name" content="UR Lotto Audit">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#1e3a8a">
-    
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Tesseract.js OCR for Ticket/Game Photo Scanning -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-    <!-- jsPDF CDN for physical 80mm & Legal PDF Generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>UR Lotto Audit — Enterprise Multi-Store Inventory & Audit System</title>
+  <link id="app-favicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231e3a8a'/><path d='M25 65 L65 35 L75 45 L35 75 Z' fill='%23fbbf24'/><circle cx='65' cy='45' r='12' fill='%23f59e0b'/><text x='50' y='64' font-family='Arial' font-size='38' font-weight='900' fill='white' text-anchor='middle'>UR</text></svg>" />
+  <link id="app-touch-icon" rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231e3a8a'/><path d='M25 65 L65 35 L75 45 L35 75 Z' fill='%23fbbf24'/><circle cx='65' cy='45' r='12' fill='%23f59e0b'/><text x='50' y='64' font-family='Arial' font-size='38' font-weight='900' fill='white' text-anchor='middle'>UR</text></svg>" />
+  <meta name="apple-mobile-web-app-title" content="UR Lotto Audit" />
+  <meta name="application-name" content="UR Lotto Audit" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#1e3a8a" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tesseract.js OCR for Ticket/Game Photo Scanning -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <!-- jsPDF CDN for physical 80mm & Legal PDF Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <style>
     :root {
       --brand-primary: #1e3a8a;
@@ -229,7 +233,7 @@
             onclick="toggleDispenserView()"
             class="bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs px-3 py-1.5 rounded shadow-sm transition"
           >
-            📋 List View
+            🔲 Grid View
           </button>
           <button
             type="button"
@@ -259,9 +263,9 @@
       </div>
     </header>
 
-<!-- MAIN APP VIEWS -->
+    <!-- MAIN APP VIEWS -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-3 py-4">
-      <!-- VIEW 1: GRID -->
+      <!-- VIEW 1: GRID / LIST -->
       <section id="view-grid" class="space-y-4">
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-3 flex flex-wrap items-center justify-between gap-3">
           <div class="flex flex-wrap items-center gap-2">
@@ -316,6 +320,10 @@
 
         <div id="dispenser-grid-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
       </section>
+<!-- ========================= END OF PART 1 OF 4 ========================= -->
+ <!-- ==========================================================================
+     PART 2 OF 4: VIEW 2 (RECONCILIATION) & VIEW 3 (HISTORICAL REPORTS)
+     ========================================================================== -->
 
       <!-- VIEW 2: RECONCILIATION -->
       <section id="view-reconcile" class="hidden space-y-4">
@@ -342,34 +350,62 @@
               </button>
             </div>
           </div>
-      
-<!-- Multi-Shift Scratch Sales & Daily Total Inputs -->
-<div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3 mb-4">
-  <h4 class="font-bold text-slate-900 text-sm border-b pb-2">📊 Shift Scratch Sales & Multi-Shift Breakdown</h4>
-  
-  <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-    <div>
-      <label class="block font-bold text-slate-700 mb-1">Cumulative Daily Scratch Total ($):</label>
-      <input type="number" step="0.01" id="rec-daily-scratch-total" oninput="recalculateReconciliationTotals()" placeholder="0.00" class="w-full border border-slate-300 rounded-lg p-2 font-mono font-bold" />
-    </div>
-    <div>
-      <label class="block font-bold text-slate-700 mb-1">Previous Shifts Sales Deduction ($):</label>
-      <input type="number" step="0.01" id="rec-previous-shifts-sales" oninput="recalculateReconciliationTotals()" placeholder="0.00" class="w-full border border-slate-300 rounded-lg p-2 font-mono font-bold text-slate-600" />
-    </div>
-    <div>
-      <label class="block font-bold text-blue-700 mb-1">This Shift's Net Scratch Sales ($):</label>
-      <div id="rec-net-shift-scratch" class="w-full bg-blue-50 border border-blue-300 rounded-lg p-2 font-mono font-black text-blue-900 text-sm">$0.00</div>
-    </div>
-  </div>
-</div>
+
+          <!-- Multi-Shift Scratch Sales & Daily Total Inputs -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3 mb-4">
+            <h4 class="font-bold text-slate-900 text-sm border-b pb-2">📊 Shift Scratch Sales &amp; Multi-Shift Breakdown</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Cumulative Daily Scratch Total ($):</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  id="rec-daily-scratch-total"
+                  oninput="recalculateReconciliationTotals()"
+                  placeholder="0.00"
+                  class="w-full border border-slate-300 rounded-lg p-2 font-mono font-bold lotto-input"
+                />
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-1">Previous Shifts Sales Deduction ($):</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  id="rec-previous-shifts-sales"
+                  oninput="recalculateReconciliationTotals()"
+                  placeholder="0.00"
+                  class="w-full border border-slate-300 rounded-lg p-2 font-mono font-bold text-slate-600 lotto-input"
+                />
+              </div>
+              <div>
+                <label class="block font-bold text-blue-700 mb-1">This Shift's Net Scratch Sales ($):</label>
+                <div
+                  id="rec-net-shift-scratch"
+                  class="w-full bg-blue-50 border border-blue-300 rounded-lg p-2 font-mono font-black text-blue-900 text-sm"
+                >
+                  $0.00
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div>
               <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Report Date</label>
-              <input type="date" id="rec-report-date" onchange="saveReconciliationDraft()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold bg-slate-50 lotto-input" />
+              <input
+                type="date"
+                id="rec-report-date"
+                onchange="saveReconciliationDraft()"
+                class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold bg-slate-50 lotto-input"
+              />
             </div>
             <div>
               <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Shift Type</label>
-              <select id="rec-shift-type" onchange="handleShiftTypeChange(this.value)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold bg-slate-50 lotto-input">
+              <select
+                id="rec-shift-type"
+                onchange="handleShiftTypeChange(this.value)"
+                class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold bg-slate-50 lotto-input"
+              >
                 <option value="Shift 1 (Morning)">Shift 1 (Morning)</option>
                 <option value="Shift 2 (Evening)">Shift 2 (Evening)</option>
                 <option value="Shift 3 (Night)">Shift 3 (Night)</option>
@@ -379,11 +415,23 @@
             </div>
             <div>
               <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Outgoing Cashier</label>
-              <input type="text" id="rec-cashier-out" placeholder="Outgoing cashier..." oninput="saveReconciliationDraft()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold lotto-input" />
+              <input
+                type="text"
+                id="rec-cashier-out"
+                placeholder="Outgoing cashier..."
+                oninput="saveReconciliationDraft()"
+                class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold lotto-input"
+              />
             </div>
             <div>
               <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Incoming Cashier</label>
-              <input type="text" id="rec-cashier-in" placeholder="Incoming cashier..." oninput="saveReconciliationDraft()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold lotto-input" />
+              <input
+                type="text"
+                id="rec-cashier-in"
+                placeholder="Incoming cashier..."
+                oninput="saveReconciliationDraft()"
+                class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold lotto-input"
+              />
             </div>
           </div>
 
@@ -396,15 +444,36 @@
               </div>
               <div class="flex items-center justify-between text-sm py-1">
                 <label for="rec-online-sales" class="text-slate-600 font-medium">Online / Draw Sales ($):</label>
-                <input type="number" step="0.01" id="rec-online-sales" placeholder="0.00" oninput="recalculateReconciliationTotals()" class="w-32 text-right font-mono font-bold border border-slate-300 rounded px-2.5 py-1 bg-white lotto-input" />
+                <input
+                  type="number"
+                  step="0.01"
+                  id="rec-online-sales"
+                  placeholder="0.00"
+                  oninput="recalculateReconciliationTotals()"
+                  class="w-32 text-right font-mono font-bold border border-slate-300 rounded px-2.5 py-1 bg-white lotto-input"
+                />
               </div>
               <div class="flex items-center justify-between text-sm py-1">
                 <label for="rec-scratch-cashed" class="text-slate-600 font-medium">Less: Scratch Prizes Cashed ($):</label>
-                <input type="number" step="0.01" id="rec-scratch-cashed" placeholder="0.00" oninput="recalculateReconciliationTotals()" class="w-32 text-right font-mono font-bold border border-slate-300 rounded px-2.5 py-1 bg-white lotto-input" />
+                <input
+                  type="number"
+                  step="0.01"
+                  id="rec-scratch-cashed"
+                  placeholder="0.00"
+                  oninput="recalculateReconciliationTotals()"
+                  class="w-32 text-right font-mono font-bold border border-slate-300 rounded px-2.5 py-1 bg-white lotto-input"
+                />
               </div>
               <div class="flex items-center justify-between text-sm py-1">
                 <label for="rec-online-cashed" class="text-slate-600 font-medium">Less: Online Prizes Cashed ($):</label>
-                <input type="number" step="0.01" id="rec-online-cashed" placeholder="0.00" oninput="recalculateReconciliationTotals()" class="w-32 text-right font-mono font-bold border border-slate-300 rounded px-2.5 py-1 bg-white lotto-input" />
+                <input
+                  type="number"
+                  step="0.01"
+                  id="rec-online-cashed"
+                  placeholder="0.00"
+                  oninput="recalculateReconciliationTotals()"
+                  class="w-32 text-right font-mono font-bold border border-slate-300 rounded px-2.5 py-1 bg-white lotto-input"
+                />
               </div>
               <div class="border-t border-slate-300 pt-2 flex items-center justify-between text-sm">
                 <span class="font-bold text-slate-800">Expected Net Lottery Revenue:</span>
@@ -412,7 +481,14 @@
               </div>
               <div class="pt-2 flex items-center justify-between text-sm">
                 <label for="rec-pos-actual" class="font-bold text-slate-800">POS Actual Total ($):</label>
-                <input type="number" step="0.01" id="rec-pos-actual" placeholder="0.00" oninput="recalculateReconciliationTotals()" class="w-36 text-right font-mono font-extrabold border-2 border-blue-500 rounded px-2.5 py-1.5 bg-white text-base lotto-input" />
+                <input
+                  type="number"
+                  step="0.01"
+                  id="rec-pos-actual"
+                  placeholder="0.00"
+                  oninput="recalculateReconciliationTotals()"
+                  class="w-36 text-right font-mono font-extrabold border-2 border-blue-500 rounded px-2.5 py-1.5 bg-white text-base lotto-input"
+                />
               </div>
               <div class="bg-white rounded-lg p-3 border border-slate-200 flex items-center justify-between mt-2">
                 <span class="font-extrabold text-sm text-slate-800">Shift Variance (Over / Short):</span>
@@ -423,7 +499,13 @@
               </div>
               <div>
                 <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Shift Audit Notes</label>
-                <textarea id="rec-shift-notes" rows="2" placeholder="Optional notes..." oninput="saveReconciliationDraft()" class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white lotto-input"></textarea>
+                <textarea
+                  id="rec-shift-notes"
+                  rows="2"
+                  placeholder="Optional notes..."
+                  oninput="saveReconciliationDraft()"
+                  class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white lotto-input"
+                ></textarea>
               </div>
             </div>
 
@@ -431,7 +513,13 @@
               <div>
                 <div class="flex items-center justify-between border-b border-slate-200 pb-2 mb-3">
                   <h3 class="font-bold text-sm text-slate-800">2. Cashier Digital Signature</h3>
-                  <button type="button" onclick="clearSignaturePad()" class="text-xs font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded border border-red-200">Clear Signature</button>
+                  <button
+                    type="button"
+                    onclick="clearSignaturePad()"
+                    class="text-xs font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded border border-red-200"
+                  >
+                    Clear Signature
+                  </button>
                 </div>
                 <div class="bg-white border-2 border-dashed border-slate-400 rounded-lg overflow-hidden relative">
                   <canvas id="signature-pad" width="500" height="160" class="w-full h-40 cursor-crosshair touch-none block"></canvas>
@@ -448,6 +536,7 @@
           </div>
         </div>
       </section>
+
       <!-- VIEW 3: REPORTS -->
       <section id="view-reports" class="hidden space-y-4">
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
@@ -457,8 +546,20 @@
               <p class="text-xs text-slate-500">Filter and review historical shift records.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              <button type="button" onclick="triggerMonthlyEmailDispatchManually()" class="bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm">✉ Email Full Backup</button>
-              <button type="button" onclick="exportHistoricalReportsJSON()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm">💾 Export Reports JSON</button>
+              <button
+                type="button"
+                onclick="triggerMonthlyEmailDispatchManually()"
+                class="bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm"
+              >
+                ✉ Email Full Backup
+              </button>
+              <button
+                type="button"
+                onclick="exportHistoricalReportsJSON()"
+                class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm"
+              >
+                💾 Export Reports JSON
+              </button>
             </div>
           </div>
 
@@ -466,7 +567,11 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
               <div>
                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Report Mode</label>
-                <select id="report-filter-mode" onchange="handleReportFilterModeChange(this.value)" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold bg-white lotto-input">
+                <select
+                  id="report-filter-mode"
+                  onchange="handleReportFilterModeChange(this.value)"
+                  class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold bg-white lotto-input"
+                >
                   <option value="daily">Single Day Report</option>
                   <option value="shift">Specific Shift Lookup</option>
                   <option value="monthly">Monthly Aggregate Summary</option>
@@ -474,15 +579,29 @@
               </div>
               <div id="filter-date-container">
                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Select Date</label>
-                <input type="date" id="report-filter-date" onchange="executeReportLookup()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white lotto-input" />
+                <input
+                  type="date"
+                  id="report-filter-date"
+                  onchange="executeReportLookup()"
+                  class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white lotto-input"
+                />
               </div>
               <div id="filter-month-container" class="hidden">
                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Select Month</label>
-                <input type="month" id="report-filter-month" onchange="executeReportLookup()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white lotto-input" />
+                <input
+                  type="month"
+                  id="report-filter-month"
+                  onchange="executeReportLookup()"
+                  class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white lotto-input"
+                />
               </div>
               <div id="filter-shift-container" class="hidden">
                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Select Shift</label>
-                <select id="report-filter-shift-type" onchange="executeReportLookup()" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold bg-white lotto-input">
+                <select
+                  id="report-filter-shift-type"
+                  onchange="executeReportLookup()"
+                  class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold bg-white lotto-input"
+                >
                   <option value="ALL">All Shifts</option>
                   <option value="Shift 1 (Morning)">Shift 1 (Morning)</option>
                   <option value="Shift 2 (Evening)">Shift 2 (Evening)</option>
@@ -492,7 +611,13 @@
                 </select>
               </div>
               <div>
-                <button type="button" onclick="executeReportLookup()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2 px-3 rounded-lg shadow-sm">🔍 Run Report Lookup</button>
+                <button
+                  type="button"
+                  onclick="executeReportLookup()"
+                  class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2 px-3 rounded-lg shadow-sm"
+                >
+                  🔍 Run Report Lookup
+                </button>
               </div>
             </div>
           </div>
@@ -520,7 +645,13 @@
             <div class="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
               <h3 class="text-xs font-extrabold uppercase text-slate-800">Shift Records Breakdown</h3>
               <div class="flex flex-wrap items-center gap-1.5">
-                <button type="button" onclick="printFilteredReportSummary()" class="text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded">🖨 Print Historical Summary</button>
+                <button
+                  type="button"
+                  onclick="printFilteredReportSummary()"
+                  class="text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded"
+                >
+                  🖨 Print Historical Summary
+                </button>
               </div>
             </div>
             <div class="overflow-x-auto">
@@ -548,6 +679,10 @@
           </div>
         </div>
       </section>
+<!-- ========================= END OF PART 2 OF 4 ========================= -->
+<!-- ==========================================================================
+     PART 3 OF 4: VIEW 4 (ADMIN SETUP / GAMES) & ALL MODALS (ROLLOVER + OUT BOX)
+     ========================================================================== -->
 
       <!-- VIEW 4: ADMIN SETUP -->
       <section id="view-admin" class="hidden space-y-4">
@@ -583,7 +718,9 @@
                 <input type="password" id="admin-store-pass" class="w-full border rounded-lg px-3 py-2 text-xs font-bold bg-white lotto-input" />
               </div>
               <div class="sm:col-span-2 lg:col-span-3">
-                <button type="button" onclick="saveActiveStoreProfile()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 px-4 rounded-lg shadow-sm">💾 Save Store Profile</button>
+                <button type="button" onclick="saveActiveStoreProfile()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 px-4 rounded-lg shadow-sm">
+                  💾 Save Store Profile
+                </button>
               </div>
             </div>
 
@@ -596,14 +733,24 @@
               </div>
             </div>
           </div>
-<!-- THERMAL PRINT FONT SIZE CONTROL -->
-      <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-2">
-        <label class="block text-xs font-extrabold text-slate-800 uppercase tracking-wider">🖨 Thermal Print Font Size (pt)</label>
-        <div class="flex items-center gap-3">
-          <input type="number" id="admin-print-fontsize-input" min="8" max="36" value="13" onchange="savePrintFontSizeSetting(this.value)" class="w-28 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono font-bold lotto-input bg-white" />
-          <span class="text-xs font-bold text-slate-600">pt (Points — 8 to 36)</span>
-        </div>
-      </div>
+
+          <!-- THERMAL PRINT FONT SIZE CONTROL -->
+          <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-2">
+            <label class="block text-xs font-extrabold text-slate-800 uppercase tracking-wider">🖨 Thermal Print Font Size (pt)</label>
+            <div class="flex items-center gap-3">
+              <input
+                type="number"
+                id="admin-print-fontsize-input"
+                min="8"
+                max="36"
+                value="13"
+                onchange="savePrintFontSizeSetting(this.value)"
+                class="w-28 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono font-bold lotto-input bg-white"
+              />
+              <span class="text-xs font-bold text-slate-600">pt (Points — 8 to 36)</span>
+            </div>
+          </div>
+
           <!-- SAVED CASHIERS MANAGEMENT -->
           <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
             <div class="flex items-center justify-between border-b border-slate-200 pb-2">
@@ -626,6 +773,7 @@
             </div>
           </div>
 
+          <!-- ADD OR EDIT GAME IN MASTER CATALOG -->
           <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
             <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3">Add or Edit Game in Master Catalog ($300 / $600 / $900 Roll Pools)</h3>
             <div class="grid grid-cols-2 sm:grid-cols-6 gap-3 items-end">
@@ -650,38 +798,46 @@
               </div>
             </div>
           </div>
-<!-- SCREEN WAKE LOCK / KEEP SCREEN ON CONTROL -->
-<div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-2">
-  <div class="flex items-center justify-between">
-    <label class="block text-xs font-extrabold text-slate-800 uppercase tracking-wider">
-      ☀️ Keep Screen On (Wake Lock Timer)
-    </label>
-    <span id="admin-wakelock-status" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-      Normal Sleep
-    </span>
-  </div>
-  <p class="text-[11px] text-slate-500">
-    Keeps the screen awake for the selected time after any tap or keypress, then returns to normal sleep when closed or idle.
-  </p>
-  <div class="flex flex-wrap items-center gap-3 pt-1">
-    <select
-      id="admin-wakelock-select"
-      onchange="setScreenKeepAwakeMinutes(this.value)"
-      class="border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold lotto-input bg-white"
-    >
-      <option value="0">Off (Device Default)</option>
-      <option value="5">5 Minutes</option>
-      <option value="10" selected>10 Minutes (Recommended)</option>
-      <option value="15">15 Minutes</option>
-      <option value="30">30 Minutes</option>
-    </select>
-  </div>
-</div>
+
+          <!-- SCREEN WAKE LOCK / KEEP SCREEN ON CONTROL -->
+          <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-2">
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-extrabold text-slate-800 uppercase tracking-wider">
+                ☀️ Keep Screen On (Wake Lock Timer)
+              </label>
+              <span id="admin-wakelock-status" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                Normal Sleep
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-500">
+              Keeps the screen awake for the selected time after any tap or keypress, then returns to normal sleep when closed or idle.
+            </p>
+            <div class="flex flex-wrap items-center gap-3 pt-1">
+              <select
+                id="admin-wakelock-select"
+                onchange="setScreenKeepAwakeMinutes(this.value)"
+                class="border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold lotto-input bg-white"
+              >
+                <option value="0">Off (Device Default)</option>
+                <option value="5">5 Minutes</option>
+                <option value="10" selected>10 Minutes (Recommended)</option>
+                <option value="15">15 Minutes</option>
+                <option value="30">30 Minutes</option>
+              </select>
+            </div>
+          </div>
+
           <!-- MASTER GAMES CATALOG -->
           <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             <div class="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
               <h3 class="text-xs font-extrabold uppercase text-slate-800">Master Games Catalog (<span id="admin-games-count">0</span> Games)</h3>
-              <input type="text" id="admin-games-filter" placeholder="Search games..." oninput="renderAdminGamesTable(this.value)" class="border rounded px-2.5 py-1 text-xs bg-white w-48 font-medium lotto-input" />
+              <input
+                type="text"
+                id="admin-games-filter"
+                placeholder="Search games..."
+                oninput="renderAdminGamesTable(this.value)"
+                class="border rounded px-2.5 py-1 text-xs bg-white w-48 font-medium lotto-input"
+              />
             </div>
             <div class="max-h-80 overflow-y-auto">
               <table class="w-full text-left border-collapse text-xs">
@@ -699,6 +855,7 @@
             </div>
           </div>
 
+          <!-- BOX / SLOT NUMBER CONFIGURATION -->
           <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
             <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3 mb-4">
               <div>
@@ -716,16 +873,23 @@
       </section>
     </main>
 
-    <!-- FOOTER -->
-    <footer class="bg-slate-900 text-slate-400 text-[11px] py-3 px-4 border-t border-slate-800 mt-auto">
+    <!-- SINGLE UNIFIED ENTERPRISE FOOTER -->
+    <footer class="bg-slate-900 text-slate-400 text-[11px] py-4 px-4 border-t border-slate-800 mt-auto space-y-2">
       <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-        <div>Project Lotto © 2026 Dimitrios Regas. All Rights Reserved.</div>
+        <div>Lotto Inventory © 2026 Dimitrios Regas UR STORE CENTRAL. All Rights Reserved.</div>
         <div>Local Encrypted Cache: OK • <span id="footer-store-display" class="text-slate-300 font-semibold">Location: Regas Shell (#101)</span></div>
+      </div>
+      <div class="max-w-7xl mx-auto text-slate-500 text-[10px] leading-relaxed border-t border-slate-800/80 pt-2 text-center sm:text-left">
+        <strong>Notice:</strong> This calculator is an operational assistant designed to help maintain accurate lottery logs, compare shift sales, and minimize shrinkage. It does not warranty or guarantee absolute perfection. In the event of a variance, please double-check calculations and notify the system administrator of any discrepancies.
       </div>
     </footer>
   </div>
 
-  <!-- MODALS -->
+  <!-- ==========================================================================
+       MODALS: MULTI-STORE, ROLLOVER / SOLD-OUT ("OUT"), AND QUICK GAME REGISTER
+       ========================================================================== -->
+
+  <!-- MULTI-STORE MANAGER MODAL -->
   <div id="modal-multi-store" class="fixed inset-0 modal-backdrop hidden z-50 flex items-center justify-center p-3">
     <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden">
       <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
@@ -761,10 +925,11 @@
     </div>
   </div>
 
+  <!-- PACK ROLLOVER & SOLD-OUT ("OUT") MODAL -->
   <div id="modal-box-rollover" class="fixed inset-0 modal-backdrop hidden z-50 flex items-center justify-center p-3">
     <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border overflow-hidden">
       <div class="bg-amber-600 text-white px-5 py-3.5 flex items-center justify-between">
-        <h3 id="modal-rollover-title" class="font-extrabold text-sm sm:text-base">Pack Rollover</h3>
+        <h3 id="modal-rollover-title" class="font-extrabold text-sm sm:text-base">Pack Rollover / Sold Out</h3>
         <button type="button" onclick="cancelRolloverModal()" class="text-white font-bold">✕</button>
       </div>
       <div class="p-5 space-y-4">
@@ -772,27 +937,62 @@
         <input type="hidden" id="modal-roll-pending-end" value="" />
         <div id="modal-roll-step-1" class="space-y-3">
           <p id="modal-roll-step1-msg" class="text-sm font-semibold text-slate-800"></p>
-          <div class="grid grid-cols-2 gap-3 pt-2">
-            <button type="button" onclick="handleRolloverStep1Answer(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 rounded">✔ Yes, New Roll Started</button>
-            <button type="button" onclick="handleRolloverStep1Answer(false)" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs py-2.5 rounded">✖ No (Typo)</button>
+          <div class="grid grid-cols-1 gap-2.5 pt-2">
+            <button
+              type="button"
+              onclick="handleRolloverStep1Answer(true)"
+              class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 px-3 rounded-lg shadow-sm"
+            >
+              ✔ Yes — Finished Pack &amp; Loaded New Roll
+            </button>
+            <button
+              type="button"
+              onclick="markBoxSoldOutFromModal()"
+              class="bg-red-600 hover:bg-red-700 text-white font-bold text-xs py-2.5 px-3 rounded-lg shadow-sm"
+            >
+              🚫 Pack Sold Out — Leave Box OUT (No Replacement Roll)
+            </button>
+            <button
+              type="button"
+              onclick="handleRolloverStep1Answer(false)"
+              class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs py-2.5 px-3 rounded-lg"
+            >
+              ✖ Cancel / Typo
+            </button>
           </div>
         </div>
         <div id="modal-roll-step-2" class="hidden space-y-3">
-          <p class="text-xs font-bold text-slate-700">Is the new roll the SAME game or a NEW game?</p>
-          <div class="grid grid-cols-2 gap-3">
-            <button type="button" onclick="handleRolloverGameChoice(true)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2.5 rounded">🔄 Same Game</button>
-            <button type="button" onclick="handleRolloverGameChoice(false)" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs py-2.5 rounded">🆕 New Game</button>
+          <p class="text-xs font-bold text-slate-700">What happened after the current pack finished?</p>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <button type="button" onclick="handleRolloverGameChoice(true)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2.5 px-2 rounded-lg">
+              🔄 Same Game Roll
+            </button>
+            <button type="button" onclick="handleRolloverGameChoice(false)" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs py-2.5 px-2 rounded-lg">
+              🆕 New Game Roll
+            </button>
+            <button type="button" onclick="markBoxSoldOutFromModal()" class="bg-red-600 hover:bg-red-700 text-white font-bold text-xs py-2.5 px-2 rounded-lg">
+              🚫 Box OUT (Empty)
+            </button>
           </div>
           <div id="modal-roll-newgame-section" class="hidden pt-3 border-t space-y-2">
             <label class="block text-[11px] font-bold text-slate-700 uppercase">Enter New Game Number:</label>
-            <input type="text" id="modal-roll-newgame-input" placeholder="e.g. 1005" onkeydown="if(event.key==='Enter'){event.preventDefault();applyRolloverWithNewGame();}" class="w-full border rounded px-2.5 py-1.5 text-xs font-mono font-bold lotto-input" />
-            <button type="button" onclick="applyRolloverWithNewGame()" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs py-2 rounded">Apply New Game &amp; Rollover</button>
+            <input
+              type="text"
+              id="modal-roll-newgame-input"
+              placeholder="e.g. 1005"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();applyRolloverWithNewGame();}"
+              class="w-full border rounded px-2.5 py-1.5 text-xs font-mono font-bold lotto-input"
+            />
+            <button type="button" onclick="applyRolloverWithNewGame()" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs py-2 rounded">
+              Apply New Game &amp; Rollover
+            </button>
           </div>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- QUICK REGISTER GAME MODAL -->
   <div id="modal-quick-game" class="fixed inset-0 modal-backdrop hidden z-50 flex items-center justify-center p-3">
     <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full border overflow-hidden">
       <div class="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
@@ -826,33 +1026,795 @@
       </div>
     </div>
   </div>
+<!-- ========================= END OF PART 3 OF 4 ========================= -->
+    <!-- ==========================================================================
+     PART 4 OF 4: PRINT CONTAINER, CORE SCRIPT LOADER & PRINT/ROLLOVER/OUT ENGINE
+     ========================================================================== -->
 
-<div id="print-container"></div>
+  <div id="print-container"></div>
   <script src="./script.js"></script>
-  
-  <!-- STARTUP SCRIPT: Force List View by Default -->
-  <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        if (typeof currentDispenserView !== 'undefined') {
-          currentDispenserView = 'list';
-        }
-        if (typeof renderDispenserGrid === 'function') {
-          renderDispenserGrid();
-        }
-      }, 100);
-    });
-  </script>
 
-  <!-- FOOTER -->
-  <footer class="bg-slate-900 text-slate-400 text-[11px] py-4 px-4 border-t border-slate-800 mt-auto space-y-2">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-      <div>Lotto Inventory © 2026 Dimitrios Regas UR STORE CENTRAL. All Rights Reserved.</div>
-      <div>Local Encrypted Cache: OK • <span id="footer-store-display" class="text-slate-300 font-semibold">Location: Regas Shell (#101)</span></div>
-    </div>
-    <div class="max-w-7xl mx-auto text-slate-500 text-[10px] leading-relaxed border-t border-slate-800/80 pt-2 text-center sm:text-left">
-      <strong>Notice:</strong> This calculator is an operational assistant designed to help maintain accurate lottery logs, compare shift sales, and minimize shrinkage. It does not warranty or guarantee absolute perfection. In the event of a variance, please double-check calculations and notify the system administrator of any discrepancies.
-    </div>
-  </footer>
+  <!-- ==========================================================================
+       PRINT, ROLLOVER & SOLD-OUT ("OUT" BOX) RUNTIME PATCH ENGINE
+       Fixes:
+       1. Prevents double-counting on Rollover when endTicket < startTicket
+       2. Adds full "OUT" (Pack Sold Out / No Replacement) support in Modal, Grid & List
+       3. Upgrades 80mm Thermal & Legal Printing (shows rolled/out packs + opens print dialog cleanly)
+       4. Properly clears or rolls "OUT" boxes when advancing to the Next Shift
+       ========================================================================== -->
+  <script>
+    (function () {
+      /* ----------------------------------------------------------------------
+         1. ACCURATE BOX METRICS (Fixes Rollover Double-Counting & Supports "OUT")
+         ---------------------------------------------------------------------- */
+      window.calculateBoxMetrics = function (box) {
+        if (!box) {
+          return { ticketsSold: 0, dollarSales: 0, status: 'empty', hasRollover: false, isSoldOut: false, activeTicket: '-' };
+        }
+
+        const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
+        let rolloverSold = 0;
+        let rolloverDollarSales = 0;
+
+        rollovers.forEach(ro => {
+          const tSold = Number(ro.ticketsSold) || 0;
+          const rPrice = Number(ro.price) || Number(box.price) || 0;
+          rolloverSold += tSold;
+          rolloverDollarSales += (ro.salesAmount !== undefined ? Number(ro.salesAmount) : (tSold * rPrice));
+        });
+
+        const isOut = Boolean(box.isSoldOut) || String(box.endTicket).toUpperCase() === 'OUT';
+
+        // If box is marked OUT (pack sold out during shift with no new roll loaded)
+        if (isOut) {
+          return {
+            ticketsSold: Math.max(0, rolloverSold),
+            dollarSales: Math.max(0, rolloverDollarSales),
+            status: 'alert',
+            hasRollover: rollovers.length > 0,
+            isSoldOut: true,
+            activeTicket: 'OUT'
+          };
+        }
+
+        if (!box.gameNum) {
+          return {
+            ticketsSold: Math.max(0, rolloverSold),
+            dollarSales: Math.max(0, rolloverDollarSales),
+            status: rollovers.length > 0 ? 'rollover' : 'empty',
+            hasRollover: rollovers.length > 0,
+            isSoldOut: false,
+            activeTicket: '-'
+          };
+        }
+
+        const price = Number(box.price) || 0;
+        const start = Number(box.startTicket) || 0;
+        const endVal = box.endTicket;
+        const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(price);
+
+        if (endVal === '' || endVal === undefined || endVal === null) {
+          return {
+            ticketsSold: Math.max(0, rolloverSold),
+            dollarSales: Math.max(0, rolloverDollarSales),
+            status: rollovers.length > 0 ? 'rollover' : 'pending',
+            hasRollover: rollovers.length > 0,
+            isSoldOut: false,
+            activeTicket: start
+          };
+        }
+
+        const end = Number(endVal);
+        let currentPackSold = 0;
+
+        if (!isNaN(end)) {
+          if (end >= start) {
+            currentPackSold = end - start;
+          } else {
+            // If end < start and no rollover was recorded yet, preview wrap-around;
+            // if a rollover was already logged, start is 0 so end >= start applies.
+            currentPackSold = rollovers.length > 0 ? Math.max(0, end - start) : Math.max(0, (rollCount - start) + end);
+          }
+        }
+
+        const totalTicketsSold = Math.max(0, currentPackSold + rolloverSold);
+        const totalDollarSales = Math.max(0, (currentPackSold * price) + rolloverDollarSales);
+
+        let status = 'active';
+        if (totalTicketsSold >= rollCount) status = 'complete';
+        if (rollovers.length > 0) status = 'rollover';
+
+        return {
+          ticketsSold: totalTicketsSold,
+          dollarSales: totalDollarSales,
+          status,
+          hasRollover: rollovers.length > 0,
+          isSoldOut: false,
+          activeTicket: end
+        };
+      };
+
+      /* ----------------------------------------------------------------------
+         2. MARK BOX SOLD OUT ("OUT") & UNDO SOLD-OUT / ROLLOVER
+         ---------------------------------------------------------------------- */
+      window.markBoxSoldOutDirect = function (idx) {
+        const box = boxes[idx];
+        if (!box) return;
+        if (!box.gameNum && !box.isSoldOut) {
+          alert('This box is already empty.');
+          return;
+        }
+        if (box.isSoldOut) {
+          alert('Box ' + box.boxNumber + ' is already marked OUT. Click "Undo" on the box if you want to restore the pack.');
+          return;
+        }
+
+        const price = Number(box.price) || 0;
+        const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(price);
+        const maxTicket = Math.max(1, rollCount);
+        const start = Number(box.startTicket) || 0;
+        const soldFromFinishedPack = Math.max(0, maxTicket - start);
+        const salesFromFinishedPack = soldFromFinishedPack * price;
+
+        if (!Array.isArray(box.rollovers)) box.rollovers = [];
+        box.rollovers.push({
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          date: new Date().toISOString().slice(0, 10),
+          gameNum: box.gameNum,
+          gameName: box.gameName || ('Game #' + box.gameNum),
+          price: price,
+          rollCount: rollCount,
+          startTicket: start,
+          finishedTicket: maxTicket,
+          endTicket: 'OUT',
+          ticketsSold: soldFromFinishedPack,
+          salesAmount: salesFromFinishedPack,
+          markedSoldOut: true
+        });
+
+        box.isSoldOut = true;
+        box.startTicket = 0;
+        box.endTicket = '';
+
+        saveBoxesState();
+        cancelRolloverModal();
+        renderDispenserGrid();
+        updateHeaderTotalsUI();
+        recalculateReconciliationTotals();
+      };
+
+      window.markBoxSoldOutFromModal = function () {
+        const idx = Number(document.getElementById('modal-roll-box-idx').value);
+        if (isNaN(idx) || !boxes[idx]) {
+          cancelRolloverModal();
+          return;
+        }
+        window.markBoxSoldOutDirect(idx);
+      };
+
+      window.undoLastRolloverInBox = function (idx) {
+        const box = boxes[idx];
+        if (!box || !Array.isArray(box.rollovers) || box.rollovers.length === 0) {
+          alert('No rollover or sold-out entry to undo for this box.');
+          return;
+        }
+        if (!confirm('Undo the last rollover / sold-out entry for Box ' + box.boxNumber + ' and restore the previous pack?')) {
+          return;
+        }
+
+        const lastRo = box.rollovers.pop();
+        box.gameNum = lastRo.gameNum;
+        box.gameName = lastRo.gameName;
+        box.price = Number(lastRo.price) || 0;
+        box.rollCount = Number(lastRo.rollCount) || getDefaultRollCountForPrice(box.price);
+        box.startTicket = Number(lastRo.startTicket) || 0;
+        box.endTicket = '';
+        box.isSoldOut = false;
+
+        saveBoxesState();
+        renderDispenserGrid();
+        updateHeaderTotalsUI();
+        recalculateReconciliationTotals();
+      };
+
+      /* ----------------------------------------------------------------------
+         3. ENHANCED ROLLOVER MODAL & LIVE INPUT COMMITS
+         ---------------------------------------------------------------------- */
+      const origFinalizeRolloverAction = window.finalizeRolloverAction;
+      window.finalizeRolloverAction = function (idx, finalGameNum) {
+        if (boxes[idx]) {
+          boxes[idx].isSoldOut = false;
+        }
+        if (typeof origFinalizeRolloverAction === 'function') {
+          origFinalizeRolloverAction(idx, finalGameNum);
+        }
+      };
+
+      window.commitBoxEndTicket = function (idx, val) {
+        if (!boxes[idx]) return;
+        const box = boxes[idx];
+        const clean = String(val).trim();
+
+        if (clean.toUpperCase() === 'OUT') {
+          window.markBoxSoldOutDirect(idx);
+          return;
+        }
+
+        if (clean === '') {
+          box.endTicket = '';
+          saveBoxesState();
+          updateBoxMetricsDisplay(idx);
+          updateHeaderTotalsUI();
+          recalculateReconciliationTotals();
+          return;
+        }
+
+        const endNum = Number(clean);
+        const startNum = Number(box.startTicket) || 0;
+        const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(box.price);
+
+        box.isSoldOut = false;
+        box.endTicket = endNum;
+
+        if (endNum < startNum) {
+          openRolloverDecisionModal(idx, endNum);
+          return;
+        }
+
+        // If user entered the exact max ticket of the pack (e.g., 60 on a 60-ticket roll),
+        // ask whether they loaded a new roll or if the box is now OUT.
+        if (box.gameNum && endNum === rollCount) {
+          saveBoxesState();
+          updateBoxMetricsDisplay(idx);
+          updateHeaderTotalsUI();
+          recalculateReconciliationTotals();
+          return;
+        }
+
+        saveBoxesState();
+        updateBoxMetricsDisplay(idx);
+        updateHeaderTotalsUI();
+        recalculateReconciliationTotals();
+      };
+
+      /* ----------------------------------------------------------------------
+         4. GRID & LIST RENDERING WITH "ROLL" + "OUT" BUTTONS & BADGES
+         ---------------------------------------------------------------------- */
+      window.renderDispenserGrid = function () {
+        const container = document.getElementById('dispenser-grid-container');
+        if (!container) return;
+
+        if (!Array.isArray(boxes) || boxes.length === 0) {
+          boxes = createDefault40Boxes();
+        }
+
+        const isUnlocked = (typeof isBoxEditUnlocked !== 'undefined' && isBoxEditUnlocked);
+        const lockAttr = isUnlocked ? '' : 'readonly';
+        const lockStyle = isUnlocked ? 'bg-white' : 'bg-slate-100 text-slate-500 cursor-pointer';
+
+        if (currentDispenserView === 'list') {
+          const rowsHtml = boxes.map((box, idx) => {
+            const m = calculateBoxMetrics(box);
+            const hasGame = Boolean(box.gameNum);
+            const isOut = Boolean(box.isSoldOut);
+            const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
+            const tabGame = 1000 + idx + 1;
+            const tabStart = 2000 + idx + 1;
+            const tabEnd = 3000 + idx + 1;
+
+            const roHistoryHtml = rollovers.map(ro =>
+              `<div class="text-[10px] font-bold ${ro.markedSoldOut ? 'text-red-800 bg-red-50 border-red-200' : 'text-amber-800 bg-amber-50 border-amber-200'} border rounded px-1.5 py-0.5 mt-1 flex items-center justify-between">
+                <span>${ro.markedSoldOut ? '🚫 SOLD OUT' : '🔄 Rolled'} #${ro.gameNum} (${ro.gameName || 'Pack'}): #${ro.startTicket}→#${ro.finishedTicket} (${ro.ticketsSold} sold = $${Number(ro.salesAmount || 0).toFixed(2)})</span>
+                <button type="button" onclick="undoLastRolloverInBox(${idx})" class="text-red-700 underline ml-2 hover:text-red-900">Undo</button>
+              </div>`
+            ).join('');
+
+            const currentEndVal = isOut ? '' : (box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '');
+
+            return `
+              <tr style="border-bottom: 1px solid #e2e8f0; background: ${isOut ? '#fef2f2' : '#fff'};" class="hover:bg-slate-50 transition">
+                <td style="padding: 6px 8px; text-align: center; background: #0f172a; font-family: monospace; font-weight: bold; color: #fff;">
+                  ${box.boxNumber || (idx + 1)}
+                </td>
+                <td style="padding: 6px 8px; text-align: center; font-family: monospace; font-weight: bold;">
+                  <input type="text" inputmode="numeric" ${lockAttr} tabindex="${tabGame}" enterkeyhint="next"
+                    id="list-input-gameNum-${idx}" value="${box.gameNum || ''}"
+                    onclick="requestBoxEditUnlock(this)"
+                    onfocus="this.select()"
+                    oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'gameNum', this.value)"
+                    onkeydown="handleGameNumKeydown(event, ${idx})"
+                    placeholder="Game#"
+                    class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input font-bold ${lockStyle}" />
+                </td>
+                <td id="list-gamename-${idx}" style="padding: 6px 8px; font-weight: 600;">
+                  <div>
+                    ${hasGame
+                      ? `<strong>#${box.gameNum}</strong> ${box.gameName || ''}` +
+                        (isOut ? ` <span class="ml-1 px-1.5 py-0.5 text-[10px] font-black bg-red-600 text-white rounded">OUT</span>` : '') +
+                        (box.needsNewGameEntry ? ` <button type="button" tabindex="-1" onclick="openQuickGameModal(${idx})" class="ml-1 text-[10px] font-extrabold underline text-blue-700">+ Register</button>` : '')
+                      : '<span class="text-slate-400 italic">Empty Box</span>'}
+                  </div>
+                  ${roHistoryHtml}
+                </td>
+                <td id="list-price-${idx}" style="padding: 6px 8px; text-align: center; font-weight: bold; color: #047857;">${hasGame && box.price ? '$' + box.price : '-'}</td>
+                <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
+                  <input type="number" inputmode="numeric" ${lockAttr} tabindex="${tabStart}" enterkeyhint="next"
+                    id="list-input-startTicket-${idx}" value="${isOut ? 0 : (box.startTicket !== '' && box.startTicket !== undefined ? box.startTicket : 0)}"
+                    onclick="requestBoxEditUnlock(this)"
+                    onfocus="this.select()"
+                    oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'startTicket', this.value)"
+                    onkeydown="handleStartKeydown(event, ${idx})"
+                    class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input ${lockStyle}" />
+                </td>
+                <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
+                  <input type="number" inputmode="numeric" tabindex="${tabEnd}" enterkeyhint="next"
+                    id="list-input-endTicket-${idx}" value="${currentEndVal}"
+                    onfocus="this.select()"
+                    oninput="updateBoxEndTicketLive(${idx}, this.value)"
+                    onchange="commitBoxEndTicket(${idx}, this.value)"
+                    onkeydown="handleGridEnter(event, ${idx})"
+                    placeholder="${isOut ? 'OUT' : 'End#'}"
+                    class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono font-bold lotto-input" />
+                </td>
+                <td id="list-sold-${idx}" style="padding: 6px 8px; text-align: center; font-weight: bold;">${m.ticketsSold}${rollovers.length > 0 ? ' *' : ''}</td>
+                <td id="list-sales-${idx}" style="padding: 6px 8px; text-align: right; font-family: monospace; font-weight: 900; color: #047857;">$${m.dollarSales.toFixed(2)}</td>
+                <td style="padding: 6px 8px; text-align: center;">
+                  <div class="flex items-center justify-center gap-1">
+                    <button type="button" tabindex="-1" onclick="rollNewPackInBox(${idx})" class="text-[10px] bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold px-2 py-1 rounded transition">Roll</button>
+                    <button type="button" tabindex="-1" onclick="markBoxSoldOutDirect(${idx})" class="text-[10px] bg-red-100 hover:bg-red-200 text-red-800 font-bold px-2 py-1 rounded transition" title="Mark Pack Sold Out (Leave Box Out)">Out</button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('');
+
+          container.innerHTML = `
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden col-span-full">
+              <table class="w-full text-xs text-left border-collapse">
+                <thead>
+                  <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1; text-transform: uppercase; font-size: 10px;">
+                    <th style="padding: 8px; text-align: center; width: 60px;">Box #</th>
+                    <th style="padding: 8px; text-align: center; width: 80px;">Game #</th>
+                    <th style="padding: 8px;">Game Name (Current &amp; Rolled / Out)</th>
+                    <th style="padding: 8px; text-align: center; width: 50px;">Price</th>
+                    <th style="padding: 8px; text-align: center; width: 80px;">Start</th>
+                    <th style="padding: 8px; text-align: center; width: 80px;">End</th>
+                    <th style="padding: 8px; text-align: center; width: 60px;">Sold</th>
+                    <th style="padding: 8px; text-align: right; width: 90px;">Sales $</th>
+                    <th style="padding: 8px; text-align: center; width: 95px;">Action</th>
+                  </tr>
+                </thead>
+                <tbody>${rowsHtml}</tbody>
+              </table>
+            </div>
+          `;
+          updateHeaderTotalsUI();
+          return;
+        }
+
+        let html = '';
+        boxes.forEach((box, idx) => {
+          const metrics = calculateBoxMetrics(box);
+          const hasGame = Boolean(box.gameNum);
+          const isOut = Boolean(box.isSoldOut);
+          const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
+          let statusClass = 'status-pending';
+          if (isOut) statusClass = 'status-alert';
+          else if (metrics.status === 'complete') statusClass = 'status-complete';
+          else if (metrics.status === 'rollover') statusClass = 'status-rollover';
+
+          const tabGame = 1000 + idx + 1;
+          const tabStart = 2000 + idx + 1;
+          const tabEnd = 3000 + idx + 1;
+
+          const roHistoryHtml = rollovers.map(ro =>
+            `<div class="text-[10px] font-bold ${ro.markedSoldOut ? 'text-red-900 bg-red-50 border-red-300' : 'text-amber-900 bg-amber-50 border-amber-300'} border rounded px-2 py-1 mb-1.5 flex items-center justify-between">
+              <div>
+                <div>${ro.markedSoldOut ? '🚫 SOLD OUT:' : 'Prev:'} #${ro.gameNum} ${ro.gameName || ''} ($${ro.price})</div>
+                <div>Start #${ro.startTicket} → End #${ro.finishedTicket} • ${ro.ticketsSold} Sold ($${Number(ro.salesAmount || 0).toFixed(2)})</div>
+              </div>
+              <button type="button" onclick="undoLastRolloverInBox(${idx})" class="text-red-700 underline font-extrabold text-[10px] ml-2 hover:text-red-900">Undo</button>
+            </div>`
+          ).join('');
+
+          const currentEndValGrid = isOut ? '' : (box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '');
+
+          html += `
+            <div id="dispenser-card-${idx}" class="dispenser-card bg-white rounded-xl border border-slate-200 p-3 shadow-sm flex flex-col justify-between ${statusClass}">
+              <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                  <div class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-900 text-white font-black text-xs font-mono" title="Slot / Box #">
+                    ${box.boxNumber || (idx + 1)}
+                  </div>
+                  <div class="leading-tight">
+                    <div id="box-title-${idx}" class="font-bold text-xs text-slate-800 truncate max-w-[125px]">
+                      ${hasGame ? (box.gameName || 'Game #' + box.gameNum) : '<span class="text-slate-400 italic">Empty Box</span>'}
+                    </div>
+                    <div id="box-sub-${idx}" class="text-[10px] text-slate-500 font-medium">
+                      ${isOut ? '<span class="text-red-600 font-extrabold">BOX OUT (SOLD OUT)</span>' : (hasGame ? `$${box.price} • ${box.rollCount} tix/pk` : 'Assign game below')}
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button type="button" tabindex="-1" onclick="rollNewPackInBox(${idx})" class="text-[10px] font-bold px-2 py-1 rounded transition border ${rollovers.length > 0 ? 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200' : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'}">
+                    Roll
+                  </button>
+                  <button type="button" tabindex="-1" onclick="markBoxSoldOutDirect(${idx})" class="text-[10px] font-bold px-2 py-1 rounded transition border bg-red-50 text-red-700 border-red-200 hover:bg-red-100">
+                    Out
+                  </button>
+                </div>
+              </div>
+              ${roHistoryHtml}
+              <div class="space-y-2 mb-2">
+                <div class="flex items-center gap-2">
+                  <label class="text-[10px] font-bold text-slate-500 uppercase w-12">Game #:</label>
+                  <input type="text" inputmode="numeric" ${lockAttr} tabindex="${tabGame}" enterkeyhint="next"
+                    id="input-gameNum-${idx}" value="${box.gameNum || ''}" placeholder="e.g. 1005"
+                    onclick="requestBoxEditUnlock(this)"
+                    onfocus="this.select()"
+                    oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'gameNum', this.value)"
+                    onkeydown="handleGameNumKeydown(event, ${idx})"
+                    class="flex-1 text-xs font-mono font-bold border border-slate-300 rounded px-2 py-1 lotto-input ${lockStyle}" />
+                </div>
+                <div id="box-unknown-wrap-${idx}" class="${box.needsNewGameEntry ? '' : 'hidden'} p-1.5 bg-red-50 border border-red-200 rounded text-[10px] text-red-700 flex items-center justify-between">
+                  <span>Unknown Game #</span>
+                  <button type="button" tabindex="-1" onclick="openQuickGameModal(${idx})" class="font-extrabold underline text-blue-700 hover:text-blue-900">+ Register</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                  <div>
+                    <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Start #</label>
+                    <input type="number" inputmode="numeric" ${lockAttr} tabindex="${tabStart}" enterkeyhint="next"
+                      id="input-startTicket-${idx}" value="${isOut ? 0 : (box.startTicket !== undefined ? box.startTicket : 0)}"
+                      onclick="requestBoxEditUnlock(this)"
+                      onfocus="this.select()"
+                      oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'startTicket', this.value)"
+                      onkeydown="handleStartKeydown(event, ${idx})" placeholder="000"
+                      class="w-full text-center font-mono font-bold text-xs border border-slate-300 rounded p-1.5 lotto-input ${lockStyle}" />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-blue-700 uppercase mb-0.5">End #</label>
+                    <input type="number" inputmode="numeric" tabindex="${tabEnd}" enterkeyhint="next"
+                      id="input-endTicket-${idx}" value="${currentEndValGrid}"
+                      onfocus="this.select()"
+                      oninput="updateBoxEndTicketLive(${idx}, this.value)"
+                      onchange="commitBoxEndTicket(${idx}, this.value)"
+                      onkeydown="handleGridEnter(event, ${idx})" placeholder="${isOut ? 'OUT' : '000'}"
+                      class="w-full text-center font-mono font-bold text-xs border-2 border-blue-400 rounded p-1.5 lotto-input" />
+                  </div>
+                </div>
+              </div>
+              <div class="bg-slate-50 rounded-lg p-2 border border-slate-200 flex items-center justify-between text-xs mt-1">
+                <span id="box-sold-badge-${idx}" class="font-mono font-bold text-slate-700">${metrics.ticketsSold} Sold</span>
+                <span id="box-sales-badge-${idx}" class="font-mono font-black text-emerald-700">$${metrics.dollarSales.toFixed(2)}</span>
+              </div>
+            </div>
+          `;
+        });
+
+        container.innerHTML = html;
+        updateHeaderTotalsUI();
+      };
+
+      /* ----------------------------------------------------------------------
+         5. NEXT SHIFT ADVANCE (Properly Clears "OUT" Boxes & Rolls Active Boxes)
+         ---------------------------------------------------------------------- */
+      window.advanceEndToStartForNewShift = function () {
+        boxes.forEach((b, idx) => {
+          const listInp = document.getElementById(`list-input-endTicket-${idx}`);
+          const gridInp = document.getElementById(`input-endTicket-${idx}`);
+          let rawVal = '';
+          if (listInp && String(listInp.value).trim() !== '') rawVal = String(listInp.value).trim();
+          else if (gridInp && String(gridInp.value).trim() !== '') rawVal = String(gridInp.value).trim();
+
+          if (rawVal !== '' && !isNaN(Number(rawVal))) {
+            b.endTicket = Number(rawVal);
+          }
+        });
+
+        let rolledCount = 0;
+        let clearedOutCount = 0;
+
+        boxes.forEach((b, idx) => {
+          if (b.isSoldOut) {
+            // Box ran out during the shift and was not refilled -> clear box for the next shift
+            b.gameNum = '';
+            b.gameName = '';
+            b.price = 0;
+            b.startTicket = 0;
+            b.endTicket = '';
+            b.rollovers = [];
+            b.isSoldOut = false;
+            clearedOutCount++;
+          } else {
+            const rawEnd = b.endTicket;
+            if (rawEnd !== '' && rawEnd !== undefined && rawEnd !== null && !isNaN(Number(rawEnd))) {
+              const endNum = Number(rawEnd);
+              const rollCount = Number(b.rollCount) || getDefaultRollCountForPrice(b.price);
+              const maxTicket = Math.max(1, rollCount);
+
+              if (b.gameNum && endNum >= maxTicket) {
+                b.startTicket = 0;
+              } else {
+                b.startTicket = endNum;
+              }
+              rolledCount++;
+            }
+            b.endTicket = '';
+            b.rollovers = [];
+          }
+
+          const listInp = document.getElementById(`list-input-endTicket-${idx}`);
+          const gridInp = document.getElementById(`input-endTicket-${idx}`);
+          if (listInp) listInp.value = '';
+          if (gridInp) gridInp.value = '';
+        });
+
+        saveBoxesState();
+        renderDispenserGrid();
+        updateHeaderTotalsUI();
+        recalculateReconciliationTotals();
+
+        alert(`Shift ended! Rolled End → Start on ${rolledCount} active boxes` + (clearedOutCount > 0 ? ` and cleared ${clearedOutCount} sold-out (OUT) boxes.` : '.'));
+        switchMainView('grid');
+      };
+
+      /* ----------------------------------------------------------------------
+         6. FIXED PRINT ENGINE (80mm Thermal + Full Legal Worksheet + Rollovers)
+         ---------------------------------------------------------------------- */
+      window.buildMatrixPrintHTML = function (repData) {
+        const bList = Array.isArray(repData.boxesSnapshot) ? repData.boxesSnapshot : boxes;
+        const t = repData.totals || {};
+        const variance = Number(t.variance) || 0;
+        let gtTickets = 0;
+        let gtSales = 0;
+
+        const rowsHtml = bList.map(box => {
+          const m = calculateBoxMetrics(box);
+          gtTickets += m.ticketsSold;
+          gtSales += m.dollarSales;
+          const hasGame = Boolean(box.gameNum);
+          const isOut = Boolean(box.isSoldOut);
+          const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
+
+          const roDetails = rollovers.map(ro =>
+            `<div style="font-size:6.5px; color:#334155;">↳ ${ro.markedSoldOut ? 'OUT' : 'Rolled'} #${ro.gameNum} (${ro.startTicket}→${ro.finishedTicket}): ${ro.ticketsSold} sold ($${Number(ro.salesAmount || 0).toFixed(2)})</div>`
+          ).join('');
+
+          const endCellText = isOut
+            ? '<strong style="color:#dc2626;">OUT</strong>'
+            : (box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '-');
+
+          return `
+            <tr style="border-bottom: 1px solid #cbd5e1; font-size: 7.5px;">
+              <td style="padding: 1.5px 3px; text-align: center; font-weight: 900; background: #0f172a; color: #fff;">${box.boxNumber}</td>
+              <td style="padding: 1.5px 3px; text-align: center; font-family: monospace; font-weight: bold;">${box.gameNum || '-'}</td>
+              <td style="padding: 1.5px 3px; font-weight: 600;">
+                ${hasGame ? (box.gameName || 'Game #' + box.gameNum) : '<span style="color:#94a3b8;">Empty</span>'}
+                ${roDetails}
+              </td>
+              <td style="padding: 1.5px 3px; text-align: center; font-weight: bold; color: #047857;">${hasGame && box.price ? '$' + box.price : '-'}</td>
+              <td style="padding: 1.5px 3px; text-align: center; font-family: monospace;">${isOut ? 'OUT' : (box.startTicket !== '' ? box.startTicket : '-')}</td>
+              <td style="padding: 1.5px 3px; text-align: center; font-family: monospace; font-weight: bold;">${endCellText}</td>
+              <td style="padding: 1.5px 3px; text-align: center; font-weight: bold;">${m.ticketsSold}${rollovers.length > 0 ? ' *' : ''}</td>
+              <td style="padding: 1.5px 3px; text-align: right; font-family: monospace; font-weight: 900; color: #047857;">$${m.dollarSales.toFixed(2)}</td>
+            </tr>
+          `;
+        }).join('');
+
+        const sigImgHtml = repData.signatureDataUrl
+          ? `<img src="${repData.signatureDataUrl}" style="max-height: 24px; max-width: 140px; object-fit: contain;" alt="Signature" />`
+          : `<span style="color: #94a3b8; font-size: 7.5px;">______________________________</span>`;
+
+        return `
+          <style>
+            @page { size: letter portrait; margin: 0.15in 0.2in; }
+            @media print {
+              html, body {
+                margin: 0 !important; padding: 0 !important;
+                background: #fff !important; color: #000 !important;
+                -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+              }
+              #app-shell, .no-print { display: none !important; }
+              #print-container { display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            }
+          </style>
+          <div class="one-page-print-sheet" style="font-family: Arial, sans-serif; color: #000; font-size: 7.5px; line-height: 1.1;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; padding-bottom: 2px; margin-bottom: 3px;">
+              <div>
+                <div style="font-size: 11px; font-weight: 900; text-transform: uppercase;">
+                  ${repData.storeName || storeProfile.name} (#${repData.storeNumber || storeProfile.number}) — Shift Lotto Count Worksheet
+                </div>
+                ${storeProfile.address ? `<div style="font-size: 7px; color: #334155;">${storeProfile.address}</div>` : ''}
+                <div style="font-size: 7.5px; color: #334155; margin-top: 1px;">Date: <strong>${repData.date}</strong> &nbsp;|&nbsp; Shift: <strong>${repData.shiftType}</strong></div>
+              </div>
+              <div style="text-align: right; font-size: 7px; font-weight: bold;">WORKSHEET</div>
+            </div>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 3px;">
+              <thead>
+                <tr style="background: #e2e8f0; border-bottom: 1.5px solid #000; font-size: 7px; text-transform: uppercase;">
+                  <th style="padding: 2px; text-align: center; width: 28px;">Box</th>
+                  <th style="padding: 2px; text-align: center; width: 48px;">Game #</th>
+                  <th style="padding: 2px; text-align: left;">Game Name</th>
+                  <th style="padding: 2px; text-align: center; width: 32px;">Price</th>
+                  <th style="padding: 2px; text-align: center; width: 42px;">Start</th>
+                  <th style="padding: 2px; text-align: center; width: 42px;">End</th>
+                  <th style="padding: 2px; text-align: center; width: 32px;">Sold</th>
+                  <th style="padding: 2px; text-align: right; width: 58px;">Sales $</th>
+                </tr>
+              </thead>
+              <tbody>${rowsHtml}</tbody>
+            </table>
+            <div style="border: 1.5px solid #000; padding: 3px 5px; background: #f8fafc;">
+              <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; border-bottom: 1px solid #94a3b8; padding-bottom: 2px; margin-bottom: 2px; text-align: center; font-size: 7px;">
+                <div><span>Total Sold:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">${gtTickets} tix</div></div>
+                <div><span>Scratch Sales:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px; color:#047857;">$${gtSales.toFixed(2)}</div></div>
+                <div><span>Online Sales:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">$${(Number(t.onlineSales) || 0).toFixed(2)}</div></div>
+                <div><span>Expected Net:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">$${(Number(t.expectedNet) || 0).toFixed(2)}</div></div>
+                <div><span>POS Actual:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">$${(Number(t.posActual) || 0).toFixed(2)}</div></div>
+                <div><span>Variance:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">${variance > 0 ? '+' : ''}$${variance.toFixed(2)}</div></div>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 6px;">
+                <div style="flex: 1.2;">
+                  <div style="display: flex; gap: 8px; font-size: 7px; margin-bottom: 2px;">
+                    <div><strong>Outgoing Cashier:</strong> ${repData.cashierOut || '&nbsp;'}</div>
+                    <div><strong>Incoming Cashier:</strong> ${repData.cashierIn || '&nbsp;'}</div>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 1px;">
+                    <div style="height: 22px; min-width: 120px; display: flex; align-items: center; border-bottom: 1px solid #000;">${sigImgHtml}</div>
+                    <span style="font-size: 6px; font-weight: bold; text-transform: uppercase;">Cashier Signature</span>
+                  </div>
+                  <div style="font-size: 6.5px; color: #1e293b; font-style: italic; line-height: 1.05;">
+                    "I hereby certify that the ticket counts, game numbers, and shift totals recorded above are true, complete, and accurate to the best of my knowledge."
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      };
+
+      window.printThermalReceiptDirect = function () {
+        const totals = recalculateReconciliationTotals();
+        const dateStr = document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10);
+        const shiftStr = document.getElementById('rec-shift-type')?.value || 'Shift 1';
+        const cashierStr = document.getElementById('print-modal-cashier-input')?.value || document.getElementById('grid-cashier-input')?.value || 'Manager';
+        const storeAddr = storeProfile.address || '';
+        const basePt = Number(globalPrintFontSizePt) || 12;
+
+        let itemsHtml = '';
+        boxes.forEach(box => {
+          const m = calculateBoxMetrics(box);
+          const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
+          if (box.gameNum || rollovers.length > 0 || box.isSoldOut) {
+            const gName = String(box.gameName || 'GAME #' + box.gameNum).toUpperCase();
+            const endDisplay = box.isSoldOut ? 'OUT' : (box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '____');
+            const startDisplay = box.isSoldOut ? 'OUT' : (box.startTicket !== '' ? box.startTicket : 0);
+
+            const roLines = rollovers.map(ro =>
+              `<div style="font-size:${Math.max(8, basePt - 2)}pt; margin-top:1px;">* ${ro.markedSoldOut ? 'OUT' : 'ROLLED'} #${ro.gameNum}: ${ro.startTicket}->${ro.finishedTicket} (${ro.ticketsSold} = $${Number(ro.salesAmount || 0).toFixed(2)})</div>`
+            ).join('');
+
+            itemsHtml += `
+              <div style="border-bottom: 1px dashed #000; padding: 3px 0;">
+                <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                  <span>[BOX ${box.boxNumber}] #${box.gameNum} ${gName}</span>
+                  <span>$${box.price || 0}</span>
+                </div>
+                ${roLines}
+                <div style="display:flex; justify-content:space-between;">
+                  <span>S:${startDisplay} E:${endDisplay}</span>
+                  <strong>${m.ticketsSold} Sold ($${m.dollarSales.toFixed(2)})</strong>
+                </div>
+              </div>
+            `;
+          }
+        });
+
+        const sigBlock = currentSignatureDataUrl
+          ? `<div style="text-align:center; margin:6px 0;"><img src="${currentSignatureDataUrl}" style="max-width:180px; max-height:55px;" /></div>`
+          : `<div style="text-align:center; margin:14px 0 4px;">____________________________</div>`;
+
+        let printContainer = document.getElementById('print-container');
+        if (!printContainer) {
+          printContainer = document.createElement('div');
+          printContainer.id = 'print-container';
+          document.body.appendChild(printContainer);
+        }
+
+        printContainer.innerHTML = `
+          <style>
+            @page { size: 80mm auto; margin: 2mm; }
+            @media print {
+              html, body {
+                width: 80mm !important; margin: 0 !important; padding: 0 !important;
+                background: #fff !important; color: #000 !important;
+              }
+              #app-shell, .no-print { display: none !important; }
+              #print-container { display: block !important; width: 76mm !important; margin: 0 auto !important; }
+            }
+          </style>
+          <div style="font-family: 'Courier New', Courier, monospace; font-size: ${basePt}pt; line-height: 1.25; color: #000; width: 100%;">
+            <div style="text-align:center; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 4px;">
+              <div style="font-size:${basePt + 2}pt; font-weight:900;">${storeProfile.name}</div>
+              <div style="font-weight:bold;">STORE #${storeProfile.number}</div>
+              ${storeAddr ? `<div style="font-size:${Math.max(8, basePt - 2)}pt;">${storeAddr}</div>` : ''}
+              <div style="font-weight:bold; margin-top:2px;">*** LOTTO COUNT RECEIPT ***</div>
+            </div>
+            <div style="border-bottom: 1px solid #000; padding-bottom: 4px; margin-bottom: 4px;">
+              <div>DATE: ${dateStr}</div>
+              <div>SHIFT: ${shiftStr}</div>
+              <div>CASHIER: ${cashierStr}</div>
+            </div>
+            ${itemsHtml}
+            <div style="border-top: 2px solid #000; padding-top: 4px; margin-top: 4px; font-weight: bold;">
+              <div style="display:flex; justify-content:space-between;"><span>TICKETS SOLD:</span><span>${totals.totalTickets || 0}</span></div>
+              <div style="display:flex; justify-content:space-between;"><span>SCRATCH SALES:</span><span>$${totals.scratchSales.toFixed(2)}</span></div>
+              <div style="display:flex; justify-content:space-between;"><span>ONLINE SALES:</span><span>$${totals.onlineSales.toFixed(2)}</span></div>
+              <div style="display:flex; justify-content:space-between;"><span>SCRATCH CASHED:</span><span>-$${totals.scratchCashed.toFixed(2)}</span></div>
+              <div style="display:flex; justify-content:space-between;"><span>ONLINE CASHED:</span><span>-$${totals.onlineCashed.toFixed(2)}</span></div>
+              <div style="border-top:1px dashed #000; margin:3px 0; padding-top:3px; display:flex; justify-content:space-between;">
+                <span>EXPECTED NET:</span><span>$${totals.expectedNet.toFixed(2)}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between;"><span>POS ACTUAL:</span><span>$${totals.posActual.toFixed(2)}</span></div>
+              <div style="display:flex; justify-content:space-between; font-size:${basePt + 1}pt;">
+                <span>VARIANCE:</span><span>${totals.variance > 0 ? '+' : ''}$${totals.variance.toFixed(2)}</span>
+              </div>
+            </div>
+            <div style="margin-top:8px; text-align:center;">
+              ${sigBlock}
+              <div style="font-size:${Math.max(8, basePt - 2)}pt; font-weight:bold;">CASHIER SIGNATURE</div>
+              <div style="font-size:${Math.max(7, basePt - 3)}pt; margin-top:3px;">${new Date().toLocaleString()}</div>
+            </div>
+          </div>
+        `;
+
+        window.print();
+      };
+
+      window.executeUnifiedPrint = function (formatChoice) {
+        const cashierVal = document.getElementById('print-modal-cashier-input')?.value?.trim() || 'Unspecified';
+        const shiftVal = document.getElementById('print-modal-shift-select')?.value || 'Shift 1 (Morning)';
+
+        const recCashier = document.getElementById('rec-cashier-out');
+        if (recCashier) recCashier.value = cashierVal;
+        const gridCashier = document.getElementById('grid-cashier-input');
+        if (gridCashier) gridCashier.value = cashierVal;
+        const recShift = document.getElementById('rec-shift-type');
+        if (recShift) recShift.value = shiftVal;
+        if (typeof printModalSigDataUrl !== 'undefined' && printModalSigDataUrl) {
+          currentSignatureDataUrl = printModalSigDataUrl;
+        }
+
+        const modalEl = document.getElementById('modal-print-worksheet-choice');
+        if (modalEl) modalEl.classList.add('hidden');
+
+        downloadFullTabletBackup(true);
+
+        if (formatChoice === 'thermal') {
+          window.printThermalReceiptDirect();
+        } else {
+          window.printWorksheetDirect();
+        }
+      };
+
+      /* ----------------------------------------------------------------------
+         7. BOOT IN LIST VIEW BY DEFAULT & REFRESH UI
+         ---------------------------------------------------------------------- */
+      window.addEventListener('DOMContentLoaded', () => {
+        setTimeout(() => {
+          if (typeof currentDispenserView !== 'undefined') {
+            currentDispenserView = 'list';
+          }
+          if (typeof renderDispenserGrid === 'function') {
+            renderDispenserGrid();
+          }
+          if (typeof updateHeaderTotalsUI === 'function') {
+            updateHeaderTotalsUI();
+          }
+        }, 120);
+      });
+    })();
+  </script>
 </body>
 </html>
+<!-- ========================= END OF PART 4 OF 4 ========================= -->
