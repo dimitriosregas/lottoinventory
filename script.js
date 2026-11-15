@@ -1,5 +1,6 @@
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 1 of 8)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 1 OF 10)
+   Storage Keys, Default Catalogs, Global State & Initialization Helpers
    ========================================================================== */
 
 const STORAGE_KEY_LOCATIONS = 'project_lotto_locations_v1';
@@ -207,8 +208,10 @@ function initActiveLocation() {
   loadActiveStoreData();
   populateLocationSwitcherDropdown();
 }
+
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 2 of 8)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 2 OF 10)
+   Store Profile Management, Location Switching & Cashier Autocomplete
    ========================================================================== */
 
 function loadActiveStoreData() {
@@ -346,9 +349,6 @@ function handleLocationSwitch(newLocId) {
   if (typeof recalculateReconciliationTotals === 'function') recalculateReconciliationTotals();
 }
 
-// ==========================================================================
-// CASHIER MANAGEMENT & AUTO-COMPLETE FUNCTIONS
-// ==========================================================================
 function renderAdminCashiersTable() {
   const tbody = document.getElementById('admin-cashiers-tbody');
   const countEl = document.getElementById('admin-cashiers-count');
@@ -402,8 +402,10 @@ function handleCashierInputAutocomplete(inputId, datalistId) {
   }
   datalist.innerHTML = savedCashiers.map(c => `<option value="${c}">`).join('');
 }
+
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 3 of 8)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 3 OF 10)
+   Box Navigation, Rollover Modals & Core Ticket Calculation Engine
    ========================================================================== */
 
 function jumpToNextBoxInput(currentIdx, inputType) {
@@ -617,7 +619,8 @@ function calculateBoxMetrics(box) {
 }
 
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 4 OF 8)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 4 OF 10)
+   Box Field Updates, Live End-Ticket Handling & Metrics Display
    ========================================================================== */
 
 function updateBoxFieldDirect(idx, field, val) {
@@ -763,6 +766,25 @@ function updateBoxMetricsDisplay(idx) {
   if (listSold) listSold.textContent = `${metrics.ticketsSold}${rollovers.length > 0 ? ' *' : ''}`;
   if (listSales) listSales.textContent = `$${metrics.dollarSales.toFixed(2)}`;
 }
+
+function updateHeaderTotalsUI() {
+  let totalTickets = 0;
+  let totalSales = 0;
+  boxes.forEach(box => {
+    const m = calculateBoxMetrics(box);
+    totalTickets += m.ticketsSold;
+    totalSales += m.dollarSales;
+  });
+  const tElem = document.getElementById('header-total-tickets');
+  const sElem = document.getElementById('header-total-sales');
+  if (tElem) tElem.textContent = totalTickets.toLocaleString();
+  if (sElem) sElem.textContent = `$${totalSales.toFixed(2)}`;
+}
+
+/* ==========================================================================
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 5 OF 10)
+   Dispenser Grid & List View Rendering + Cashier/Shift Header Bar
+   ========================================================================== */
 
 function toggleDispenserView() {
   currentDispenserView = currentDispenserView === 'grid' ? 'list' : 'grid';
@@ -962,22 +984,81 @@ function renderDispenserGrid() {
   updateHeaderTotalsUI();
 }
 
-function updateHeaderTotalsUI() {
-  let totalTickets = 0;
-  let totalSales = 0;
-  boxes.forEach(box => {
-    const m = calculateBoxMetrics(box);
-    totalTickets += m.ticketsSold;
-    totalSales += m.dollarSales;
-  });
-  const tElem = document.getElementById('header-total-tickets');
-  const sElem = document.getElementById('header-total-sales');
-  if (tElem) tElem.textContent = totalTickets.toLocaleString();
-  if (sElem) sElem.textContent = `$${totalSales.toFixed(2)}`;
+function renderMainGridCashierShiftBar() {
+  let bar = document.getElementById('main-grid-cashier-shift-bar');
+  if (!bar) {
+    const container = document.getElementById('view-grid');
+    if (!container) return;
+    bar = document.createElement('div');
+    bar.id = 'main-grid-cashier-shift-bar';
+    bar.className = 'bg-white rounded-xl shadow-sm border border-slate-200 p-3 mb-4 space-y-2.5 text-xs';
+    container.insertBefore(bar, container.firstChild);
+  }
+
+  const currentCashier = document.getElementById('rec-cashier-out')?.value || '';
+  const currentShift = document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
+  const isUnlocked = (typeof window.isBoxEditUnlocked !== 'undefined' && window.isBoxEditUnlocked);
+
+  const lockBannerHtml = isUnlocked
+    ? `<div class="pt-2 border-t border-slate-100 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+         <span class="font-bold text-amber-900">
+           🔓 <strong>Game # & Start # Unlocked</strong> by ${window.boxEditCurrentCashier || 'Cashier'} (5-Min Timer Active)
+         </span>
+         <button type="button" onclick="window.lockBoxEditsImmediately()" class="bg-amber-600 hover:bg-amber-700 text-white font-extrabold px-3 py-1 rounded-lg shadow-sm transition">
+           🔒 Done Editing — Lock Now
+         </button>
+       </div>`
+    : `<div class="pt-2 border-t border-slate-100 flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5 text-slate-600">
+         <span>💡 <strong>Tip:</strong> Game # and Start # boxes are locked to prevent accidental edits. Tap any Game # or Start # box to unlock.</span>
+         <span class="bg-slate-200 text-slate-700 font-extrabold px-2.5 py-1 rounded text-[11px] whitespace-nowrap ml-2">
+           🔒 Game# & Start# Locked
+         </span>
+       </div>`;
+
+  bar.innerHTML = `
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3 flex-1 min-w-[280px]">
+        <div class="flex items-center gap-1.5 flex-1">
+          <label class="font-bold text-slate-600 uppercase text-[10px]">Cashier:</label>
+          <input type="text" id="grid-cashier-input" value="${currentCashier}" placeholder="Select or type cashier..." oninput="syncMainGridCashier(this.value)" class="flex-1 border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-xs bg-slate-50 focus:bg-white" />
+        </div>
+        <div class="flex items-center gap-1.5">
+          <label class="font-bold text-slate-600 uppercase text-[10px]">Shift:</label>
+          <select id="grid-shift-select" onchange="syncMainGridShift(this.value)" class="border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-xs bg-white">
+            <option value="Shift 1 (Morning)" ${currentShift.includes('Morning') || currentShift.includes('1') ? 'selected' : ''}>Shift 1 (Morning)</option>
+            <option value="Shift 2 (Evening)" ${currentShift.includes('Evening') || currentShift.includes('2') ? 'selected' : ''}>Shift 2 (Evening)</option>
+            <option value="Shift 3 (Night)" ${currentShift.includes('Night') || currentShift.includes('3') ? 'selected' : ''}>Shift 3 (Night)</option>
+          </select>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" onclick="openWorksheetPrintChoiceModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-3 py-1.5 rounded-lg shadow-sm transition">
+          🖨 Print Worksheet...
+        </button>
+      </div>
+    </div>
+    ${lockBannerHtml}
+  `;
+  handleCashierInputAutocomplete('grid-cashier-input', 'cashier-datalist-grid');
+}
+
+function syncMainGridCashier(val) {
+  const rec = document.getElementById('rec-cashier-out');
+  if (rec) rec.value = val;
+  saveReconciliationDraft();
+}
+
+function syncMainGridShift(val) {
+  const rec = document.getElementById('rec-shift-type');
+  if (rec) {
+    rec.value = val;
+    handleShiftTypeChange(val);
+  }
 }
 
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 5 of 8)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 6 OF 10)
+   Print Choice Modal, 80mm Thermal Receipt Generator & Multi-Store Modals
    ========================================================================== */
 
 function openWorksheetPrintChoiceModal() {
@@ -1269,78 +1350,6 @@ function printThermalReceiptDirect() {
   setTimeout(() => URL.revokeObjectURL(pdfUrl), 3000);
 }
 
-function renderMainGridCashierShiftBar() {
-  let bar = document.getElementById('main-grid-cashier-shift-bar');
-  if (!bar) {
-    const container = document.getElementById('view-grid');
-    if (!container) return;
-    bar = document.createElement('div');
-    bar.id = 'main-grid-cashier-shift-bar';
-    bar.className = 'bg-white rounded-xl shadow-sm border border-slate-200 p-3 mb-4 space-y-2.5 text-xs';
-    container.insertBefore(bar, container.firstChild);
-  }
-
-  const currentCashier = document.getElementById('rec-cashier-out')?.value || '';
-  const currentShift = document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
-  const isUnlocked = (typeof window.isBoxEditUnlocked !== 'undefined' && window.isBoxEditUnlocked);
-
-  const lockBannerHtml = isUnlocked
-    ? `<div class="pt-2 border-t border-slate-100 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-         <span class="font-bold text-amber-900">
-           🔓 <strong>Game # & Start # Unlocked</strong> by ${window.boxEditCurrentCashier || 'Cashier'} (5-Min Timer Active)
-         </span>
-         <button type="button" onclick="window.lockBoxEditsImmediately()" class="bg-amber-600 hover:bg-amber-700 text-white font-extrabold px-3 py-1 rounded-lg shadow-sm transition">
-           🔒 Done Editing — Lock Now
-         </button>
-       </div>`
-    : `<div class="pt-2 border-t border-slate-100 flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5 text-slate-600">
-         <span>💡 <strong>Tip:</strong> Game # and Start # boxes are locked to prevent accidental edits. Tap any Game # or Start # box to unlock.</span>
-         <span class="bg-slate-200 text-slate-700 font-extrabold px-2.5 py-1 rounded text-[11px] whitespace-nowrap ml-2">
-           🔒 Game# & Start# Locked
-         </span>
-       </div>`;
-
-  bar.innerHTML = `
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-3 flex-1 min-w-[280px]">
-        <div class="flex items-center gap-1.5 flex-1">
-          <label class="font-bold text-slate-600 uppercase text-[10px]">Cashier:</label>
-          <input type="text" id="grid-cashier-input" value="${currentCashier}" placeholder="Select or type cashier..." oninput="syncMainGridCashier(this.value)" class="flex-1 border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-xs bg-slate-50 focus:bg-white" />
-        </div>
-        <div class="flex items-center gap-1.5">
-          <label class="font-bold text-slate-600 uppercase text-[10px]">Shift:</label>
-          <select id="grid-shift-select" onchange="syncMainGridShift(this.value)" class="border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-xs bg-white">
-            <option value="Shift 1 (Morning)" ${currentShift.includes('Morning') || currentShift.includes('1') ? 'selected' : ''}>Shift 1 (Morning)</option>
-            <option value="Shift 2 (Evening)" ${currentShift.includes('Evening') || currentShift.includes('2') ? 'selected' : ''}>Shift 2 (Evening)</option>
-            <option value="Shift 3 (Night)" ${currentShift.includes('Night') || currentShift.includes('3') ? 'selected' : ''}>Shift 3 (Night)</option>
-          </select>
-        </div>
-      </div>
-      <div class="flex items-center gap-2">
-        <button type="button" onclick="openWorksheetPrintChoiceModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-3 py-1.5 rounded-lg shadow-sm transition">
-          🖨 Print Worksheet...
-        </button>
-      </div>
-    </div>
-    ${lockBannerHtml}
-  `;
-  handleCashierInputAutocomplete('grid-cashier-input', 'cashier-datalist-grid');
-}
-
-function syncMainGridCashier(val) {
-  const rec = document.getElementById('rec-cashier-out');
-  if (rec) rec.value = val;
-  saveReconciliationDraft();
-}
-
-function syncMainGridShift(val) {
-  const rec = document.getElementById('rec-shift-type');
-  if (rec) {
-    rec.value = val;
-    handleShiftTypeChange(val);
-  }
-}
-
 function openQuickGameModal(idx) {
   const box = boxes[idx];
   if (!box) return;
@@ -1456,8 +1465,10 @@ function deleteStoreLocation(locId) {
   renderMultiStoreModalList();
   populateLocationSwitcherDropdown();
 }
+
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 6 of 8)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 7 OF 10)
+   Cloud/Tablet Backups, JSON Export/Import & Automated Schedulers
    ========================================================================== */
 
 function buildFullTabletBackupPayload() {
@@ -1682,7 +1693,8 @@ function startTwiceDailyBackupScheduler() {
 }
 
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 7 OF 8)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 8 OF 10)
+   Shift Rollover, Reconciliation Totals, Signature Pad & Historical Reports
    ========================================================================== */
 
 function advanceEndToStartForNewShift() {
@@ -1967,7 +1979,7 @@ function executeReportLookup() {
   if (scrEl) scrEl.textContent = `$${sumScratch.toFixed(2)}`;
   if (expEl) expEl.textContent = `$${sumExpected.toFixed(2)}`;
   if (varEl) {
-    const sign = variance > 0 ? '+' : '';
+    const sign = sumVariance > 0 ? '+' : '';
     varEl.textContent = `${sign}$${sumVariance.toFixed(2)}`;
   }
 
@@ -2017,6 +2029,11 @@ function exportHistoricalReportsJSON() {
 function triggerMonthlyEmailDispatchManually() {
   sendNightlyEmailBackupToOwner(false);
 }
+
+/* ==========================================================================
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 9 OF 10)
+   Admin Catalog Management, Box Slot Configuration, View Switching & Printing
+   ========================================================================== */
 
 function saveNewMasterGameManual() {
   const numInp = document.getElementById('new-game-num');
@@ -2200,10 +2217,6 @@ function jumpToReconciliation() {
   }
 }
 
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 8 OF 8)
-   ========================================================================== */
-
 function buildMatrixPrintHTML(repData, isFinalReport = false) {
   const bList = Array.isArray(repData.boxesSnapshot) ? repData.boxesSnapshot : boxes;
   const t = repData.totals || {};
@@ -2355,9 +2368,11 @@ function printArchivedSingleReport(reportId) {
 
 function printFilteredReportSummary() { window.print(); }
 
-// --------------------------------------------------------------------------
-// SCREEN WAKE LOCK & HELPERS
-// --------------------------------------------------------------------------
+/* ==========================================================================
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 10 OF 10)
+   Screen Wake-Lock, Secure Edit Locking & Initialization Boot Listener
+   ========================================================================== */
+
 let screenWakeLockSentinel = null;
 let screenWakeLockTimeoutId = null;
 let screenWakeLockMinutes = 10;
@@ -2593,22 +2608,8 @@ window.resetBoxEditTimeout = function() {
 };
 
 // --------------------------------------------------------------------------
-// INITIALIZATION BOOT LISTENER (CORRECTED BOXES ITERATION)
+// INITIALIZATION BOOT LISTENER
 // --------------------------------------------------------------------------
-function updateHeaderTotalsUI() {
-  let totalTickets = 0;
-  let totalSales = 0;
-  boxes.forEach(box => {
-    const m = calculateBoxMetrics(box);
-    totalTickets += m.ticketsSold;
-    totalSales += m.dollarSales;
-  });
-  const tElem = document.getElementById('header-total-tickets');
-  const sElem = document.getElementById('header-total-sales');
-  if (tElem) tElem.textContent = totalTickets.toLocaleString();
-  if (sElem) sElem.textContent = `$${totalSales.toFixed(2)}`;
-}
-
 window.addEventListener('DOMContentLoaded', () => {
   loadMasterGames();
   initActiveLocation();
