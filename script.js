@@ -1,5 +1,5 @@
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 1 OF 7)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 1 of 8)
    ========================================================================== */
 
 const STORAGE_KEY_LOCATIONS = 'project_lotto_locations_v1';
@@ -208,7 +208,7 @@ function initActiveLocation() {
   populateLocationSwitcherDropdown();
 }
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 2 OF 7)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 2 of 8)
    ========================================================================== */
 
 function loadActiveStoreData() {
@@ -403,7 +403,7 @@ function handleCashierInputAutocomplete(inputId, datalistId) {
   datalist.innerHTML = savedCashiers.map(c => `<option value="${c}">`).join('');
 }
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 3 OF 7)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 3 of 8)
    ========================================================================== */
 
 function jumpToNextBoxInput(currentIdx, inputType) {
@@ -615,8 +615,9 @@ function calculateBoxMetrics(box) {
 
   return { ticketsSold: totalTicketsSold, dollarSales, status, hasRollover: rollovers.length > 0, activeTicket: end };
 }
+
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 4 OF 7)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 4 OF 8)
    ========================================================================== */
 
 function updateBoxFieldDirect(idx, field, val) {
@@ -700,6 +701,7 @@ function commitBoxEndTicket(idx, val) {
   const endNum = Number(clean);
   const startNum = Number(box.startTicket) || 0;
 
+  // Assign the exact entered end number directly without any arbitrary maximum capping or jumping
   box.endTicket = endNum;
 
   if (endNum < startNum) {
@@ -963,7 +965,7 @@ function renderDispenserGrid() {
 function updateHeaderTotalsUI() {
   let totalTickets = 0;
   let totalSales = 0;
-  boxes.forEach(box => {
+  boxes.boxes.forEach(box => {
     const m = calculateBoxMetrics(box);
     totalTickets += m.ticketsSold;
     totalSales += m.dollarSales;
@@ -973,8 +975,9 @@ function updateHeaderTotalsUI() {
   if (tElem) tElem.textContent = totalTickets.toLocaleString();
   if (sElem) sElem.textContent = `$${totalSales.toFixed(2)}`;
 }
+
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 5 OF 7)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 5 of 8)
    ========================================================================== */
 
 function openWorksheetPrintChoiceModal() {
@@ -1454,7 +1457,7 @@ function deleteStoreLocation(locId) {
   populateLocationSwitcherDropdown();
 }
 /* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 6 OF 7)
+   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 6 of 8)
    ========================================================================== */
 
 function buildFullTabletBackupPayload() {
