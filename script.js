@@ -1710,22 +1710,24 @@ function startTwiceDailyBackupScheduler() {
    ========================================================================== */
 
 function advanceEndToStartForNewShift() {
-  // Force scrape active input values from ANY view (grid, list, or card inputs)
+  // 1. Aggressively force-scrape active input values from ANY view (grid, list, or card)
   boxes.forEach((b, idx) => {
-    const activeInput = document.getElementById(`list-input-endTicket-${idx}`) ||
-                        document.getElementById(`input-endTicket-${idx}`) ||
-                        document.querySelector(`[id*="endTicket-${idx}"]`);
+    const listInp = document.getElementById(`list-input-endTicket-${idx}`);
+    const gridInp = document.getElementById(`input-endTicket-${idx}`);
+    const genericInp = document.querySelector(`input[id$="endTicket-${idx}"]`) || document.querySelector(`input[name*="endTicket-${idx}"]`);
     
-    if (activeInput && activeInput.value !== undefined && activeInput.value !== null && activeInput.value !== '') {
-      b.endTicket = Number(activeInput.value);
+    const activeVal = listInp?.value ?? gridInp?.value ?? genericInp?.value;
+    
+    if (activeVal !== undefined && activeVal !== null && String(activeVal).trim() !== '') {
+      b.endTicket = Number(activeVal);
     }
   });
 
   let rolledCount = 0;
 
   boxes.forEach(b => {
-    if (b.endTicket !== '' && b.endTicket !== undefined && b.endTicket !== null && !isNaN(Number(b.endTicket))) {
-      const endNum = Number(b.endTicket);
+    const endNum = Number(b.endTicket);
+    if (b.endTicket !== '' && b.endTicket !== undefined && b.endTicket !== null && !isNaN(endNum)) {
       const rollCount = Number(b.rollCount) || getDefaultRollCountForPrice(b.price);
       const maxTicket = Math.max(1, rollCount);
 
