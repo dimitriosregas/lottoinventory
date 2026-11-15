@@ -1680,6 +1680,7 @@ function startTwiceDailyBackupScheduler() {
     }
   }, 30000);
 }
+
 /* ==========================================================================
    PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 7 OF 8)
    ========================================================================== */
@@ -2198,13 +2199,11 @@ function jumpToReconciliation() {
     }
   }
 }
+
 /* ==========================================================================
    PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 8 OF 8)
    ========================================================================== */
 
-// --------------------------------------------------------------------------
-// DIRECT CSS PRINT ENGINE (LETTER SIZE 8.5" x 11" — STRICT 1-PAGE FIT)
-// --------------------------------------------------------------------------
 function buildMatrixPrintHTML(repData, isFinalReport = false) {
   const bList = Array.isArray(repData.boxesSnapshot) ? repData.boxesSnapshot : boxes;
   const t = repData.totals || {};
@@ -2357,7 +2356,7 @@ function printArchivedSingleReport(reportId) {
 function printFilteredReportSummary() { window.print(); }
 
 // --------------------------------------------------------------------------
-// SCREEN WAKE LOCK (KEEP SCREEN ON) & HELPERS
+// SCREEN WAKE LOCK & HELPERS
 // --------------------------------------------------------------------------
 let screenWakeLockSentinel = null;
 let screenWakeLockTimeoutId = null;
@@ -2594,8 +2593,22 @@ window.resetBoxEditTimeout = function() {
 };
 
 // --------------------------------------------------------------------------
-// INITIALIZATION BOOT LISTENER
+// INITIALIZATION BOOT LISTENER (CORRECTED BOXES ITERATION)
 // --------------------------------------------------------------------------
+function updateHeaderTotalsUI() {
+  let totalTickets = 0;
+  let totalSales = 0;
+  boxes.forEach(box => {
+    const m = calculateBoxMetrics(box);
+    totalTickets += m.ticketsSold;
+    totalSales += m.dollarSales;
+  });
+  const tElem = document.getElementById('header-total-tickets');
+  const sElem = document.getElementById('header-total-sales');
+  if (tElem) tElem.textContent = totalTickets.toLocaleString();
+  if (sElem) sElem.textContent = `$${totalSales.toFixed(2)}`;
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   loadMasterGames();
   initActiveLocation();
