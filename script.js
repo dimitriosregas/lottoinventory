@@ -57,6 +57,7 @@ const DEFAULT_MASTER_GAMES = [
   { gameNum: '1856', name: '$3 CROSSWORD JUMBO', price: 3, count: 100 },
   { gameNum: '1891', name: 'GIGANTIC JUMBO', price: 30, count: 20 },
   { gameNum: '1909', name: '$25 JUMBO', price: 25, count: 24 },
+  { gameNum: '1990', name: '$25 JUMBO', price: 25, count: 24 },
   { gameNum: '1949', name: '$10 JUMBO', price: 10, count: 30 },
   { gameNum: '1964', name: 'MILL JUMBO', price: 20, count: 15 },
   { gameNum: '1996', name: 'GIANT JUMBO', price: 5, count: 60 }
