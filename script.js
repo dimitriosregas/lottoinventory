@@ -1897,6 +1897,18 @@ function saveLocationHistoricalReports(reportsArr, locId = activeLocationId) {
 }
 
 function finalizeAndSaveShiftReport() {
+  // Force scrape all active end ticket inputs before finalizing and archiving
+  boxes.forEach((b, idx) => {
+    const activeInput = document.getElementById(`list-input-endTicket-${idx}`) ||
+                        document.getElementById(`input-endTicket-${idx}`) ||
+                        document.querySelector(`[id*="endTicket-${idx}"]`);
+    
+    if (activeInput && activeInput.value !== undefined && activeInput.value !== null && String(activeInput.value).trim() !== '') {
+      b.endTicket = Number(activeInput.value);
+    }
+  });
+  saveBoxesState();
+
   const totals = recalculateReconciliationTotals();
   const normalizedDate = document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10);
   const shiftVal = document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
