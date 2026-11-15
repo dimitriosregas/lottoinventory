@@ -1698,6 +1698,18 @@ function startTwiceDailyBackupScheduler() {
    ========================================================================== */
 
 function advanceEndToStartForNewShift() {
+  // First, aggressively sync any uncommitted values currently typed into the DOM inputs
+  boxes.forEach((b, idx) => {
+    const listInp = document.getElementById(`list-input-endTicket-${idx}`);
+    const gridInp = document.getElementById(`input-endTicket-${idx}`);
+    const activeVal = listInp?.value !== undefined ? listInp.value : (gridInp?.value !== undefined ? gridInp.value : '');
+    
+    if (activeVal !== '' && activeVal !== null) {
+      b.endTicket = Number(activeVal);
+    }
+  });
+
+  // Now perform the shift rollover calculations
   boxes.forEach(b => {
     if (b.endTicket !== '' && b.endTicket !== undefined && b.endTicket !== null) {
       const endNum = Number(b.endTicket);
@@ -1713,6 +1725,7 @@ function advanceEndToStartForNewShift() {
     b.endTicket = '';
     b.rollovers = [];
   });
+  
   saveBoxesState();
   renderDispenserGrid();
   recalculateReconciliationTotals();
