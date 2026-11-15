@@ -1710,20 +1710,19 @@ function startTwiceDailyBackupScheduler() {
    ========================================================================== */
 
 function advanceEndToStartForNewShift() {
-  // 1. Force scrape any active input values currently on screen before rolling over
+  // Force scrape active input values from ANY view (grid, list, or card inputs)
   boxes.forEach((b, idx) => {
-    const listEnd = document.getElementById(`list-input-endTicket-${idx}`);
-    const gridEnd = document.getElementById(`input-endTicket-${idx}`);
-    const activeVal = listEnd?.value !== undefined ? listEnd.value : (gridEnd?.value !== undefined ? gridEnd.value : '');
+    const activeInput = document.getElementById(`list-input-endTicket-${idx}`) ||
+                        document.getElementById(`input-endTicket-${idx}`) ||
+                        document.querySelector(`[id*="endTicket-${idx}"]`);
     
-    if (activeVal !== '' && activeVal !== null && activeVal !== undefined) {
-      b.endTicket = Number(activeVal);
+    if (activeInput && activeInput.value !== undefined && activeInput.value !== null && activeInput.value !== '') {
+      b.endTicket = Number(activeInput.value);
     }
   });
 
   let rolledCount = 0;
 
-  // 2. Roll end numbers into start numbers and reset
   boxes.forEach(b => {
     if (b.endTicket !== '' && b.endTicket !== undefined && b.endTicket !== null && !isNaN(Number(b.endTicket))) {
       const endNum = Number(b.endTicket);
