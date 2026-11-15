@@ -965,7 +965,7 @@ function renderDispenserGrid() {
 function updateHeaderTotalsUI() {
   let totalTickets = 0;
   let totalSales = 0;
-  boxes.boxes.forEach(box => {
+  boxes.forEach(box => {
     const m = calculateBoxMetrics(box);
     totalTickets += m.ticketsSold;
     totalSales += m.dollarSales;
