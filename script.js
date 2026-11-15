@@ -672,14 +672,9 @@ window.updateBoxEndTicketLive = function(idx, val) {
 
   if (clean === '') {
     box.endTicket = '';
-    if (typeof saveBoxesState === 'function') saveBoxesState();
-    if (typeof updateBoxMetricsDisplay === 'function') updateBoxMetricsDisplay(idx);
-    if (typeof updateHeaderTotalsUI === 'function') updateHeaderTotalsUI();
-    if (typeof recalculateReconciliationTotals === 'function') recalculateReconciliationTotals();
-    return;
+  } else {
+    box.endTicket = Number(clean);
   }
-
-  box.endTicket = Number(clean);
 
   if (typeof saveBoxesState === 'function') saveBoxesState();
   if (typeof updateBoxMetricsDisplay === 'function') updateBoxMetricsDisplay(idx);
@@ -787,6 +782,19 @@ function updateHeaderTotalsUI() {
    ========================================================================== */
 
 function toggleDispenserView() {
+  // Sync current DOM inputs to memory state before switching views to prevent data loss
+  if (typeof boxes !== 'undefined' && Array.isArray(boxes)) {
+    boxes.forEach((_, idx) => {
+      const listEnd = document.getElementById(`list-input-endTicket-${idx}`);
+      const gridEnd = document.getElementById(`input-endTicket-${idx}`);
+      const val = listEnd?.value ?? gridEnd?.value;
+      if (val !== undefined && val !== '' && boxes[idx]) {
+        boxes[idx].endTicket = Number(val);
+      }
+    });
+    if (typeof saveBoxesState === 'function') saveBoxesState();
+  }
+
   currentDispenserView = currentDispenserView === 'grid' ? 'list' : 'grid';
   try { localStorage.setItem('user_dispenser_view', currentDispenserView); } catch (e) {}
   const btn = document.getElementById('dispenser-view-toggle-btn');
@@ -822,6 +830,8 @@ function renderDispenserGrid() {
         </div>`
       ).join('');
 
+      const currentEndVal = box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '';
+
       return `
         <tr style="border-bottom: 1px solid #e2e8f0; background: #fff;" class="hover:bg-slate-50 transition">
           <td style="padding: 6px 8px; text-align: center; background: #0f172a; font-family: monospace; font-weight: bold; color: #fff;">
@@ -853,7 +863,7 @@ function renderDispenserGrid() {
           </td>
           <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
             <input type="number" inputmode="numeric" tabindex="${tabEnd}" enterkeyhint="next"
-              id="list-input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}"
+              id="list-input-endTicket-${idx}" value="${currentEndVal}"
               onfocus="this.select()"
               oninput="updateBoxEndTicketLive(${idx}, this.value)"
               onchange="commitBoxEndTicket(${idx}, this.value)"
@@ -917,6 +927,8 @@ function renderDispenserGrid() {
       </div>`
     ).join('');
 
+    const currentEndValGrid = box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '';
+
     html += `
       <div id="dispenser-card-${idx}" class="dispenser-card bg-white rounded-xl border border-slate-200 p-3 shadow-sm flex flex-col justify-between ${statusClass}">
         <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
@@ -963,7 +975,7 @@ function renderDispenserGrid() {
             <div>
               <label class="block text-[10px] font-bold text-blue-700 uppercase mb-0.5">End #</label>
               <input type="number" inputmode="numeric" tabindex="${tabEnd}" enterkeyhint="next"
-                id="input-endTicket-${idx}" value="${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : ''}"
+                id="input-endTicket-${idx}" value="${currentEndValGrid}"
                 onfocus="this.select()"
                 oninput="updateBoxEndTicketLive(${idx}, this.value)"
                 onchange="commitBoxEndTicket(${idx}, this.value)"
@@ -1698,20 +1710,22 @@ function startTwiceDailyBackupScheduler() {
    ========================================================================== */
 
 function advanceEndToStartForNewShift() {
-  // First, aggressively sync any uncommitted values currently typed into the DOM inputs
+  // 1. Force scrape any active input values currently on screen before rolling over
   boxes.forEach((b, idx) => {
-    const listInp = document.getElementById(`list-input-endTicket-${idx}`);
-    const gridInp = document.getElementById(`input-endTicket-${idx}`);
-    const activeVal = listInp?.value !== undefined ? listInp.value : (gridInp?.value !== undefined ? gridInp.value : '');
+    const listEnd = document.getElementById(`list-input-endTicket-${idx}`);
+    const gridEnd = document.getElementById(`input-endTicket-${idx}`);
+    const activeVal = listEnd?.value !== undefined ? listEnd.value : (gridEnd?.value !== undefined ? gridEnd.value : '');
     
-    if (activeVal !== '' && activeVal !== null) {
+    if (activeVal !== '' && activeVal !== null && activeVal !== undefined) {
       b.endTicket = Number(activeVal);
     }
   });
 
-  // Now perform the shift rollover calculations
+  let rolledCount = 0;
+
+  // 2. Roll end numbers into start numbers and reset
   boxes.forEach(b => {
-    if (b.endTicket !== '' && b.endTicket !== undefined && b.endTicket !== null) {
+    if (b.endTicket !== '' && b.endTicket !== undefined && b.endTicket !== null && !isNaN(Number(b.endTicket))) {
       const endNum = Number(b.endTicket);
       const rollCount = Number(b.rollCount) || getDefaultRollCountForPrice(b.price);
       const maxTicket = Math.max(1, rollCount);
@@ -1721,6 +1735,7 @@ function advanceEndToStartForNewShift() {
       } else {
         b.startTicket = endNum;
       }
+      rolledCount++;
     }
     b.endTicket = '';
     b.rollovers = [];
@@ -1729,7 +1744,8 @@ function advanceEndToStartForNewShift() {
   saveBoxesState();
   renderDispenserGrid();
   recalculateReconciliationTotals();
-  alert('Shift ended successfully! Start tickets updated for the new shift (finished rolls automatically reset to 0).');
+  
+  alert(`Shift ended successfully! Rolled over ${rolledCount} active boxes. Start tickets have been updated for the new shift.`);
   switchMainView('grid');
 }
 
