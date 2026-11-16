@@ -1961,6 +1961,25 @@ function checkMidnightDateRollover() {
   }
 }
 
+function updateHeaderTotalsUI() {
+  let totalTickets = 0;
+  let totalSales = 0;
+
+  if (Array.isArray(boxes)) {
+    boxes.forEach(box => {
+      const metrics = calculateBoxMetrics(box);
+      totalTickets += metrics.ticketsSold;
+      totalSales += metrics.dollarSales;
+    });
+  }
+
+  const headerTicketsEl = document.getElementById('header-total-tickets');
+  const headerSalesEl = document.getElementById('header-total-sales');
+  
+  if (headerTicketsEl) headerTicketsEl.textContent = `${totalTickets} Tix`;
+  if (headerSalesEl) headerSalesEl.textContent = `$${totalSales.toFixed(2)}`;
+}
+
 function recalculateReconciliationTotals() {
   checkMidnightDateRollover();
 
