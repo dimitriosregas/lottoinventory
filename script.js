@@ -906,6 +906,40 @@ function toggleDispenserView() {
   renderDispenserGrid();
 }
 
+function buildPairedBoxRows(boxList) {
+  const rows = [];
+  let i = 0;
+  while (i < boxList.length) {
+    const currentBox = boxList[i];
+    const currentLabel = String(currentBox.boxNumber || '').trim();
+
+    if (currentLabel.includes('&')) {
+      rows.push({ type: 'single', index: i, box: currentBox });
+      i++;
+    } else {
+      let nextBox = null;
+      let nextIdx = -1;
+      if (i + 1 < boxList.length) {
+        const potentialNext = boxList[i + 1];
+        const nextLabel = String(potentialNext.boxNumber || '').trim();
+        if (!nextLabel.includes('&')) {
+          nextBox = potentialNext;
+          nextIdx = i + 1;
+        }
+      }
+
+      if (nextBox) {
+        rows.push({ type: 'pair', leftIndex: i, leftBox: currentBox, rightIndex: nextIdx, rightBox: nextBox });
+        i += 2;
+      } else {
+        rows.push({ type: 'single', index: i, box: currentBox });
+        i++;
+      }
+    }
+  }
+  return rows;
+}
+
 function renderDispenserGrid() {
   const container = document.getElementById('dispenser-grid-container');
   if (!container) return;
@@ -2690,7 +2724,44 @@ function injectHeaderWakeLockControl() {
   `;
   firstGroup.appendChild(wrap);
 }
+function injectHeaderPrintFontSizeControl() {
+  const headerBar = document.querySelector('header .max-w-7xl');
+  if (!headerBar || document.getElementById('header-printsize-select')) return;
+  const firstGroup = headerBar.children[0];
+  if (!firstGroup) return;
 
+  const wrap = document.createElement('div');
+  wrap.className = 'flex items-center bg-slate-800 border border-slate-600 rounded-lg px-2 py-1 gap-1.5';
+  wrap.innerHTML = `
+    <span class="text-[11px] font-bold text-slate-300 uppercase">Font Size:</span>
+    <select id="header-printsize-select" onchange="savePrintFontSizeSetting(this.value)" class="bg-slate-900 text-emerald-300 font-bold text-xs rounded px-1.5 py-1 border border-slate-700">
+      <option value="9">9 pt</option>
+      <option value="10">10 pt</option>
+      <option value="11">11 pt</option>
+      <option value="12">12 pt</option>
+      <option value="13">13 pt</option>
+      <option value="14">14 pt</option>
+    </select>
+  `;
+  firstGroup.appendChild(wrap);
+  
+  const sel = document.getElementById('header-printsize-select');
+  if (sel) sel.value = String(globalPrintFontSizePt);
+}
+
+function savePrintFontSizeSetting(val) {
+  globalPrintFontSizePt = Math.min(36, Math.max(8, Number(val) || 11));
+  try { localStorage.setItem(STORAGE_KEY_PRINT_FONT_SIZE, String(globalPrintFontSizePt)); } catch (e) {}
+}
+
+function loadPrintFontSizeSetting() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_PRINT_FONT_SIZE);
+    if (saved) globalPrintFontSizePt = Math.min(36, Math.max(8, Number(saved) || 11));
+  } catch (e) {}
+  const sel = document.getElementById('header-printsize-select');
+  if (sel) sel.value = String(globalPrintFontSizePt);
+}
 function setScreenKeepAwakeMinutes(minsVal) {
   screenWakeLockMinutes = Math.max(0, Number(minsVal) || 0);
   try { localStorage.setItem(STORAGE_KEY_WAKELOCK_MINS, String(screenWakeLockMinutes)); } catch (e) {}
