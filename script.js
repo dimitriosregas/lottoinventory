@@ -2277,7 +2277,7 @@ function executeReportLookup() {
   if (!tbody) return;
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="11" class="p-6 text-center text-slate-400">No archived shift reports found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" class="p-6 text-center text-slate-400">No archived shift reports found.</td></tr>`;
     return;
   }
 
@@ -2297,6 +2297,9 @@ function executeReportLookup() {
         <td class="p-2.5 text-right font-mono font-bold">$${(Number(t.posActual) || 0).toFixed(2)}</td>
         <td class="p-2.5 text-right font-mono font-extrabold ${vColor}">${v > 0 ? '+' : ''}$${v.toFixed(2)}</td>
         <td class="p-2.5 text-center">${r.signatureDataUrl ? '<span class="text-emerald-600 font-bold">✔ Signed</span>' : '<span class="text-slate-400">None</span>'}</td>
+        <td class="p-2.5 text-center">
+          <button type="button" onclick="rollbackAndEditArchivedShiftReport('${r.reportId}')" class="bg-amber-600 hover:bg-amber-700 text-white text-[10px] px-2 py-1 rounded font-bold">🔓 Edit</button>
+        </td>
         <td class="p-2.5 text-center">
           <button type="button" onclick="printArchivedSingleReport('${r.reportId}')" class="bg-slate-800 text-white text-[10px] px-2 py-1 rounded">🖨 Print</button>
         </td>
