@@ -1998,7 +1998,6 @@ function checkMidnightDateRollover() {
 function updateHeaderTotalsUI() {
   let totalTickets = 0;
   let totalSales = 0;
-
   if (Array.isArray(boxes)) {
     boxes.forEach(box => {
       const metrics = calculateBoxMetrics(box);
@@ -2006,12 +2005,106 @@ function updateHeaderTotalsUI() {
       totalSales += metrics.dollarSales;
     });
   }
-
+  
+  // Top Navbar Counters
   const headerTicketsEl = document.getElementById('header-total-tickets');
   const headerSalesEl = document.getElementById('header-total-sales');
-  
   if (headerTicketsEl) headerTicketsEl.textContent = `${totalTickets} Tix`;
   if (headerSalesEl) headerSalesEl.textContent = `$${totalSales.toFixed(2)}`;
+
+  // Bottom Live Summary Footer Bar (Interactive Cashier, Shift, & End Shift & Print Button)
+  let footerBar = document.getElementById('main-grid-summary-footer');
+  if (!footerBar) {
+    const gridView = document.getElementById('view-grid');
+    if (gridView) {
+      footerBar = document.createElement('div');
+      footerBar.id = 'main-grid-summary-footer';
+      gridView.appendChild(footerBar);
+    }
+  }
+
+  if (footerBar) {
+    const currentCashier = document.getElementById('grid-cashier-input')?.value || document.getElementById('rec-cashier-out')?.value || '';
+    const currentShift = document.getElementById('grid-shift-select')?.value || document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
+    const currentDate = document.getElementById('rec-report-date')?.value || new Date().toLocaleDateString();
+    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const isUnlocked = (typeof window.isBoxEditUnlocked !== 'undefined' && window.isBoxEditUnlocked);
+
+    footerBar.className = 'bg-slate-900 text-white rounded-xl shadow-md p-4 mt-6 space-y-3 border border-slate-800 text-xs';
+    footerBar.innerHTML = `
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="space-y-1.5 flex-1 min-w-[320px]">
+          <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Shift Summary & Cashier Controls</div>
+          <div class="flex flex-wrap items-center gap-3 font-bold text-slate-200">
+            <div class="flex items-center gap-1.5">
+              <span>👤 Cashier:</span>
+              <input type="text" id="footer-cashier-input" value="${currentCashier}" placeholder="Enter name..." oninput="syncFooterCashier(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded px-2 py-1 text-xs font-bold w-32 focus:border-emerald-500" />
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span>🕒 Shift:</span>
+              <select id="footer-shift-select" onchange="syncFooterShift(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded px-2 py-1 text-xs font-bold focus:border-emerald-500">
+                <option value="Shift 1 (Morning)" ${currentShift.includes('Morning') || currentShift.includes('1') ? 'selected' : ''}>Shift 1 (Morning)</option>
+                <option value="Shift 2 (Evening)" ${currentShift.includes('Evening') || currentShift.includes('2') ? 'selected' : ''}>Shift 2 (Evening)</option>
+                <option value="Shift 3 (Night)" ${currentShift.includes('Night') || currentShift.includes('3') ? 'selected' : ''}>Shift 3 (Night)</option>
+              </select>
+            </div>
+            <div class="text-slate-400">📅 ${currentDate} (${currentTime})</div>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-4 bg-slate-800/80 px-4 py-2 rounded-lg border border-slate-700">
+            <div>
+              <div class="text-[10px] text-slate-400 uppercase font-bold">Total Sold</div>
+              <div class="font-mono font-black text-sm text-emerald-400">${totalTickets} Tix</div>
+            </div>
+            <div class="h-6 w-px bg-slate-700"></div>
+            <div>
+              <div class="text-[10px] text-slate-400 uppercase font-bold">Total Sales</div>
+              <div class="font-mono font-black text-base text-emerald-400">$${totalSales.toFixed(2)}</div>
+            </div>
+          </div>
+
+          <button type="button" onclick="openWorksheetPrintChoiceModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-1.5 text-xs whitespace-nowrap">
+            🖨 End Shift & Print
+          </button>
+        </div>
+      </div>
+
+      ${isUnlocked ? 
+        `<div class="pt-2 border-t border-slate-800 flex items-center justify-between bg-amber-950/40 border border-amber-800 rounded-lg px-3 py-2 text-amber-200">
+           <span>🔓 <strong>Game # & Start # Unlocked</strong> by ${window.boxEditCurrentCashier || 'Cashier'} (5-Min Timer Active)</span>
+           <button type="button" onclick="window.lockBoxEditsImmediately()" class="bg-amber-600 hover:bg-amber-700 text-white font-extrabold px-3 py-1 rounded-lg shadow-sm transition">🔒 Lock Now</button>
+         </div>` : 
+        `<div class="pt-2 border-t border-slate-800 flex items-center justify-between text-slate-400 text-[11px]">
+           <span>💡 Tap any Game # or Start # box above to unlock editing.</span>
+           <span class="text-slate-500 font-bold">🔒 Locked</span>
+         </div>`
+      }
+    `;
+    
+    if (typeof handleCashierInputAutocomplete === 'function') {
+      handleCashierInputAutocomplete('footer-cashier-input', 'cashier-datalist-footer');
+    }
+  }
+}
+
+function syncFooterCashier(val) {
+  const gridInp = document.getElementById('grid-cashier-input');
+  const recInp = document.getElementById('rec-cashier-out');
+  if (gridInp) gridInp.value = val;
+  if (recInp) recInp.value = val;
+  if (typeof saveReconciliationDraft === 'function') saveReconciliationDraft();
+}
+
+function syncFooterShift(val) {
+  const gridSel = document.getElementById('grid-shift-select');
+  const recSel = document.getElementById('rec-shift-type');
+  if (gridSel) gridSel.value = val;
+  if (recSel) {
+    recSel.value = val;
+    if (typeof handleShiftTypeChange === 'function') handleShiftTypeChange(val);
+  }
 }
 
 function recalculateReconciliationTotals() {
