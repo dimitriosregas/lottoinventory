@@ -2727,6 +2727,45 @@ function injectHeaderWakeLockControl() {
   `;
   firstGroup.appendChild(wrap);
 }
+
+function injectHeaderUiFontSizeControl() {
+  const headerBar = document.querySelector('header .max-w-7xl');
+  if (!headerBar || document.getElementById('header-uifont-select')) return;
+  const firstGroup = headerBar.children[0];
+  if (!firstGroup) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'flex items-center bg-slate-800 border border-slate-600 rounded-lg px-2 py-1 gap-1.5';
+  wrap.innerHTML = `
+    <span class="text-[11px] font-bold text-slate-300 uppercase">UI Font:</span>
+    <select id="header-uifont-select" onchange="setAppUiFontSize(this.value)" class="bg-slate-900 text-emerald-300 font-bold text-xs rounded px-1.5 py-1 border border-slate-700">
+      <option value="12">Normal (12px)</option>
+      <option value="14">Medium (14px)</option>
+      <option value="16">Large (16px)</option>
+      <option value="18">Extra Large (18px)</option>
+    </select>
+  `;
+  firstGroup.appendChild(wrap);
+
+  // Restore saved preference if any
+  try {
+    const saved = localStorage.getItem('lotto_ui_font_size');
+    if (saved) {
+      document.getElementById('header-uifont-select').value = saved;
+      setAppUiFontSize(saved, false);
+    }
+  } catch (e) {}
+}
+
+function setAppUiFontSize(sizePx, save = true) {
+  document.documentElement.style.fontSize = `${sizePx}px`;
+  if (save) {
+    try {
+      localStorage.setItem('lotto_ui_font_size', sizePx);
+    } catch (e) {}
+  }
+}
+
 function injectHeaderPrintFontSizeControl() {
   const headerBar = document.querySelector('header .max-w-7xl');
   if (!headerBar || document.getElementById('header-printsize-select')) return;
@@ -2750,6 +2789,65 @@ function injectHeaderPrintFontSizeControl() {
   
   const sel = document.getElementById('header-printsize-select');
   if (sel) sel.value = String(globalPrintFontSizePt);
+}
+
+function updateHeaderTotalsUI() {
+  let totalTickets = 0;
+  let totalSales = 0;
+  if (Array.isArray(boxes)) {
+    boxes.forEach(box => {
+      const metrics = calculateBoxMetrics(box);
+      totalTickets += metrics.ticketsSold;
+      totalSales += metrics.dollarSales;
+    });
+  }
+  
+  // Top Navbar Counters
+  const headerTicketsEl = document.getElementById('header-total-tickets');
+  const headerSalesEl = document.getElementById('header-total-sales');
+  if (headerTicketsEl) headerTicketsEl.textContent = `${totalTickets} Tix`;
+  if (headerSalesEl) headerSalesEl.textContent = `$${totalSales.toFixed(2)}`;
+
+  // Bottom Live Summary Footer Bar (Below the boxes)
+  let footerBar = document.getElementById('main-grid-summary-footer');
+  if (!footerBar) {
+    const gridView = document.getElementById('view-grid');
+    if (gridView) {
+      footerBar = document.createElement('div');
+      footerBar.id = 'main-grid-summary-footer';
+      gridView.appendChild(footerBar);
+    }
+  }
+
+  if (footerBar) {
+    const currentCashier = document.getElementById('grid-cashier-input')?.value || document.getElementById('rec-cashier-out')?.value || 'Unspecified';
+    const currentShift = document.getElementById('grid-shift-select')?.value || document.getElementById('rec-shift-type')?.value || 'Shift 1';
+    const currentDate = document.getElementById('rec-report-date')?.value || new Date().toLocaleDateString();
+    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    footerBar.className = 'bg-slate-900 text-white rounded-xl shadow-md p-4 mt-6 flex flex-wrap items-center justify-between gap-4 border border-slate-800 text-xs';
+    footerBar.innerHTML = `
+      <div class="space-y-0.5">
+        <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Shift Summary & Metadata</div>
+        <div class="font-bold text-slate-200">
+          👤 Cashier: <span class="text-white">${currentCashier}</span> &nbsp;|&nbsp; 
+          🕒 Shift: <span class="text-white">${currentShift}</span> &nbsp;|&nbsp; 
+          📅 Date: <span class="text-white">${currentDate} (${currentTime})</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-4 bg-slate-800/80 px-4 py-2 rounded-lg border border-slate-700">
+        <div>
+          <div class="text-[10px] text-slate-400 uppercase font-bold">Total Sold</div>
+          <div class="font-mono font-black text-sm text-emerald-400">${totalTickets} Tix</div>
+        </div>
+        <div class="h-6 w-px bg-slate-700"></div>
+        <div>
+          <div class="text-[10px] text-slate-400 uppercase font-bold">Total Sales</div>
+          <div class="font-mono font-black text-base text-emerald-400">$${totalSales.toFixed(2)}</div>
+        </div>
+      </div>
+    `;
+  }
 }
 
 function savePrintFontSizeSetting(val) {
@@ -2944,6 +3042,8 @@ window.addEventListener('DOMContentLoaded', () => {
   loadMasterGames();
   initActiveLocation();
   loadPrintFontSizeSetting();
+  injectHeaderPrintFontSizeControl();
+  injectHeaderUiFontSizeControl(); // <-- Injects the UI font size dropdown into the header
   initScreenKeepAwakeSystem();
 
   const todayIso = new Date().toISOString().slice(0, 10);
