@@ -1611,9 +1611,18 @@ function closePrintChoiceModal() {
   if (modal) modal.classList.add('hidden');
 }
 
+function openWorksheetPrintChoiceModal() {
+  openPrintChoiceModal();
+}
+
 function openBackupWorksheetChoiceModal() {
   const modal = document.getElementById('modal-backup-worksheet-choice');
-  if (modal) modal.classList.remove('hidden');
+  if (modal) {
+    modal.classList.remove('hidden');
+  } else {
+    // Fallback if modal HTML is missing: print 2-page numbered backup sheet directly
+    executeManualBackupWorksheetPrint('2page');
+  }
 }
 
 function closeBackupWorksheetChoiceModal() {
@@ -1780,7 +1789,14 @@ function executeShiftAuditPrint(format = 'letter') {
   if (!printContainer) return;
 
   const r = activeStoreState.reconciliation || {};
-  const totals = getShiftTotalsSummary();
+  const { totalTickets, totalSales } = getShiftTotals();
+  const onlineSales = Number(r.onlineSales) || 0;
+  const totalPayouts = Number(r.totalPayouts) || 0;
+  const grossSales = totalSales + onlineSales;
+  const netExpectedCash = grossSales - totalPayouts;
+  const actualCashDropped = Number(r.actualCash) || 0;
+  const variance = actualCashDropped - netExpectedCash;
+
   const storeLabel = `${activeStoreState.locationName} (#${activeStoreState.locationCode})`;
   const activeBoxes = (activeStoreState.boxes || []).filter(
     b => b.gameNum || b.ticketsSold > 0 || (b.rollovers && b.rollovers.length > 0)
@@ -1794,10 +1810,10 @@ function executeShiftAuditPrint(format = 'letter') {
         <div style="border-bottom:1px dashed #000; padding:3px 0; font-size:11px;">
           <div style="display:flex; justify-content:space-between; font-weight:800;">
             <span>B${b.label || ''} #${b.gameNum || '-'} ($${b.price || 0})${rollTag}</span>
-            <span>$${(b.salesDollars || 0).toFixed(2)}</span>
+            <span>$${(Number(b.salesAmount) || 0).toFixed(2)}</span>
           </div>
           <div style="font-size:10px;">
-            ${b.gameName || 'Game'} | ${b.startNum || 0}→${b.endNum || 0} (${b.ticketsSold || 0} tix)
+            ${b.gameName || 'Game'} | ${b.startTicket || 0}→${b.endTicket || 0} (${b.ticketsSold || 0} tix)
           </div>
         </div>
       `;
@@ -1816,19 +1832,19 @@ function executeShiftAuditPrint(format = 'letter') {
         ${linesHtml || '<div style="text-align:center; padding:8px 0;">No active box counts recorded.</div>'}
 
         <div style="border-top:2px solid #000; margin-top:6px; padding-top:5px; font-size:11px;">
-          <div style="display:flex; justify-content:space-between;"><span>Total Tickets Sold:</span><strong>${totals.totalTickets}</strong></div>
-          <div style="display:flex; justify-content:space-between;"><span>Scratch Sales:</span><strong>$${totals.scratchSales.toFixed(2)}</strong></div>
-          <div style="display:flex; justify-content:space-between;"><span>Online / Draw Sales:</span><strong>$${totals.onlineSales.toFixed(2)}</strong></div>
+          <div style="display:flex; justify-content:space-between;"><span>Total Tickets Sold:</span><strong>${totalTickets}</strong></div>
+          <div style="display:flex; justify-content:space-between;"><span>Scratch Sales:</span><strong>$${totalSales.toFixed(2)}</strong></div>
+          <div style="display:flex; justify-content:space-between;"><span>Online / Draw Sales:</span><strong>$${onlineSales.toFixed(2)}</strong></div>
           <div style="display:flex; justify-content:space-between; font-size:12px; border-top:1px solid #000; margin-top:3px; padding-top:3px;">
-            <span>TOTAL GROSS LOTTO:</span><strong>$${totals.grossSales.toFixed(2)}</strong>
+            <span>TOTAL GROSS LOTTO:</span><strong>$${grossSales.toFixed(2)}</strong>
           </div>
-          <div style="display:flex; justify-content:space-between;"><span>Less Total Cashes:</span><span>-$${totals.totalCashes.toFixed(2)}</span></div>
+          <div style="display:flex; justify-content:space-between;"><span>Less Total Cashes:</span><span>-$${totalPayouts.toFixed(2)}</span></div>
           <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:900;">
-            <span>NET EXPECTED CASH:</span><span>$${totals.netExpectedCash.toFixed(2)}</span>
+            <span>NET EXPECTED CASH:</span><span>$${netExpectedCash.toFixed(2)}</span>
           </div>
-          <div style="display:flex; justify-content:space-between;"><span>Actual Cash Dropped:</span><span>$${totals.actualCashDropped.toFixed(2)}</span></div>
+          <div style="display:flex; justify-content:space-between;"><span>Actual Cash Dropped:</span><span>$${actualCashDropped.toFixed(2)}</span></div>
           <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:900; border-top:1px dashed #000; margin-top:3px; padding-top:3px;">
-            <span>OVER / SHORT:</span><span>${totals.variance >= 0 ? '+' : ''}$${totals.variance.toFixed(2)}</span>
+            <span>OVER / SHORT:</span><span>${variance >= 0 ? '+' : ''}$${variance.toFixed(2)}</span>
           </div>
         </div>
 
@@ -1844,7 +1860,6 @@ function executeShiftAuditPrint(format = 'letter') {
       </div>
     `;
   } else {
-    // SINGLE-PAGE US LETTER (8.5" x 11")
     const rowsHtml = (activeStoreState.boxes || []).map((b, idx) => {
       const hasRoll = b.rollovers && b.rollovers.length > 0;
       return `
@@ -1853,10 +1868,10 @@ function executeShiftAuditPrint(format = 'letter') {
           <td style="border:1px solid #000; padding:2px 4px;">${b.gameNum || '-'}</td>
           <td style="border:1px solid #000; padding:2px 4px;">${b.gameName || 'Empty'}${hasRoll ? ` (+${b.rollovers.length} Roll)` : ''}</td>
           <td style="border:1px solid #000; padding:2px 4px; text-align:center;">${b.price ? `$${b.price}` : '-'}</td>
-          <td style="border:1px solid #000; padding:2px 4px; text-align:center;">${b.startNum || 0}</td>
-          <td style="border:1px solid #000; padding:2px 4px; text-align:center;">${b.endNum || 0}</td>
+          <td style="border:1px solid #000; padding:2px 4px; text-align:center;">${b.startTicket || 0}</td>
+          <td style="border:1px solid #000; padding:2px 4px; text-align:center;">${b.endTicket ?? 0}</td>
           <td style="border:1px solid #000; padding:2px 4px; text-align:center; font-weight:700;">${b.ticketsSold || 0}</td>
-          <td style="border:1px solid #000; padding:2px 4px; text-align:right; font-weight:800;">$${(b.salesDollars || 0).toFixed(2)}</td>
+          <td style="border:1px solid #000; padding:2px 4px; text-align:right; font-weight:800;">$${(Number(b.salesAmount) || 0).toFixed(2)}</td>
         </tr>
       `;
     }).join('');
@@ -1870,7 +1885,7 @@ function executeShiftAuditPrint(format = 'letter') {
           </div>
           <div style="text-align:right; font-size:10px;">
             <div><strong>Date:</strong> ${r.auditDate || getLocalDateStr()} | <strong>Shift:</strong> ${r.shiftType || ''}</div>
-            <div><strong>Cashier:</strong> ${r.cashierOut || 'Unspecified'} | <strong>Verifier:</strong> ${r.verifierName || 'N/A'}</div>
+            <div><strong>Cashier:</strong> ${r.cashierOut || 'Unspecified'} | <strong>Cashier In:</strong> ${r.cashierIn || 'N/A'}</div>
           </div>
         </div>
 
@@ -1892,16 +1907,16 @@ function executeShiftAuditPrint(format = 'letter') {
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:10px; border:1px solid #000; padding:6px; background:#f8fafc;">
           <div>
-            <div><strong>Total Tickets Sold:</strong> ${totals.totalTickets}</div>
-            <div><strong>Scratch Sales:</strong> $${totals.scratchSales.toFixed(2)}</div>
-            <div><strong>Online / Draw Sales:</strong> $${totals.onlineSales.toFixed(2)}</div>
-            <div><strong>Total Gross Lotto:</strong> $${totals.grossSales.toFixed(2)}</div>
+            <div><strong>Total Tickets Sold:</strong> ${totalTickets}</div>
+            <div><strong>Scratch Sales:</strong> $${totalSales.toFixed(2)}</div>
+            <div><strong>Online / Draw Sales:</strong> $${onlineSales.toFixed(2)}</div>
+            <div><strong>Total Gross Lotto:</strong> $${grossSales.toFixed(2)}</div>
           </div>
           <div>
-            <div><strong>Total Cashes Paid Out:</strong> -$${totals.totalCashes.toFixed(2)}</div>
-            <div><strong>Net Expected Cash:</strong> $${totals.netExpectedCash.toFixed(2)}</div>
-            <div><strong>Actual Cash Dropped:</strong> $${totals.actualCashDropped.toFixed(2)}</div>
-            <div style="font-size:11px; font-weight:900;">Over / Short Variance: ${totals.variance >= 0 ? '+' : ''}$${totals.variance.toFixed(2)}</div>
+            <div><strong>Total Cashes Paid Out:</strong> -$${totalPayouts.toFixed(2)}</div>
+            <div><strong>Net Expected Cash:</strong> $${netExpectedCash.toFixed(2)}</div>
+            <div><strong>Actual Cash Dropped:</strong> $${actualCashDropped.toFixed(2)}</div>
+            <div style="font-size:11px; font-weight:900;">Over / Short Variance: ${variance >= 0 ? '+' : ''}$${variance.toFixed(2)}</div>
           </div>
         </div>
 
@@ -1919,7 +1934,14 @@ function executeShiftAuditPrint(format = 'letter') {
   window.print();
 }
 
+function reprintArchivedShiftReport(recordId) {
+  const rec = activeStoreState?.history?.find(h => h.id === recordId);
+  if (!rec) return;
+  executeShiftAuditPrint('letter');
+}
+
 /* ========================= END OF PART 8 OF 10 ========================= */
+
 /* ============================================================================
    PART 9 OF 10: SETUP / GAMES ADMIN VIEW, BOX LABEL AUTO-CASCADE & CATALOG CRUD
    ============================================================================ */
@@ -1937,20 +1959,16 @@ function applyUiFontSize(sizeStr, persist = true) {
 
 function renderAdminView() {
   if (!activeStoreState) return;
-
   const boxCountInput = document.getElementById('admin-total-boxes-input');
   if (boxCountInput) boxCountInput.value = activeStoreState.boxCount || 40;
-
   const uiFontSelect = document.getElementById('admin-ui-font-size');
   if (uiFontSelect) {
     uiFontSelect.value = localStorage.getItem(STORAGE_KEYS.UI_FONT_SIZE) || '14px';
   }
-
   const receiptFontSelect = document.getElementById('admin-receipt-font-size');
   if (receiptFontSelect) {
     receiptFontSelect.value = localStorage.getItem(STORAGE_KEYS.RECEIPT_FONT_SIZE) || '11';
   }
-
   renderAdminBoxLabelsGrid();
   renderAdminSavedCashiersTags();
   renderAdminMasterGamesTable();
@@ -1959,12 +1977,10 @@ function renderAdminView() {
 function renderAdminBoxLabelsGrid() {
   const grid = document.getElementById('admin-box-labels-grid');
   if (!grid || !activeStoreState) return;
-
   const count = Number(activeStoreState.boxCount) || 40;
   if (!Array.isArray(activeStoreState.boxLabels) || activeStoreState.boxLabels.length !== count) {
     activeStoreState.boxLabels = generateDefaultCustomBoxLabels(count);
   }
-
   grid.innerHTML = activeStoreState.boxLabels.map((lbl, idx) => `
     <div class="bg-white border border-slate-300 rounded-lg p-1.5 text-center shadow-sm">
       <div class="text-[9px] font-bold text-slate-400 uppercase mb-0.5">Slot ${idx + 1}</div>
@@ -1979,14 +1995,12 @@ function renderAdminBoxLabelsGrid() {
   `).join('');
 }
 
-// Auto-cascade left-to-right when a single letter (e.g. C -> D, E, F) or number (e.g. 1 -> 2, 3, 4) is typed
 function handleAdminBoxLabelInput(startIdx, rawVal) {
   if (!activeStoreState) return;
   const val = String(rawVal || '').trim();
   activeStoreState.boxLabels[startIdx] = val;
 
   if (/^\d+$/.test(val)) {
-    // Pure integer: increment all following boxes sequentially (+1, +2, ...)
     const baseNum = parseInt(val, 10);
     for (let i = startIdx + 1; i < activeStoreState.boxLabels.length; i++) {
       const nextVal = String(baseNum + (i - startIdx));
@@ -1995,7 +2009,6 @@ function handleAdminBoxLabelInput(startIdx, rawVal) {
       if (inp) inp.value = nextVal;
     }
   } else if (/^[A-Za-z]$/.test(val)) {
-    // Single letter: increment alphabetically (C -> D -> E -> F ... up to Z)
     const isUpper = val === val.toUpperCase();
     const baseCode = val.toUpperCase().charCodeAt(0);
     for (let i = startIdx + 1; i < activeStoreState.boxLabels.length; i++) {
@@ -2024,12 +2037,10 @@ function handleAdminBoxCountChange(newCountRaw) {
   const newCount = Math.min(100, Math.max(1, parseInt(newCountRaw, 10) || 40));
   const currentLabels = Array.isArray(activeStoreState.boxLabels) ? [...activeStoreState.boxLabels] : [];
   const defaultPattern = generateDefaultCustomBoxLabels(newCount);
-
   const updatedLabels = [];
   for (let i = 0; i < newCount; i++) {
     updatedLabels.push(currentLabels[i] !== undefined ? currentLabels[i] : defaultPattern[i]);
   }
-
   const updatedBoxes = [];
   for (let i = 0; i < newCount; i++) {
     const existing = activeStoreState.boxes[i];
@@ -2053,11 +2064,9 @@ function handleAdminBoxCountChange(newCountRaw) {
       });
     }
   }
-
   activeStoreState.boxCount = newCount;
   activeStoreState.boxLabels = updatedLabels;
   activeStoreState.boxes = updatedBoxes;
-
   saveActiveStoreState();
   renderAdminBoxLabelsGrid();
   renderDispenserGrid();
@@ -2065,22 +2074,18 @@ function handleAdminBoxCountChange(newCountRaw) {
 
 function saveAdminSettingsAndRefresh() {
   if (!activeStoreState) return;
-
   const receiptFontSelect = document.getElementById('admin-receipt-font-size');
   if (receiptFontSelect) {
     localStorage.setItem(STORAGE_KEYS.RECEIPT_FONT_SIZE, receiptFontSelect.value);
   }
-
   const uiFontSelect = document.getElementById('admin-ui-font-size');
   if (uiFontSelect) {
     applyUiFontSize(uiFontSelect.value, true);
   }
-
   activeStoreState.boxes.forEach((box, idx) => {
     const lbl = activeStoreState.boxLabels[idx];
     box.label = lbl && String(lbl).trim() !== '' ? String(lbl).trim() : String(idx + 1);
   });
-
   saveActiveStoreState();
   renderDispenserGrid();
   updateHeaderAndBottomSummary();
@@ -2090,7 +2095,6 @@ function saveAdminSettingsAndRefresh() {
 function renderAdminSavedCashiersTags() {
   const wrap = document.getElementById('admin-saved-cashiers-tags');
   if (!wrap) return;
-
   wrap.innerHTML = savedCashiersList.map((name, idx) => `
     <span class="inline-flex items-center gap-1 bg-white border border-slate-300 rounded-full px-2.5 py-0.5 text-xs font-bold text-slate-800">
       <span>${name}</span>
@@ -2103,7 +2107,6 @@ function addSavedCashierFromAdmin() {
   const input = document.getElementById('admin-new-cashier-input');
   const name = (input?.value || '').trim();
   if (!name) return;
-
   if (!savedCashiersList.some(c => c.toLowerCase() === name.toLowerCase())) {
     savedCashiersList.push(name);
     localStorage.setItem(STORAGE_KEYS.SAVED_CASHIERS, JSON.stringify(savedCashiersList));
@@ -2123,13 +2126,11 @@ function removeSavedCashierFromAdmin(idx) {
 function renderAdminMasterGamesTable() {
   const tbody = document.getElementById('admin-master-games-tbody');
   if (!tbody) return;
-
   const query = (document.getElementById('admin-game-search')?.value || '').trim().toLowerCase();
   const filtered = masterGamesCatalog.filter(g => {
     if (!query) return true;
     return String(g.gameNum).toLowerCase().includes(query) || String(g.name).toLowerCase().includes(query);
   });
-
   tbody.innerHTML = filtered.map(g => {
     const packValue = (Number(g.price) || 0) * (Number(g.count) || 0);
     return `
@@ -2140,20 +2141,8 @@ function renderAdminMasterGamesTable() {
         <td class="p-2 text-center font-mono">${g.count}</td>
         <td class="p-2 text-center font-mono font-bold text-emerald-700">$${packValue.toFixed(0)}</td>
         <td class="p-2 text-right space-x-2">
-          <button
-            type="button"
-            onclick="editMasterGameInAdmin('${g.gameNum}')"
-            class="text-blue-600 hover:text-blue-800 font-bold"
-          >
-            Edit
-          </button>
-          <button
-            type="button"
-            onclick="deleteMasterGameFromAdmin('${g.gameNum}')"
-            class="text-red-600 hover:text-red-800 font-bold"
-          >
-            Delete
-          </button>
+          <button type="button" onclick="editMasterGameInAdmin('${g.gameNum}')" class="text-blue-600 hover:text-blue-800 font-bold">Edit</button>
+          <button type="button" onclick="deleteMasterGameFromAdmin('${g.gameNum}')" class="text-red-600 hover:text-red-800 font-bold">Delete</button>
         </td>
       </tr>
     `;
@@ -2165,12 +2154,10 @@ function upsertMasterGameFromAdmin() {
   const name = (document.getElementById('admin-game-name')?.value || '').trim().toUpperCase();
   const price = parseFloat(document.getElementById('admin-game-price')?.value);
   const count = parseInt(document.getElementById('admin-game-count')?.value, 10);
-
   if (!num || !name || isNaN(price) || isNaN(count)) {
     alert('Please fill in Game #, Game Name, Price ($), and Pack Size (Tix).');
     return;
   }
-
   const idx = masterGamesCatalog.findIndex(g => String(g.gameNum) === num);
   const entry = { gameNum: num, name, price, count };
   if (idx >= 0) {
@@ -2178,16 +2165,13 @@ function upsertMasterGameFromAdmin() {
   } else {
     masterGamesCatalog.push(entry);
   }
-
   saveMasterGamesCatalog();
   recalculateAllBoxes();
   saveActiveStoreState();
-
   document.getElementById('admin-game-num').value = '';
   document.getElementById('admin-game-name').value = '';
   document.getElementById('admin-game-price').value = '';
   document.getElementById('admin-game-count').value = '';
-
   renderAdminMasterGamesTable();
   renderDispenserGrid();
   updateHeaderAndBottomSummary();
@@ -2211,6 +2195,7 @@ function deleteMasterGameFromAdmin(gameNum) {
 }
 
 /* ========================= END OF PART 9 OF 10 ========================= */
+
 /* ============================================================================
    PART 10 OF 10: EXPORT/IMPORT, BACKUP/RESTORE, MULTI-STORE & BOOTLOADER
    ============================================================================ */
@@ -2234,7 +2219,6 @@ function exportMasterGamesUniversal() {
 function importMasterGamesUniversal(event) {
   const file = event.target?.files?.[0];
   if (!file) return;
-
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
@@ -2282,7 +2266,6 @@ function exportCurrentLocationBackup() {
 function importLocationBackupFile(event) {
   const file = event.target?.files?.[0];
   if (!file || !activeStoreState) return;
-
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
@@ -2292,15 +2275,12 @@ function importLocationBackupFile(event) {
         alert('Invalid location backup file.');
         return;
       }
-
       if (!confirm(`Restore backup into ${activeStoreState.locationName}? This will overwrite current boxes and history for this store.`)) {
         return;
       }
-
       incoming.locationId = activeStoreState.locationId;
       incoming.locationName = activeStoreState.locationName;
       incoming.locationCode = activeStoreState.locationCode;
-
       activeStoreState = incoming;
       saveActiveStoreState();
       syncReconciliationFormFromState();
@@ -2317,7 +2297,6 @@ function importLocationBackupFile(event) {
   reader.readAsText(file);
 }
 
-// Multi-Store Location Manager Modal
 function openMultiStoreManagerModal() {
   const modal = document.getElementById('modal-locations');
   if (!modal) return;
@@ -2333,7 +2312,6 @@ function closeMultiStoreManagerModal() {
 function renderLocationsManagerList() {
   const list = document.getElementById('locations-manager-list');
   if (!list) return;
-
   list.innerHTML = appLocations.map(loc => `
     <div class="p-2.5 flex items-center justify-between text-xs bg-white">
       <div>
@@ -2369,14 +2347,11 @@ function addNewStoreLocation() {
     alert('Please enter a Store Name.');
     return;
   }
-
   const newId = `store_${Date.now()}`;
   appLocations.push({ id: newId, name, code });
   saveLocationsCatalog();
-
   document.getElementById('new-store-name').value = '';
   document.getElementById('new-store-code').value = '';
-
   renderLocationSwitcher();
   renderLocationsManagerList();
 }
@@ -2384,11 +2359,9 @@ function addNewStoreLocation() {
 function deleteStoreLocation(locId) {
   if (appLocations.length <= 1) return;
   if (!confirm('Delete this store location?')) return;
-
   appLocations = appLocations.filter(l => l.id !== locId);
   saveLocationsCatalog();
   localStorage.removeItem(STORAGE_KEYS.LOCATION_PREFIX + locId);
-
   if (activeLocationId === locId) {
     handleLocationSwitch(appLocations[0].id);
   }
@@ -2396,24 +2369,20 @@ function deleteStoreLocation(locId) {
   renderLocationsManagerList();
 }
 
-// Main View Navigation Switcher
 function switchMainView(viewName) {
   activeMainView = viewName;
-
   const views = {
     grid: document.getElementById('view-grid'),
     reconcile: document.getElementById('view-reconcile'),
     reports: document.getElementById('view-reports'),
     admin: document.getElementById('view-admin')
   };
-
   const navBtns = {
     grid: document.getElementById('nav-btn-grid'),
     reconcile: document.getElementById('nav-btn-reconcile'),
     reports: document.getElementById('nav-btn-reports'),
     admin: document.getElementById('nav-btn-admin')
   };
-
   Object.keys(views).forEach(key => {
     if (views[key]) views[key].classList.toggle('hidden', key !== viewName);
     if (navBtns[key]) {
@@ -2422,7 +2391,6 @@ function switchMainView(viewName) {
         : 'bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3 py-1.5 rounded shadow-sm transition';
     }
   });
-
   if (viewName === 'grid') {
     renderDispenserGrid();
     updateHeaderAndBottomSummary();
@@ -2453,6 +2421,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ========================= END OF PART 10 OF 10 ========================= */
+
 /* ============================================================================
    PART 11: TENNESSEE CLICKWRAP NDA GATE, PERSISTENT DEVICE MEMORY & TIMER
    ============================================================================ */
@@ -2460,7 +2429,6 @@ document.addEventListener('DOMContentLoaded', () => {
 const LEGAL_GATE_STORAGE_KEY = 'ur_lotto_nda_acceptance_v1';
 const LEGAL_AUDIT_LOG_KEY = 'ur_lotto_security_audit_logs_v1';
 
-// Authorized Pilot Access Codes (days: 0 = Unlimited Access, or 30, 60, 90, 120, 365)
 const AUTHORIZED_PILOT_CODES = {
   'REGAS-OWNER-2026': { label: 'Regas Enterprise (Owner)', retailerId: 'OWNER', days: 0, active: true },
   'TN-124749': { label: 'Regas Shell (#124749)', retailerId: '124749', days: 0, active: true },
@@ -2674,7 +2642,7 @@ function recordSecurityAuditEvent(eventType, details = {}) {
 
 function getRemainingLicenseDays(acceptance) {
   if (!acceptance || !acceptance.expiresAtMs || Number(acceptance.accessDays) === 0) {
-    return null; // Unlimited access
+    return null;
   }
   const msLeft = Number(acceptance.expiresAtMs) - Date.now();
   return Math.ceil(msLeft / (1000 * 60 * 60 * 24));
@@ -2718,7 +2686,6 @@ function verifyLegalNdaGateOnLoad() {
         const isExpired = accessDays > 0 && saved.expiresAtMs && Date.now() > Number(saved.expiresAtMs);
 
         if (!isExpired) {
-          // Device already signed & active -> hide gate immediately and stay remembered
           modal.classList.add('hidden');
           modal.style.display = 'none';
           applyLicensedPilotWatermark(saved);
@@ -2726,7 +2693,6 @@ function verifyLegalNdaGateOnLoad() {
           return;
         }
 
-        // Expired -> show renewal banner and pre-fill their saved info
         recordSecurityAuditEvent('PILOT_ACCESS_EXPIRED', { inviteCode: codeKey });
         injectEnhancedNdaControlsIntoGate();
         document.getElementById('legal-expiration-banner')?.classList.remove('hidden');
@@ -2740,9 +2706,7 @@ function verifyLegalNdaGateOnLoad() {
         return;
       }
     }
-  } catch (e) {
-    console.warn('NDA gate storage check warning:', e);
-  }
+  } catch (e) {}
 
   injectEnhancedNdaControlsIntoGate();
   modal.style.display = 'flex';
@@ -2810,7 +2774,6 @@ function downloadSignedNdaReceiptHtml(data, modeLabel, codeOrDaysLabel) {
   URL.revokeObjectURL(url);
 }
 
-// OPTION 1: Tester signs & emails request to dimitriosregas@gmail.com to get a code
 function signAndEmailPilotRequest() {
   const fields = validateGateCommonFields();
   if (!fields) return;
@@ -2842,7 +2805,6 @@ function signAndEmailPilotRequest() {
   window.location.href = `mailto:dimitriosregas@gmail.com?subject=${subject}&body=${body}`;
 }
 
-// OPTION 2: User already has an authorized code -> saves permanently on device & unlocks app
 function submitLegalNdaGate() {
   const codeRaw = (document.getElementById('legal-invite-code')?.value || '').trim().toUpperCase();
   if (!codeRaw) {
