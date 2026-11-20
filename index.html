@@ -844,7 +844,103 @@
 <!-- ==========================================================================
      PART 4 OF 4: PRINT OUTPUT CONTAINER & SCRIPT LOADER
      ========================================================================== -->
+<!-- ========================================================================
+       MANDATORY FIRST-LAUNCH TENNESSEE NDA & PILOT ACCESS GATE
+       ======================================================================== -->
+  <div id="modal-legal-nda-gate" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[9999] flex items-center justify-center p-3 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border-2 border-amber-500 overflow-hidden my-auto">
+      <div class="bg-slate-900 text-white px-5 py-4 border-b border-slate-700 flex items-center justify-between gap-3">
+        <div>
+          <div class="text-[10px] font-extrabold uppercase tracking-widest text-amber-400">CONFIDENTIAL PROPRIETARY SOFTWARE</div>
+          <h2 class="text-base sm:text-lg font-black tracking-tight">UR STORE CENTRAL — PILOT LICENSE &amp; NDA GATE</h2>
+        </div>
+        <span class="bg-red-900/80 text-red-200 border border-red-500/50 text-[10px] font-extrabold px-2.5 py-1 rounded-full shrink-0">
+          🔒 RESTRICTED ACCESS
+        </span>
+      </div>
 
+      <div class="p-5 space-y-4">
+        <p class="text-xs text-slate-700 font-semibold">
+          Access to <strong>UR Store Central Lotto Audit</strong> is restricted strictly to authorized locations and approved pilot testers. You must read the agreement below, enter an authorized <strong>Pilot Access Code</strong>, and electronically sign before the application will unlock.
+        </p>
+
+        <!-- SCROLLABLE TENNESSEE LEGAL AGREEMENT BOX -->
+        <div
+          id="legal-nda-scroll-box"
+          onscroll="handleLegalScrollCheck(this)"
+          class="h-52 overflow-y-auto bg-slate-50 border border-slate-300 rounded-xl p-3.5 text-[11px] text-slate-800 space-y-2.5 leading-relaxed select-none"
+        >
+          <p class="font-black text-slate-900 uppercase">CONFIDENTIALITY, NON-DISCLOSURE &amp; LIMITED PILOT EVALUATION AGREEMENT (STATE OF TENNESSEE)</p>
+          <p><strong>1. EXCLUSIVE OWNERSHIP &amp; INTELLECTUAL PROPERTY:</strong> Licensee acknowledges and agrees that the <strong>UR Store Central</strong> software suite—including <em>UR Store Central Lotto Audit</em>, <em>Store Scan</em>, <em>Fueling Trends</em>, <em>UR Employees Central</em>, and all source code, layouts, formulas, workflows, graphics, and documentation (the "Software")—is the sole and exclusive copyrighted and trade-secret property of <strong>Dimitrios "Jimmy" Regas</strong> ("Owner"), protected under U.S. copyright law and the <strong>Tennessee Uniform Trade Secrets Act (Tenn. Code Ann. § 47-25-1701 et seq.)</strong>.</p>
+          <p><strong>2. STRICT CONFIDENTIALITY &amp; PROHIBITION ON COPYING OR PITCHING:</strong> Without the <strong>prior written consent of Dimitrios "Jimmy" Regas</strong>, Licensee shall NOT, directly or indirectly: (a) copy, reproduce, clone, photograph, screenshot, record, or distribute any portion of the Software to any third party; (b) share, lend, or disclose Pilot Access Codes to anyone outside authorized store staff; (c) reverse-engineer, inspect source code, or extract underlying logic; or (d) pitch, market, develop, or sell any competing or derivative convenience-store or lottery-audit software utilizing concepts observed in the Software.</p>
+          <p><strong>3. REVOCABLE PILOT LICENSE &amp; TELEMETRY LOGGING:</strong> Owner grants a limited, non-transferable, revocable license strictly for internal evaluation at the single registered store location. Licensee consents to automated logging of access timestamps, IP/network metadata, device identifiers, and usage activity. Owner may revoke access immediately at any time.</p>
+          <p><strong>4. FEEDBACK ASSIGNMENT &amp; DISCLAIMER:</strong> Any suggestions or feedback become the sole property of Dimitrios "Jimmy" Regas. The Software is provided <strong>"AS IS"</strong> without warranties; Licensee remains solely responsible for verifying all cash drops, ticket counts, and store records.</p>
+          <p><strong>5. INJUNCTIVE RELIEF &amp; TENNESSEE VENUE:</strong> Any unauthorized copying, sharing, or competitive use causes irreparable harm entitling Owner to immediate injunctive relief plus recovery of reasonable attorney's fees and court costs. Governed by the laws of the <strong>State of Tennessee</strong>, with exclusive venue in <strong>White County or Putnam County, Tennessee</strong>.</p>
+        </div>
+        <div id="legal-scroll-hint" class="text-[11px] font-bold text-amber-700">
+          ⬇ Please scroll to the bottom of the agreement above to enable the signature fields.
+        </div>
+
+        <!-- SIGNER & ACCESS CODE INPUTS -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Pilot Access Code *</label>
+            <input
+              type="text"
+              id="legal-invite-code"
+              placeholder="Enter assigned code..."
+              class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono font-extrabold uppercase bg-white"
+            />
+          </div>
+          <div>
+            <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Store / Business Name *</label>
+            <input
+              type="text"
+              id="legal-store-name"
+              placeholder="e.g. Regas Shell"
+              class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold bg-white"
+            />
+          </div>
+          <div>
+            <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Your Full Legal Name (Signature) *</label>
+            <input
+              type="text"
+              id="legal-signer-name"
+              placeholder="Type full legal name..."
+              class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold bg-white"
+            />
+          </div>
+          <div>
+            <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Email or Phone Number *</label>
+            <input
+              type="text"
+              id="legal-contact-info"
+              placeholder="you@store.com or (931) 555-0199"
+              class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold bg-white"
+            />
+          </div>
+        </div>
+
+        <label class="flex items-start gap-2.5 bg-amber-50 border border-amber-300 rounded-xl p-3 cursor-pointer">
+          <input type="checkbox" id="legal-agree-checkbox" class="mt-0.5 w-4 h-4 accent-blue-600" />
+          <span class="text-xs font-bold text-slate-900">
+            I have read and agree to the Confidentiality, Non-Disclosure &amp; Pilot License Agreement above. I agree not to copy, reproduce, share access, or pitch any part of this application without prior written consent from Dimitrios "Jimmy" Regas.
+          </span>
+        </label>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <span class="text-[10px] text-slate-500">All access &amp; downloads are logged with timestamp and device ID.</span>
+          <button
+            type="button"
+            onclick="submitLegalNdaGate()"
+            class="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm px-6 py-2.5 rounded-xl shadow-lg transition"
+          >
+            ✔ I AGREE &amp; ENTER APP
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
   <!-- DEDICATED PRINT OUTPUT CONTAINER (USED FOR 80MM, LETTER, BACKUP WORKSHEET & COMBINED REPORTS) -->
   <div id="print-container"></div>
 
