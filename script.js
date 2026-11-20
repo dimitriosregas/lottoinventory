@@ -2267,3 +2267,102 @@ document.addEventListener('DOMContentLoaded', () => {
   switchMainView('grid');
 });
 /* ========================= END OF PART 11 OF 11 ========================= */
+/* ============================================================================
+   ADDITIONAL UTILITIES & PRINT MODAL HELPERS FOR index.html
+   ============================================================================ */
+function openBackupWorksheetChoiceModal() {
+  const modal = document.getElementById('modal-backup-worksheet-choice');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeBackupWorksheetChoiceModal() {
+  const modal = document.getElementById('modal-backup-worksheet-choice');
+  if (modal) modal.classList.add('hidden');
+}
+
+function executeManualBackupWorksheetPrint(layoutType) {
+  closeBackupWorksheetChoiceModal();
+  const data = buildCurrentShiftPrintData();
+  if (!data) return;
+  printStandardWorksheet(data);
+}
+
+function openMultiStoreManagerModal() {
+  const modal = document.getElementById('modal-locations');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeMultiStoreManagerModal() {
+  const modal = document.getElementById('modal-locations');
+  if (modal) modal.classList.add('hidden');
+}
+
+function addNewStoreLocation() {
+  const nameInput = document.getElementById('new-store-name');
+  const codeInput = document.getElementById('new-store-code');
+  const name = (nameInput?.value || '').trim();
+  const code = (codeInput?.value || '').trim();
+  if (!name || !code) {
+    alert('Please enter both Store Name and Store Code.');
+    return;
+  }
+  const id = `store_${Date.now()}`;
+  appLocations.push({ id, name, code });
+  saveLocationsCatalog();
+  renderLocationSwitcher();
+  if (nameInput) nameInput.value = '';
+  if (codeInput) codeInput.value = '';
+  closeMultiStoreManagerModal();
+  handleLocationSwitch(id);
+}
+
+function renderHistoricalReports() {
+  const container = document.getElementById('historical-reports-container');
+  if (!container || !activeStoreState) return;
+  const history = Array.isArray(activeStoreState.history) ? activeStoreState.history : [];
+  if (history.length === 0) {
+    container.innerHTML = `<div class="p-6 text-center text-slate-500 bg-slate-50 rounded-xl">No archived shift reports found yet.</div>`;
+    return;
+  }
+  container.innerHTML = history.map((item, idx) => `
+    <div class="bg-white border border-slate-200 rounded-xl p-4 flex items-center justify-between shadow-sm">
+      <div>
+        <div class="font-bold text-slate-900">${escapeHtml(item.auditDate)} — ${escapeHtml(item.shiftType)}</div>
+        <div class="text-xs text-slate-500">Cashier: ${escapeHtml(item.cashierOut)} | Sales: $${Number(item.scratchSales || 0).toFixed(2)} | Over/Short: $${Number(item.variance || 0).toFixed(2)}</div>
+      </div>
+      <button onclick="openHistoryPrintChoice(${idx})" class="px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-lg">🖨️ Print</button>
+    </div>
+  `).join('');
+}
+
+function renderAdminView() {
+  renderSettingsGrid();
+}
+
+function setReportViewMode(mode) {
+  activeReportMode = mode;
+  const dailyBtn = document.getElementById('report-mode-daily-btn');
+  const monthlyBtn = document.getElementById('report-mode-monthly-btn');
+  const dailyWrap = document.getElementById('report-daily-picker-wrap');
+  const monthlyWrap = document.getElementById('report-monthly-picker-wrap');
+  if (mode === 'daily') {
+    dailyBtn?.classList.add('bg-blue-600', 'text-white');
+    dailyBtn?.classList.remove('text-slate-700');
+    monthlyBtn?.classList.remove('bg-blue-600', 'text-white');
+    monthlyBtn?.classList.add('text-slate-700');
+    dailyWrap?.classList.remove('hidden');
+    monthlyWrap?.classList.add('hidden');
+  } else {
+    monthlyBtn?.classList.add('bg-blue-600', 'text-white');
+    monthlyBtn?.classList.remove('text-slate-700');
+    dailyBtn?.classList.remove('bg-blue-600', 'text-white');
+    dailyBtn?.classList.add('text-slate-700');
+    monthlyWrap?.classList.remove('hidden');
+    dailyWrap?.classList.add('hidden');
+  }
+  renderHistoricalReports();
+}
+
+function printCombinedPeriodReport() {
+  openWorksheetPrintChoiceModal();
+}
