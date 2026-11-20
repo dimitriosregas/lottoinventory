@@ -49,6 +49,10 @@ const DEFAULT_MASTER_GAMES = [
   { gameNum: '1402', name: 'MERRY MONEY', price: 5, count: 60 },
   { gameNum: '1403', name: '$50 $100 $500', price: 10, count: 30 },
   { gameNum: '1404', name: 'HOLIDAY RICHES', price: 20, count: 15 },
+  { gameNum: '1409', name: "SUPER 7'S", price: 2, count: 150 },
+  { gameNum: '1410', name: '$5 VIP TRIPLE', price: 5, count: 60 },
+  { gameNum: '1411', name: 'BIG CA$H', price: 10, count: 30 },
+  { gameNum: '1412', name: 'BLACK DIAMOND', price: 10, count: 30 },
   { gameNum: '1762', name: "LUCKY 7'S", price: 1, count: 300 },
   { gameNum: '1802', name: '300X JUMBO', price: 30, count: 20 },
   { gameNum: '1825', name: '$2 JUMBO', price: 2, count: 150 },
@@ -61,10 +65,6 @@ const DEFAULT_MASTER_GAMES = [
   { gameNum: '1949', name: '$10 JUMBO', price: 10, count: 30 },
   { gameNum: '1964', name: 'MILL JUMBO', price: 20, count: 15 },
   { gameNum: '1996', name: 'GIANT JUMBO', price: 5, count: 60 }
-   { gameNum: '1409', name: 'Super 7's', price: 2, count: 150 },
-  { gameNum: '1410', name: '$5 VIP Triple', price: 5, count: 60 },
-  { gameNum: '1411', name: 'Big CA$H', price: 10, count: 30 },
-  { gameNum: '1412', name: 'Black Diamond', price: 10, count: 30 }
 ];
 
 let activeLocationId = 'loc-regas-shell';
