@@ -2489,7 +2489,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ========================= END OF PART 10 OF 10 ========================= */
 /* ============================================================================
-   PART 11: TENNESSEE CLICKWRAP NDA GATE, DRAWN SIGNATURE, 30/60/90/120/365 & UNLIMITED TIMER
+   PART 11: TENNESSEE CLICKWRAP NDA GATE, PERSISTENT DEVICE MEMORY & TIMER
    ============================================================================ */
 
 const LEGAL_GATE_STORAGE_KEY = 'ur_lotto_nda_acceptance_v1';
@@ -2531,7 +2531,6 @@ function injectEnhancedNdaControlsIntoGate() {
   const agreeLabel = document.getElementById('legal-agree-checkbox')?.closest('label');
   if (!agreeLabel) return;
 
-  // Inject Retailer #, Duration Selector, and Drawn Signature Pad right above the checkbox
   const extraBlock = document.createElement('div');
   extraBlock.id = 'legal-drawn-sig-wrap';
   extraBlock.className = 'space-y-3';
@@ -2585,7 +2584,6 @@ function injectEnhancedNdaControlsIntoGate() {
 
   modalBody.insertBefore(extraBlock, agreeLabel);
 
-  // Update bottom button bar so both "Sign & Email Request" and "I Agree & Enter App" are available
   const submitBtn = modalBody.querySelector('button[onclick="submitLegalNdaGate()"]');
   if (submitBtn && submitBtn.parentElement) {
     submitBtn.parentElement.innerHTML = `
@@ -2742,33 +2740,47 @@ function verifyLegalNdaGateOnLoad() {
   const modal = document.getElementById('modal-legal-nda-gate');
   if (!modal) return;
 
-  injectEnhancedNdaControlsIntoGate();
-
   try {
-    const saved = JSON.parse(localStorage.getItem(LEGAL_GATE_STORAGE_KEY) || 'null');
-    if (saved && saved.inviteCode && saved.signerName && saved.agreed === true) {
-      const codeRecord = AUTHORIZED_PILOT_CODES[String(saved.inviteCode).toUpperCase()];
+    const raw = localStorage.getItem(LEGAL_GATE_STORAGE_KEY);
+    const saved = raw ? JSON.parse(raw) : null;
+
+    if (saved && saved.agreed === true && saved.inviteCode && saved.signerName) {
+      const codeKey = String(saved.inviteCode).trim().toUpperCase();
+      const codeRecord = AUTHORIZED_PILOT_CODES[codeKey];
+
       if (codeRecord && codeRecord.active) {
-        if (saved.expiresAtMs && Number(saved.accessDays) > 0 && Date.now() > Number(saved.expiresAtMs)) {
-          recordSecurityAuditEvent('PILOT_ACCESS_EXPIRED', { inviteCode: saved.inviteCode });
-          document.getElementById('legal-expiration-banner')?.classList.remove('hidden');
-          if (document.getElementById('legal-store-name')) document.getElementById('legal-store-name').value = saved.storeName || '';
-          if (document.getElementById('legal-signer-name')) document.getElementById('legal-signer-name').value = saved.signerName || '';
-          if (document.getElementById('legal-contact-info')) document.getElementById('legal-contact-info').value = saved.contactInfo || '';
-          if (document.getElementById('legal-retailer-num')) document.getElementById('legal-retailer-num').value = saved.retailerNum || '';
-          modal.classList.remove('hidden');
-          setTimeout(initLegalNdaSignatureCanvas, 30);
+        const accessDays = Number(codeRecord.days) || 0;
+        const isExpired = accessDays > 0 && saved.expiresAtMs && Date.now() > Number(saved.expiresAtMs);
+
+        if (!isExpired) {
+          // Device already signed & active -> hide gate immediately and stay remembered
+          modal.classList.add('hidden');
+          modal.style.display = 'none';
+          applyLicensedPilotWatermark(saved);
+          recordSecurityAuditEvent('APP_OPENED_REMEMBERED_DEVICE', { inviteCode: codeKey });
           return;
         }
 
-        modal.classList.add('hidden');
-        applyLicensedPilotWatermark(saved);
-        recordSecurityAuditEvent('APP_OPENED', { inviteCode: saved.inviteCode });
+        // Expired -> show renewal banner and pre-fill their saved info
+        recordSecurityAuditEvent('PILOT_ACCESS_EXPIRED', { inviteCode: codeKey });
+        injectEnhancedNdaControlsIntoGate();
+        document.getElementById('legal-expiration-banner')?.classList.remove('hidden');
+        if (document.getElementById('legal-store-name')) document.getElementById('legal-store-name').value = saved.storeName || '';
+        if (document.getElementById('legal-signer-name')) document.getElementById('legal-signer-name').value = saved.signerName || '';
+        if (document.getElementById('legal-contact-info')) document.getElementById('legal-contact-info').value = saved.contactInfo || '';
+        if (document.getElementById('legal-retailer-num')) document.getElementById('legal-retailer-num').value = saved.retailerNum || '';
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+        setTimeout(initLegalNdaSignatureCanvas, 30);
         return;
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('NDA gate storage check warning:', e);
+  }
 
+  injectEnhancedNdaControlsIntoGate();
+  modal.style.display = 'flex';
   modal.classList.remove('hidden');
   setTimeout(initLegalNdaSignatureCanvas, 30);
   recordSecurityAuditEvent('GATE_DISPLAYED_UNAUTHENTICATED');
@@ -2865,7 +2877,7 @@ function signAndEmailPilotRequest() {
   window.location.href = `mailto:dimitriosregas@gmail.com?subject=${subject}&body=${body}`;
 }
 
-// OPTION 2: User already has an authorized code -> verifies code, starts timer & unlocks app
+// OPTION 2: User already has an authorized code -> saves permanently on device & unlocks app
 function submitLegalNdaGate() {
   const codeRaw = (document.getElementById('legal-invite-code')?.value || '').trim().toUpperCase();
   if (!codeRaw) {
@@ -2911,13 +2923,16 @@ function submitLegalNdaGate() {
   downloadSignedNdaReceiptHtml(fields, 'ACTIVATED LICENSE', durationText);
 
   const modal = document.getElementById('modal-legal-nda-gate');
-  if (modal) modal.classList.add('hidden');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.style.display = 'none';
+  }
   applyLicensedPilotWatermark(acceptancePayload);
 
   alert(
     accessDays === 0
-      ? `✔ Welcome, ${fields.signerName}!\n\nUnlimited Access activated for ${fields.storeName} (${codeRaw}).`
-      : `✔ Welcome, ${fields.signerName}!\n\nYour ${accessDays}-day pilot license for ${fields.storeName} is active through ${expiresDateStr}.`
+      ? `✔ Welcome, ${fields.signerName}!\n\nUnlimited Access activated and saved on this device for ${fields.storeName} (${codeRaw}).`
+      : `✔ Welcome, ${fields.signerName}!\n\nYour ${accessDays}-day pilot license for ${fields.storeName} is active through ${expiresDateStr} and saved on this device.`
   );
 }
 
