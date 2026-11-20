@@ -245,7 +245,7 @@
           <div class="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onclick="printManualBackupWorksheet()"
+              onclick="openBackupWorksheetChoiceModal()"
               class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-sm"
             >
               <span>🖨 Print Backup Sheet</span>
@@ -941,7 +941,35 @@
       </div>
     </div>
   </div>
-  <!-- DEDICATED PRINT OUTPUT CONTAINER (USED FOR 80MM, LETTER, BACKUP WORKSHEET & COMBINED REPORTS) -->
+  <!-- MANUAL BACKUP WORKSHEET FORMAT CHOICE MODAL (1-PAGE FIT VS 2-PAGE NUMBERED) -->
+  <div id="modal-backup-worksheet-choice" class="fixed inset-0 modal-backdrop hidden z-50 flex items-center justify-center p-3">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden">
+      <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
+        <h3 class="font-extrabold text-sm sm:text-base">Print Manual Backup Worksheet</h3>
+        <button type="button" onclick="closeBackupWorksheetChoiceModal()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+      </div>
+      <div class="p-5 space-y-3">
+        <p class="text-xs text-slate-600">Select your layout for the pen-ready Manual Backup Worksheet (includes blank Start #, End #, # Sold, and Sales $ columns):</p>
+        <button
+          type="button"
+          onclick="executeManualBackupWorksheetPrint('1page')"
+          class="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs py-3 px-4 rounded-xl flex items-center justify-between shadow-sm"
+        >
+          <span>📄 Fit to 1 Page (All Boxes on Single Sheet)</span>
+          <span>Print →</span>
+        </button>
+        <button
+          type="button"
+          onclick="executeManualBackupWorksheetPrint('2page')"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-3 px-4 rounded-xl flex items-center justify-between shadow-sm"
+        >
+          <span>📑 2-Page Large Print (Page 1 of 2 &amp; 2 of 2, Full Header &amp; Signatures on Both)</span>
+          <span>Print →</span>
+        </button>
+      </div>
+    </div>
+  </div>
+           <!-- DEDICATED PRINT OUTPUT CONTAINER (USED FOR 80MM, LETTER, BACKUP WORKSHEET & COMBINED REPORTS) -->
   <div id="print-container"></div>
 
   <!-- MAIN APPLICATION LOGIC -->
