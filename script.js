@@ -1,5 +1,5 @@
 /* ============================================================================
-   PART 1 OF 10: MASTER GAMES CATALOG, DEFAULT BOX PATTERN, LOCAL DATE & STATE
+   PART 1 OF 11: MASTER GAMES CATALOG, DEFAULT BOX PATTERN, LOCAL DATE & STATE
    ============================================================================ */
 
 const DEFAULT_MASTER_GAMES = [
@@ -140,9 +140,9 @@ function findGameByNumber(gameNum) {
   return masterGamesCatalog.find(g => String(g.gameNum) === clean) || null;
 }
 
-/* ========================= END OF PART 1 OF 10 ========================= */
+/* ========================= END OF PART 1 OF 11 ========================= */
 /* ============================================================================
-   PART 2 OF 10: STORE STATE INITIALIZATION, STORAGE & MIDNIGHT AUTO-ROLLOVER
+   PART 2 OF 11: STORE STATE INITIALIZATION, STORAGE & MIDNIGHT AUTO-ROLLOVER
    ============================================================================ */
 
 function createDefaultStoreState(locationObj) {
@@ -347,9 +347,9 @@ function startMidnightRolloverWatcher() {
   }, 15000);
 }
 
-/* ========================= END OF PART 2 OF 10 ========================= */
+/* ========================= END OF PART 2 OF 11 ========================= */
 /* ============================================================================
-   PART 3 OF 10: TICKET SALES & ROLLOVER MATH, BOX INPUTS & LOCK PROTECTION
+   PART 3 OF 11: TICKET SALES & ROLLOVER MATH, BOX INPUTS & LOCK PROTECTION
    ============================================================================ */
 
 function calculateBoxMetrics(box) {
@@ -588,9 +588,9 @@ function handleGridFieldEnterKey(event, fieldType, boxIdx) {
   }
 }
 
-/* ========================= END OF PART 3 OF 10 ========================= */
+/* ========================= END OF PART 3 OF 11 ========================= */
 /* ============================================================================
-   PART 4 OF 10: DISPENSER LIST & BOX GRID RENDERING + VIEW MODE SWITCHER
+   PART 4 OF 11: DISPENSER LIST & BOX GRID RENDERING + VIEW MODE SWITCHER
    ============================================================================ */
 
 function setDispenserViewMode(mode) {
@@ -884,9 +884,9 @@ function updateSingleBoxRowOrCardDisplay(boxIdx) {
   }
 }
 
-/* ========================= END OF PART 4 OF 10 ========================= */
+/* ========================= END OF PART 4 OF 11 ========================= */
 /* ============================================================================
-   PART 5 OF 10: CASHIER & SHIFT CHECK-IN ON FIRST END # + BOTTOM SUMMARY BAR
+   PART 5 OF 11: CASHIER & SHIFT CHECK-IN ON FIRST END # + BOTTOM SUMMARY BAR
    ============================================================================ */
 
 function populatePromptCashiersDatalist() {
@@ -1098,11 +1098,10 @@ function handleCompleteAuditButtonClick() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-/* ========================= END OF PART 5 OF 10 ========================= */
+/* ========================= END OF PART 5 OF 11 ========================= */
 /* ============================================================================
-   PART 6 OF 10: RECONCILIATION MATH, SIGNATURE CANVAS & SHIFT ARCHIVING
+   PART 6 OF 11: RECONCILIATION MATH, SIGNATURE CANVAS & SHIFT ARCHIVING
    ============================================================================ */
-
 let sigCanvas = null;
 let sigCtx = null;
 let isDrawingSignature = false;
@@ -1110,7 +1109,6 @@ let isDrawingSignature = false;
 function initSignaturePad() {
   sigCanvas = document.getElementById('cashier-signature-canvas');
   if (!sigCanvas) return;
-
   sigCtx = sigCanvas.getContext('2d');
 
   const resizeCanvas = () => {
@@ -1123,7 +1121,6 @@ function initSignaturePad() {
       sigCtx.lineCap = 'round';
       sigCtx.lineJoin = 'round';
       sigCtx.strokeStyle = '#0f172a';
-
       if (existingData) {
         const img = new Image();
         img.onload = () => sigCtx.drawImage(img, 0, 0, sigCanvas.width, sigCanvas.height);
@@ -1139,10 +1136,7 @@ function initSignaturePad() {
     const rect = sigCanvas.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return {
-      x: clientX - rect.left,
-      y: clientY - rect.top
-    };
+    return { x: clientX - rect.left, y: clientY - rect.top };
   };
 
   const startDraw = (e) => {
@@ -1191,7 +1185,6 @@ function clearSignaturePad() {
 function syncReconciliationFormFromState() {
   if (!activeStoreState || !activeStoreState.reconciliation) return;
   const rec = activeStoreState.reconciliation;
-
   const dateEl = document.getElementById('rec-audit-date');
   const shiftEl = document.getElementById('rec-shift-type');
   const cOutEl = document.getElementById('rec-cashier-out');
@@ -1216,7 +1209,6 @@ function syncReconciliationFormFromState() {
 function saveReconciliationDraft() {
   if (!activeStoreState || !activeStoreState.reconciliation) return;
   const rec = activeStoreState.reconciliation;
-
   rec.auditDate = document.getElementById('rec-audit-date')?.value || getLocalDateStr();
   rec.shiftType = document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
   rec.cashierOut = (document.getElementById('rec-cashier-out')?.value || '').trim();
@@ -1229,7 +1221,6 @@ function saveReconciliationDraft() {
   if (rec.cashierOut) {
     shiftSessionConfirmed = true;
   }
-
   saveActiveStoreState();
   updateHeaderAndBottomSummary();
 }
@@ -1244,7 +1235,6 @@ function handleShiftTypeChange(newShift) {
 function recalculateReconciliationMath() {
   if (!activeStoreState) return;
   const { totalTickets, totalSales } = getShiftTotals();
-
   const onlineSales = parseFloat(document.getElementById('rec-online-sales')?.value) || 0;
   const totalPayouts = parseFloat(document.getElementById('rec-total-payouts')?.value) || 0;
   const actualCash = parseFloat(document.getElementById('rec-actual-cash')?.value) || 0;
@@ -1278,14 +1268,12 @@ function recalculateReconciliationMath() {
       varianceBadge.className = 'px-2 py-0.5 rounded bg-red-100 text-red-800 border border-red-300';
     }
   }
-
   saveActiveStoreState();
 }
 
 function finalizeAndSaveShiftAudit() {
   if (!activeStoreState) return;
   saveReconciliationDraft();
-
   const rec = activeStoreState.reconciliation;
   const cashierOut = (rec.cashierOut || '').trim();
   if (!cashierOut) {
@@ -1297,8 +1285,6 @@ function finalizeAndSaveShiftAudit() {
   const { totalTickets, totalSales } = getShiftTotals();
   const netExpected = Number((totalSales + rec.onlineSales - rec.totalPayouts).toFixed(2));
   const variance = Number((rec.actualCash - netExpected).toFixed(2));
-
-  // Normalize auditDate to YYYY-MM-DD local format
   const auditDate = (rec.auditDate || getLocalDateStr()).slice(0, 10);
 
   const archiveRecord = {
@@ -1324,7 +1310,6 @@ function finalizeAndSaveShiftAudit() {
     boxesSnapshot: JSON.parse(JSON.stringify(activeStoreState.boxes))
   };
 
-  // Replace existing archive entry if same date + same shift is re-finalized, otherwise append
   const existingIdx = activeStoreState.history.findIndex(
     h => (h.auditDate || '').slice(0, 10) === auditDate && h.shiftType === archiveRecord.shiftType
   );
@@ -1335,1545 +1320,878 @@ function finalizeAndSaveShiftAudit() {
   }
 
   saveActiveStoreState();
-  alert(`✔ Shift Report Saved & Archived!\n\nStore: ${activeStoreState.locationName}\nDate: ${auditDate}\nShift: ${archiveRecord.shiftType}\nCashier: ${cashierOut}\nScratch Sales: $${totalSales.toFixed(2)}`);
+  alert(
+    `✔ Shift Report Saved & Archived!\n\nStore: ${activeStoreState.locationName}\nDate: ${auditDate}\nShift: ${archiveRecord.shiftType}\nCashier: ${cashierOut}\nScratch Sales: $${totalSales.toFixed(2)}`
+  );
 
   if (confirm('Would you like to print the signed shift report now?')) {
     openWorksheetPrintChoiceModal();
   }
 }
-
-/* ========================= END OF PART 6 OF 10 ========================= */
+/* ========================= END OF PART 6 OF 11 ========================= */
 /* ============================================================================
-   PART 7 OF 10: HISTORICAL REPORTS (COMBINED DAILY & MONTHLY SUMMARIES)
+   PART 7 OF 11: SHIFT ROLLBACK & SHIFT HISTORY ARCHIVE VIEWER
    ============================================================================ */
-
-function setReportViewMode(mode) {
-  activeReportMode = mode === 'monthly' ? 'monthly' : 'daily';
-
-  const dailyBtn = document.getElementById('report-mode-daily-btn');
-  const monthlyBtn = document.getElementById('report-mode-monthly-btn');
-  const dailyWrap = document.getElementById('report-daily-picker-wrap');
-  const monthlyWrap = document.getElementById('report-monthly-picker-wrap');
-
-  if (dailyBtn && monthlyBtn) {
-    if (activeReportMode === 'daily') {
-      dailyBtn.className = 'px-3 py-1 rounded-md text-xs font-extrabold bg-blue-600 text-white transition';
-      monthlyBtn.className = 'px-3 py-1 rounded-md text-xs font-extrabold text-slate-700 hover:text-slate-900 transition';
-    } else {
-      monthlyBtn.className = 'px-3 py-1 rounded-md text-xs font-extrabold bg-blue-600 text-white transition';
-      dailyBtn.className = 'px-3 py-1 rounded-md text-xs font-extrabold text-slate-700 hover:text-slate-900 transition';
-    }
+function rollbackToPreviousShift() {
+  if (!activeStoreState) return;
+  if (!Array.isArray(activeStoreState.history) || activeStoreState.history.length === 0) {
+    alert('No saved shift history found to roll back to.');
+    return;
   }
 
-  if (dailyWrap) dailyWrap.classList.toggle('hidden', activeReportMode !== 'daily');
-  if (monthlyWrap) monthlyWrap.classList.toggle('hidden', activeReportMode !== 'monthly');
+  const latestSaved = activeStoreState.history[0];
+  const confirmMsg =
+    `Rollback current shift to the last saved shift?\n\n` +
+    `Saved Shift: ${latestSaved.auditDate} (${latestSaved.shiftType})\n` +
+    `Cashier: ${latestSaved.cashierOut || 'N/A'}\n` +
+    `Scratch Sales: $${Number(latestSaved.scratchSales || 0).toFixed(2)}\n\n` +
+    `This will restore the dispenser ticket numbers from that saved shift.`;
 
-  renderHistoricalReports();
-}
+  if (!confirm(confirmMsg)) return;
 
-function getNormalizedRecordDate(record) {
-  if (record.auditDate) {
-    return String(record.auditDate).trim().slice(0, 10);
+  if (Array.isArray(latestSaved.boxesSnapshot)) {
+    activeStoreState.boxes = JSON.parse(JSON.stringify(latestSaved.boxesSnapshot));
   }
-  if (record.savedAt) {
-    const parsed = new Date(record.savedAt);
-    if (!isNaN(parsed.getTime())) {
-      return getLocalDateStr(parsed);
-    }
-  }
-  return getLocalDateStr();
-}
 
-function getFilteredReportRecords() {
-  if (!activeStoreState || !Array.isArray(activeStoreState.history)) return [];
-
-  const dateInput = document.getElementById('report-filter-date');
-  const monthInput = document.getElementById('report-filter-month');
-
-  if (activeReportMode === 'monthly') {
-    const targetMonth = (monthInput?.value || getLocalMonthStr()).slice(0, 7);
-    return activeStoreState.history.filter(rec => getNormalizedRecordDate(rec).startsWith(targetMonth));
-  } else {
-    const targetDate = (dateInput?.value || getLocalDateStr()).slice(0, 10);
-    return activeStoreState.history.filter(rec => getNormalizedRecordDate(rec) === targetDate);
-  }
-}
-
-function aggregateReportRecords(records) {
-  let totalTickets = 0;
-  let scratchSales = 0;
-  let onlineSales = 0;
-  let totalPayouts = 0;
-  let netExpected = 0;
-  let actualCash = 0;
-  let variance = 0;
-
-  records.forEach(r => {
-    totalTickets += Number(r.totalTickets) || 0;
-    scratchSales += Number(r.scratchSales) || 0;
-    onlineSales += Number(r.onlineSales) || 0;
-    totalPayouts += Number(r.totalPayouts) || 0;
-    netExpected += Number(r.netExpected) || 0;
-    actualCash += Number(r.actualCash) || 0;
-    variance += Number(r.variance) || 0;
-  });
-
-  return {
-    shiftCount: records.length,
-    totalTickets,
-    scratchSales: Number(scratchSales.toFixed(2)),
-    onlineSales: Number(onlineSales.toFixed(2)),
-    totalPayouts: Number(totalPayouts.toFixed(2)),
-    netExpected: Number(netExpected.toFixed(2)),
-    actualCash: Number(actualCash.toFixed(2)),
-    variance: Number(variance.toFixed(2))
+  activeStoreState.reconciliation = {
+    auditDate: latestSaved.auditDate || getLocalDateStr(),
+    shiftType: latestSaved.shiftType || 'Shift 1 (Morning)',
+    cashierOut: latestSaved.cashierOut || '',
+    cashierIn: latestSaved.cashierIn || '',
+    onlineSales: Number(latestSaved.onlineSales) || 0,
+    totalPayouts: Number(latestSaved.totalPayouts) || 0,
+    actualCash: Number(latestSaved.actualCash) || 0,
+    notes: latestSaved.notes || '',
+    signatureDataUrl: latestSaved.signatureDataUrl || ''
   };
+
+  saveActiveStoreState();
+  renderAllUI();
+  alert('✔ Shift rolled back to the last saved shift.');
 }
 
-function renderHistoricalReports() {
-  const kpiContainer = document.getElementById('report-combined-summary-cards');
-  const listContainer = document.getElementById('historical-reports-container');
-  if (!kpiContainer || !listContainer || !activeStoreState) return;
+function renderHistoryList() {
+  const container = document.getElementById('history-list-container');
+  if (!container || !activeStoreState) return;
 
-  const dateInput = document.getElementById('report-filter-date');
-  const monthInput = document.getElementById('report-filter-month');
-  if (dateInput && !dateInput.value) dateInput.value = getLocalDateStr();
-  if (monthInput && !monthInput.value) monthInput.value = getLocalMonthStr();
-
-  const records = getFilteredReportRecords();
-  const totals = aggregateReportRecords(records);
-
-  const periodLabel = activeReportMode === 'monthly'
-    ? `Month: ${monthInput?.value || getLocalMonthStr()}`
-    : `Date: ${dateInput?.value || getLocalDateStr()}`;
-
-  const varSign = totals.variance > 0 ? '+' : '';
-  const varColor = Math.abs(totals.variance) < 0.01
-    ? 'text-emerald-700'
-    : (totals.variance > 0 ? 'text-blue-700' : 'text-red-700');
-
-  kpiContainer.innerHTML = `
-    <div class="bg-slate-900 text-white rounded-xl p-3 border border-slate-700">
-      <div class="text-[10px] font-extrabold uppercase text-amber-400">COMBINED ${activeReportMode === 'monthly' ? 'MONTHLY' : 'DAILY'}</div>
-      <div class="font-extrabold text-sm mt-0.5">${periodLabel}</div>
-      <div class="text-[11px] text-slate-300 mt-0.5">${totals.shiftCount} Shift(s) Combined</div>
-    </div>
-    <div class="bg-slate-50 rounded-xl p-3 border border-slate-200">
-      <div class="text-[10px] font-extrabold uppercase text-slate-500">SCRATCH SALES</div>
-      <div class="font-mono font-extrabold text-base text-emerald-700 mt-0.5">$${totals.scratchSales.toFixed(2)}</div>
-      <div class="text-[11px] text-slate-500">${totals.totalTickets} Tickets Sold</div>
-    </div>
-    <div class="bg-slate-50 rounded-xl p-3 border border-slate-200">
-      <div class="text-[10px] font-extrabold uppercase text-slate-500">ONLINE / PAYOUTS</div>
-      <div class="font-mono font-extrabold text-sm text-slate-900 mt-0.5">+$${totals.onlineSales.toFixed(2)}</div>
-      <div class="text-[11px] text-red-600 font-semibold">-$${totals.totalPayouts.toFixed(2)} Paid</div>
-    </div>
-    <div class="bg-slate-50 rounded-xl p-3 border border-slate-200">
-      <div class="text-[10px] font-extrabold uppercase text-slate-500">NET EXPECTED</div>
-      <div class="font-mono font-extrabold text-base text-slate-900 mt-0.5">$${totals.netExpected.toFixed(2)}</div>
-      <div class="text-[11px] text-slate-500">Actual: $${totals.actualCash.toFixed(2)}</div>
-    </div>
-    <div class="bg-slate-50 rounded-xl p-3 border border-slate-200">
-      <div class="text-[10px] font-extrabold uppercase text-slate-500">OVER / SHORT</div>
-      <div class="font-mono font-extrabold text-base ${varColor} mt-0.5">${varSign}$${totals.variance.toFixed(2)}</div>
-      <div class="text-[11px] text-slate-500">Combined Variance</div>
-    </div>
-  `;
-
-  // Also show quick-jump list of all logged dates for this store so past days are 1-click accessible
-  const uniqueDates = Array.from(
-    new Set(activeStoreState.history.map(r => getNormalizedRecordDate(r)))
-  ).sort((a, b) => b.localeCompare(a));
-
-  const quickDatesHtml = uniqueDates.length > 0
-    ? `
-      <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5 flex flex-wrap items-center gap-1.5 text-xs">
-        <span class="font-extrabold text-slate-600 uppercase text-[10px] mr-1">Logged Days:</span>
-        ${uniqueDates.slice(0, 14).map(d => `
-          <button
-            type="button"
-            onclick="jumpToLoggedReportDate('${d}')"
-            class="px-2.5 py-1 rounded font-mono font-bold text-[11px] border transition ${
-              activeReportMode === 'daily' && dateInput?.value === d
-                ? 'bg-blue-600 text-white border-blue-600'
-                : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300'
-            }"
-          >
-            ${d}
-          </button>
-        `).join('')}
-      </div>
-    `
-    : '';
-
-  if (records.length === 0) {
-    listContainer.innerHTML = `
-      ${quickDatesHtml}
-      <div class="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-8 text-center text-slate-500 text-xs">
-        No finalized shift audits found for <strong>${periodLabel}</strong> at <strong>${activeStoreState.locationName}</strong>.
-        <div class="mt-1">Finalize a shift under <strong>Reconciliation → Finalize &amp; Archive Shift</strong> to log it here.</div>
+  const history = Array.isArray(activeStoreState.history) ? activeStoreState.history : [];
+  if (history.length === 0) {
+    container.innerHTML = `
+      <div class="bg-slate-800/70 border border-slate-700 rounded-xl p-8 text-center text-slate-400">
+        No archived shift audits yet for <strong class="text-white">${escapeHtml(activeStoreState.locationName)}</strong>.
       </div>
     `;
     return;
   }
 
-  // Sort chronologically (Shift 1 -> Shift 2 -> Shift 3)
-  const sorted = [...records].sort((a, b) => {
-    const dCmp = getNormalizedRecordDate(a).localeCompare(getNormalizedRecordDate(b));
-    if (dCmp !== 0) return dCmp;
-    return String(a.shiftType || '').localeCompare(String(b.shiftType || ''));
-  });
-
-  const rowsHtml = sorted.map(rec => {
-    const rDate = getNormalizedRecordDate(rec);
-    const rVar = Number(rec.variance) || 0;
-    const rSign = rVar > 0 ? '+' : '';
-    const rVarCls = Math.abs(rVar) < 0.01 ? 'text-emerald-700' : (rVar > 0 ? 'text-blue-700' : 'text-red-700');
+  container.innerHTML = history.map((item, idx) => {
+    const variance = Number(item.variance || 0);
+    const sign = variance > 0 ? '+' : '';
+    const varianceClass = Math.abs(variance) < 0.01
+      ? 'bg-emerald-900/60 text-emerald-300 border-emerald-700'
+      : variance > 0
+        ? 'bg-blue-900/60 text-blue-300 border-blue-700'
+        : 'bg-red-900/60 text-red-300 border-red-700';
 
     return `
-      <tr class="border-b border-slate-200 hover:bg-slate-50">
-        <td class="p-2.5 font-mono font-bold text-slate-800">${rDate}</td>
-        <td class="p-2.5 font-extrabold text-slate-900">${rec.shiftType || 'Shift'}</td>
-        <td class="p-2.5 font-bold text-slate-700">${rec.cashierOut || 'Unspecified'}</td>
-        <td class="p-2.5 text-center font-mono font-bold">${rec.totalTickets || 0}</td>
-        <td class="p-2.5 text-right font-mono font-extrabold text-emerald-700">$${(Number(rec.scratchSales) || 0).toFixed(2)}</td>
-        <td class="p-2.5 text-right font-mono">$${(Number(rec.onlineSales) || 0).toFixed(2)}</td>
-        <td class="p-2.5 text-right font-mono text-red-600">-$${(Number(rec.totalPayouts) || 0).toFixed(2)}</td>
-        <td class="p-2.5 text-right font-mono font-bold">$${(Number(rec.actualCash) || 0).toFixed(2)}</td>
-        <td class="p-2.5 text-right font-mono font-extrabold ${rVarCls}">${rSign}$${rVar.toFixed(2)}</td>
-        <td class="p-2.5 text-right">
-          <button
-            type="button"
-            onclick="reprintArchivedShiftReport('${rec.id}')"
-            class="bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] px-2.5 py-1 rounded"
-          >
-            🖨 Print
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-4 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="font-bold text-white text-base">${escapeHtml(item.auditDate || 'Unknown Date')}</span>
+            <span class="px-2 py-0.5 rounded text-xs font-bold bg-indigo-900/80 text-indigo-200 border border-indigo-700">
+              ${escapeHtml(item.shiftType || 'Shift')}
+            </span>
+            <span class="px-2 py-0.5 rounded text-xs font-bold border ${varianceClass}">
+              Over/Short: ${sign}$${variance.toFixed(2)}
+            </span>
+          </div>
+          <div class="text-xs text-slate-300 mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+            <span><strong>Cashier:</strong> ${escapeHtml(item.cashierOut || 'N/A')}</span>
+            <span><strong>Tickets Sold:</strong> ${item.totalTickets ?? 0}</span>
+            <span><strong>Scratch Sales:</strong> $${Number(item.scratchSales || 0).toFixed(2)}</span>
+            <span><strong>Net Expected:</strong> $${Number(item.netExpected || 0).toFixed(2)}</span>
+            <span><strong>Actual Cash:</strong> $${Number(item.actualCash || 0).toFixed(2)}</span>
+          </div>
+          ${item.notes ? `<div class="text-xs text-amber-300 mt-1 italic">Note: ${escapeHtml(item.notes)}</div>` : ''}
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button onclick="openHistoryPrintChoice(${idx})"
+            class="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold border border-slate-600">
+            🖨️ Print Report
           </button>
-        </td>
-      </tr>
+          <button onclick="loadHistoryShiftIntoEditor(${idx})"
+            class="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold">
+            📂 Load
+          </button>
+          <button onclick="deleteHistoryRecord(${idx})"
+            class="px-3 py-2 rounded-lg bg-red-900/70 hover:bg-red-800 text-red-200 text-xs font-bold border border-red-700">
+            🗑️
+          </button>
+        </div>
+      </div>
     `;
   }).join('');
-
-  listContainer.innerHTML = `
-    ${quickDatesHtml}
-    <div class="overflow-x-auto border border-slate-300 rounded-xl bg-white">
-      <table class="w-full text-left border-collapse text-xs">
-        <thead class="bg-slate-800 text-white uppercase text-[11px]">
-          <tr>
-            <th class="p-2.5">Date</th>
-            <th class="p-2.5">Shift</th>
-            <th class="p-2.5">Cashier</th>
-            <th class="p-2.5 text-center">Tickets</th>
-            <th class="p-2.5 text-right">Scratch Sales</th>
-            <th class="p-2.5 text-right">Online</th>
-            <th class="p-2.5 text-right">Payouts</th>
-            <th class="p-2.5 text-right">Actual Cash</th>
-            <th class="p-2.5 text-right">Over/Short</th>
-            <th class="p-2.5 text-right">Action</th>
-          </tr>
-        </thead>
-        <tbody>${rowsHtml}</tbody>
-        <tfoot class="bg-slate-100 font-extrabold border-t-2 border-slate-400">
-          <tr>
-            <td colspan="3" class="p-2.5 text-right uppercase">Combined ${activeReportMode === 'monthly' ? 'Monthly' : 'Daily'} Totals (${totals.shiftCount} Shifts):</td>
-            <td class="p-2.5 text-center font-mono">${totals.totalTickets}</td>
-            <td class="p-2.5 text-right font-mono text-emerald-700">$${totals.scratchSales.toFixed(2)}</td>
-            <td class="p-2.5 text-right font-mono">$${totals.onlineSales.toFixed(2)}</td>
-            <td class="p-2.5 text-right font-mono text-red-600">-$${totals.totalPayouts.toFixed(2)}</td>
-            <td class="p-2.5 text-right font-mono">$${totals.actualCash.toFixed(2)}</td>
-            <td class="p-2.5 text-right font-mono ${varColor}">${varSign}$${totals.variance.toFixed(2)}</td>
-            <td class="p-2.5"></td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  `;
 }
 
-function jumpToLoggedReportDate(dateStr) {
-  const dateInput = document.getElementById('report-filter-date');
-  if (dateInput) dateInput.value = dateStr;
-  setReportViewMode('daily');
+function loadHistoryShiftIntoEditor(index) {
+  if (!activeStoreState || !activeStoreState.history[index]) return;
+  const item = activeStoreState.history[index];
+  if (!confirm(`Load shift ${item.auditDate} (${item.shiftType}) into the active editor?`)) return;
+
+  if (Array.isArray(item.boxesSnapshot)) {
+    activeStoreState.boxes = JSON.parse(JSON.stringify(item.boxesSnapshot));
+  }
+  activeStoreState.reconciliation = {
+    auditDate: item.auditDate || getLocalDateStr(),
+    shiftType: item.shiftType || 'Shift 1 (Morning)',
+    cashierOut: item.cashierOut || '',
+    cashierIn: item.cashierIn || '',
+    onlineSales: Number(item.onlineSales) || 0,
+    totalPayouts: Number(item.totalPayouts) || 0,
+    actualCash: Number(item.actualCash) || 0,
+    notes: item.notes || '',
+    signatureDataUrl: item.signatureDataUrl || ''
+  };
+  shiftSessionConfirmed = Boolean(item.cashierOut);
+  saveActiveStoreState();
+  switchTab('grid');
+  renderAllUI();
 }
 
-/* ========================= END OF PART 7 OF 10 ========================= */
+function deleteHistoryRecord(index) {
+  if (!activeStoreState || !activeStoreState.history[index]) return;
+  const item = activeStoreState.history[index];
+  if (!confirm(`Delete archived shift ${item.auditDate} (${item.shiftType})?`)) return;
+  activeStoreState.history.splice(index, 1);
+  saveActiveStoreState();
+  renderHistoryList();
+}
+/* ========================= END OF PART 7 OF 11 ========================= */
 /* ============================================================================
-   PART 8 OF 10: PRINTING ENGINE (80MM THERMAL, US LETTER & BACKUP WORKSHEET)
+   PART 8 OF 11: CLOUDFLARE CLOUD SYNC, JSON BACKUP & RESTORE
    ============================================================================ */
+async function syncCurrentStoreToCloud() {
+  if (!activeStoreState) return;
+  const statusEl = document.getElementById('cloud-sync-status');
+  if (statusEl) statusEl.textContent = 'Syncing...';
 
-function openPrintChoiceModal() {
-  const modal = document.getElementById('modal-print-choice');
-  if (modal) modal.classList.remove('hidden');
+  try {
+    const endpoint = `/api/store/${encodeURIComponent(activeStoreState.locationId)}`;
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(activeStoreState)
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    activeStoreState.lastCloudSync = new Date().toISOString();
+    saveActiveStoreState();
+    if (statusEl) statusEl.textContent = `Synced ${formatDisplayTime(new Date())}`;
+    alert(`✔ Cloud Sync Complete for ${activeStoreState.locationName}!`);
+  } catch (err) {
+    console.warn('Cloud sync failed (offline or local-only mode):', err);
+    if (statusEl) statusEl.textContent = 'Local Saved (Offline)';
+    alert(
+      `⚠️ Cloud sync could not reach the server (${err.message}).\n\nAll data is safely saved locally on this device.`
+    );
+  }
 }
 
-function closePrintChoiceModal() {
-  const modal = document.getElementById('modal-print-choice');
-  if (modal) modal.classList.add('hidden');
+async function pullCurrentStoreFromCloud() {
+  if (!activeStoreState) return;
+  if (!confirm(`Pull latest cloud data for ${activeStoreState.locationName}? This will overwrite unsynced local changes.`)) {
+    return;
+  }
+
+  try {
+    const endpoint = `/api/store/${encodeURIComponent(activeStoreState.locationId)}`;
+    const response = await fetch(endpoint);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const cloudData = await response.json();
+    if (!cloudData || !Array.isArray(cloudData.boxes)) {
+      throw new Error('Invalid store payload from cloud');
+    }
+
+    activeStoreState = normalizeStoreState(cloudData, activeStoreState.locationId);
+    saveActiveStoreState();
+    renderAllUI();
+    alert(`✔ Pulled latest cloud data for ${activeStoreState.locationName}!`);
+  } catch (err) {
+    alert(`⚠️ Could not pull from cloud: ${err.message}`);
+  }
+}
+
+function downloadJsonBackup() {
+  if (!activeStoreState) return;
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    appVersion: 'ProjectLotto-v3',
+    locationId: activeStoreState.locationId,
+    storeState: activeStoreState
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const dateTag = getLocalDateStr();
+  a.href = url;
+  a.download = `LottoBackup_${activeStoreState.locationId}_${dateTag}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function triggerJsonRestoreUpload() {
+  const input = document.getElementById('json-restore-file-input');
+  if (input) {
+    input.value = '';
+    input.click();
+  }
+}
+
+function handleJsonRestoreFile(event) {
+  const file = event.target?.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      const restoredState = parsed.storeState || parsed;
+      if (!restoredState || !Array.isArray(restoredState.boxes)) {
+        throw new Error('File does not contain valid Project Lotto box data.');
+      }
+
+      const targetLoc = activeStoreState?.locationId || restoredState.locationId || 'regas_shell';
+      if (!confirm(`Restore backup into ${activeStoreState?.locationName || targetLoc}?`)) return;
+
+      activeStoreState = normalizeStoreState(restoredState, targetLoc);
+      saveActiveStoreState();
+      renderAllUI();
+      alert('✔ Backup restored successfully!');
+    } catch (err) {
+      alert(`❌ Failed to restore backup: ${err.message}`);
+    }
+  };
+  reader.readAsText(file);
+}
+/* ========================= END OF PART 8 OF 11 ========================= */
+/* ============================================================================
+   PART 9 OF 11: FIXED PRINT SYSTEM (80MM THERMAL RECEIPT & 8.5"x11" SHEET)
+   ============================================================================ */
+let pendingPrintPayload = null;
+
+function ensurePrintInfrastructure() {
+  if (!document.getElementById('lotto-print-container')) {
+    const printDiv = document.createElement('div');
+    printDiv.id = 'lotto-print-container';
+    document.body.appendChild(printDiv);
+  }
+
+  if (!document.getElementById('lotto-dynamic-print-style')) {
+    const style = document.createElement('style');
+    style.id = 'lotto-dynamic-print-style';
+    style.textContent = `
+      #lotto-print-container { display: none; }
+      @media print {
+        body > *:not(#lotto-print-container) { display: none !important; }
+        #lotto-print-container {
+          display: block !important;
+          position: static !important;
+          width: 100% !important;
+          background: #ffffff !important;
+          color: #000000 !important;
+          font-family: 'Courier New', Courier, monospace;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  if (!document.getElementById('print-choice-modal')) {
+    const modal = document.createElement('div');
+    modal.id = 'print-choice-modal';
+    modal.className = 'fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4';
+    modal.innerHTML = `
+      <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl text-white">
+        <div class="flex items-center justify-between border-b border-slate-700 pb-3 mb-4">
+          <h3 class="text-lg font-extrabold tracking-tight">🖨️ Choose Print Format</h3>
+          <button onclick="closePrintChoiceModal()" class="text-slate-400 hover:text-white text-xl font-bold px-2">&times;</button>
+        </div>
+        <p id="print-choice-subtitle" class="text-xs text-slate-300 mb-4"></p>
+        <div class="grid grid-cols-1 gap-3">
+          <button onclick="executeSelectedPrint('thermal')"
+            class="w-full p-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-left border border-emerald-400/40 shadow-lg transition">
+            <div class="font-extrabold text-base">🧾 80mm Thermal Receipt (Epson TM-m30II)</div>
+            <div class="text-xs text-emerald-100 mt-0.5">Compact 3 1/8" receipt tape with box breakdown, totals &amp; signature.</div>
+          </button>
+          <button onclick="executeSelectedPrint('letter')"
+            class="w-full p-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-left border border-blue-400/40 shadow-lg transition">
+            <div class="font-extrabold text-base">📄 Single-Page Worksheet (8.5" &times; 11" Letter)</div>
+            <div class="text-xs text-blue-100 mt-0.5">Full audit grid formatted to fit cleanly on 1 standard sheet.</div>
+          </button>
+        </div>
+        <button onclick="closePrintChoiceModal()"
+          class="mt-4 w-full py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold border border-slate-700">
+          Cancel
+        </button>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+}
+
+function buildCurrentShiftPrintData() {
+  if (!activeStoreState) return null;
+  if (typeof saveReconciliationDraft === 'function') {
+    saveReconciliationDraft();
+  }
+  const rec = activeStoreState.reconciliation || {};
+  const { totalTickets, totalSales } = getShiftTotals();
+  const onlineSales = Number(rec.onlineSales) || 0;
+  const totalPayouts = Number(rec.totalPayouts) || 0;
+  const actualCash = Number(rec.actualCash) || 0;
+  const netExpected = Number((totalSales + onlineSales - totalPayouts).toFixed(2));
+  const variance = Number((actualCash - netExpected).toFixed(2));
+
+  return {
+    locationName: activeStoreState.locationName || 'Store',
+    locationCode: activeStoreState.locationCode || '',
+    auditDate: (rec.auditDate || getLocalDateStr()).slice(0, 10),
+    shiftType: rec.shiftType || 'Shift 1 (Morning)',
+    cashierOut: rec.cashierOut || 'Unassigned',
+    cashierIn: rec.cashierIn || '',
+    totalTickets,
+    scratchSales: totalSales,
+    onlineSales,
+    totalPayouts,
+    netExpected,
+    actualCash,
+    variance,
+    notes: rec.notes || '',
+    signatureDataUrl: rec.signatureDataUrl || '',
+    boxes: JSON.parse(JSON.stringify(activeStoreState.boxes || [])),
+    printedAt: formatDisplayDateTime(new Date())
+  };
 }
 
 function openWorksheetPrintChoiceModal() {
-  openPrintChoiceModal();
-}
+  ensurePrintInfrastructure();
+  const data = buildCurrentShiftPrintData();
+  if (!data) return;
+  pendingPrintPayload = data;
 
-function openBackupWorksheetChoiceModal() {
-  const modal = document.getElementById('modal-backup-worksheet-choice');
+  const sub = document.getElementById('print-choice-subtitle');
+  if (sub) {
+    sub.textContent = `${data.locationName} • ${data.auditDate} • ${data.shiftType} • Cashier: ${data.cashierOut}`;
+  }
+  const modal = document.getElementById('print-choice-modal');
   if (modal) {
     modal.classList.remove('hidden');
-  } else {
-    // Fallback if modal HTML is missing: print 2-page numbered backup sheet directly
-    executeManualBackupWorksheetPrint('2page');
+    modal.classList.add('flex');
   }
 }
 
-function closeBackupWorksheetChoiceModal() {
-  const modal = document.getElementById('modal-backup-worksheet-choice');
-  if (modal) modal.classList.add('hidden');
+function openHistoryPrintChoice(index) {
+  ensurePrintInfrastructure();
+  if (!activeStoreState || !activeStoreState.history[index]) return;
+  const item = activeStoreState.history[index];
+  pendingPrintPayload = {
+    locationName: item.locationName || activeStoreState.locationName || 'Store',
+    locationCode: item.locationCode || activeStoreState.locationCode || '',
+    auditDate: (item.auditDate || '').slice(0, 10),
+    shiftType: item.shiftType || 'Shift',
+    cashierOut: item.cashierOut || 'N/A',
+    cashierIn: item.cashierIn || '',
+    totalTickets: Number(item.totalTickets) || 0,
+    scratchSales: Number(item.scratchSales) || 0,
+    onlineSales: Number(item.onlineSales) || 0,
+    totalPayouts: Number(item.totalPayouts) || 0,
+    netExpected: Number(item.netExpected) || 0,
+    actualCash: Number(item.actualCash) || 0,
+    variance: Number(item.variance) || 0,
+    notes: item.notes || '',
+    signatureDataUrl: item.signatureDataUrl || '',
+    boxes: JSON.parse(JSON.stringify(item.boxesSnapshot || [])),
+    printedAt: formatDisplayDateTime(new Date())
+  };
+
+  const sub = document.getElementById('print-choice-subtitle');
+  if (sub) {
+    sub.textContent = `Archived: ${pendingPrintPayload.locationName} • ${pendingPrintPayload.auditDate} • ${pendingPrintPayload.shiftType}`;
+  }
+  const modal = document.getElementById('print-choice-modal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
 }
 
-function printManualBackupWorksheet() {
-  openBackupWorksheetChoiceModal();
+function closePrintChoiceModal() {
+  const modal = document.getElementById('print-choice-modal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+  }
 }
 
-// 1. PEN-READY MANUAL BACKUP WORKSHEET ('1page' FIT OR '2page' NUMBERED WITH REPORT TOTAL & DAY TOTAL)
-function executeManualBackupWorksheetPrint(layoutMode = '2page') {
-  closeBackupWorksheetChoiceModal();
-  const printContainer = document.getElementById('print-container');
-  if (!printContainer || !activeStoreState) return;
-
-  const storeLabel = `${activeStoreState.locationName} (#${activeStoreState.locationCode})`;
-  const cashierVal = (activeStoreState.reconciliation?.cashierOut || '').trim();
-  const cashierDisplay = cashierVal ? cashierVal : '______________________';
-  const shiftVal = activeStoreState.reconciliation?.shiftType || '______________________';
-  const dateStr = activeStoreState.reconciliation?.auditDate || getLocalDateStr();
-  const boxes = activeStoreState.boxes || [];
-
-  const isOnePage = layoutMode === '1page';
-  const pageChunks = isOnePage
-    ? [boxes]
-    : [boxes.slice(0, Math.ceil(boxes.length / 2)), boxes.slice(Math.ceil(boxes.length / 2))];
-
-  const totalPages = pageChunks.length;
-  const rowPad = isOnePage ? '2px 4px' : '5px 6px';
-  const fontSize = isOnePage ? '9.5px' : '11.5px';
-  const blankLineHeight = isOnePage ? '12px' : '21px';
-
-  const pagesHtml = pageChunks.map((chunk, pageIdx) => {
-    const pageNum = pageIdx + 1;
-    const isLastPage = pageNum === totalPages;
-    const startOffset = pageIdx === 0 ? 0 : pageChunks[0].length;
-
-    const rowsHtml = chunk.map((box, idx) => {
-      const globalIdx = startOffset + idx;
-      const boxLabel = box.label || String(globalIdx + 1);
-      const gameNum = box.gameNum || '____';
-      const gameName = box.gameName || '____________________';
-      const price = box.price ? `$${Number(box.price).toFixed(0)}` : '____';
-
-      return `
-        <tr>
-          <td style="border:1px solid #000; padding:${rowPad}; text-align:center; font-weight:900;">${boxLabel}</td>
-          <td style="border:1px solid #000; padding:${rowPad};">
-            <strong>${gameNum}</strong> — ${gameName}
-          </td>
-          <td style="border:1px solid #000; padding:${rowPad}; text-align:center; font-weight:700;">${price}</td>
-          <td style="border:1px solid #000; padding:${rowPad};">
-            <div style="border-bottom:1px solid #000; height:${blankLineHeight};"></div>
-          </td>
-          <td style="border:1px solid #000; padding:${rowPad};">
-            <div style="border-bottom:1px solid #000; height:${blankLineHeight};"></div>
-          </td>
-          <td style="border:1px solid #000; padding:${rowPad};">
-            <div style="border-bottom:1px solid #000; height:${blankLineHeight};"></div>
-          </td>
-          <td style="border:1px solid #000; padding:${rowPad};">
-            <div style="border-bottom:1px solid #000; height:${blankLineHeight};"></div>
-          </td>
-        </tr>
-      `;
-    }).join('');
-
-    const totalsFooterHtml = isLastPage
-      ? `
-        <tfoot>
-          <tr style="background:#f1f5f9; font-weight:900;">
-            <td colspan="5" style="border:1px solid #000; padding:${isOnePage ? '3px 6px' : '6px'}; text-align:right;">MANUAL SHIFT TOTALS (SCRATCH):</td>
-            <td style="border:1px solid #000; padding:${isOnePage ? '3px 6px' : '6px'};">&nbsp;</td>
-            <td style="border:1px solid #000; padding:${isOnePage ? '3px 6px' : '6px'};">$</td>
-          </tr>
-        </tfoot>
-      `
-      : '';
-
-    const summaryTotalsBoxHtml = isLastPage
-      ? `
-        <table style="width:100%; border-collapse:collapse; margin-top:${isOnePage ? '5px' : '10px'}; font-size:${isOnePage ? '10px' : '11.5px'}; font-weight:800;">
-          <tr>
-            <td style="border:1px solid #000; padding:${isOnePage ? '4px 6px' : '7px'}; width:25%; background:#f8fafc;">
-              SHIFT TOTAL ($):<br/><span style="font-size:${isOnePage ? '11px' : '13px'};">$_________________</span>
-            </td>
-            <td style="border:1px solid #000; padding:${isOnePage ? '4px 6px' : '7px'}; width:25%; background:#f8fafc;">
-              REPORT TOTAL ($):<br/><span style="font-size:${isOnePage ? '11px' : '13px'};">$_________________</span>
-            </td>
-            <td style="border:1px solid #000; padding:${isOnePage ? '4px 6px' : '7px'}; width:25%; background:#f8fafc;">
-              DAY TOTAL ($):<br/><span style="font-size:${isOnePage ? '11px' : '13px'};">$_________________</span>
-            </td>
-            <td style="border:1px solid #000; padding:${isOnePage ? '4px 6px' : '7px'}; width:25%; background:#f8fafc;">
-              OVER / SHORT ($):<br/><span style="font-size:${isOnePage ? '11px' : '13px'};">$_________________</span>
-            </td>
-          </tr>
-        </table>
-      `
-      : '';
-
-    const pageBreakStyle = !isLastPage ? 'page-break-after: always; break-after: page;' : '';
-
-    return `
-      <div style="font-family: Arial, sans-serif; color: #000; padding: ${isOnePage ? '4px 8px' : '10px'}; max-width: 8.5in; margin: 0 auto; ${pageBreakStyle}">
-        <div style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #000; padding-bottom:4px; margin-bottom:5px;">
-          <div>
-            <div style="font-size:${isOnePage ? '13px' : '15px'}; font-weight:900; letter-spacing:0.4px;">UR STORE CENTRAL LOTTO AUDIT — MANUAL BACKUP WORKSHEET</div>
-            <div style="font-size:${isOnePage ? '11px' : '12px'}; font-weight:800; margin-top:2px;">Location: ${storeLabel}</div>
-          </div>
-          <div style="text-align:right; font-size:${isOnePage ? '10px' : '11px'}; line-height:1.3;">
-            <div><strong>Date:</strong> ${dateStr}</div>
-            <div><strong>Shift:</strong> ${shiftVal}</div>
-            <div><strong>Cashier:</strong> ${cashierDisplay}</div>
-          </div>
-        </div>
-
-        <table style="width:100%; border-collapse:collapse; font-size:${fontSize};">
-          <thead>
-            <tr style="background:#e2e8f0;">
-              <th style="border:1px solid #000; padding:4px; width:46px; text-align:center;">BOX #</th>
-              <th style="border:1px solid #000; padding:4px; text-align:left;">GAME # &amp; NAME</th>
-              <th style="border:1px solid #000; padding:4px; width:46px; text-align:center;">PRICE</th>
-              <th style="border:1px solid #000; padding:4px; width:82px; text-align:center;">START #</th>
-              <th style="border:1px solid #000; padding:4px; width:82px; text-align:center;">END #</th>
-              <th style="border:1px solid #000; padding:4px; width:76px; text-align:center;"># SOLD</th>
-              <th style="border:1px solid #000; padding:4px; width:86px; text-align:center;">SALES $</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-          ${totalsFooterHtml}
-        </table>
-
-        ${summaryTotalsBoxHtml}
-
-        <div style="margin-top:${isOnePage ? '6px' : '12px'}; border-top:1px solid #000; padding-top:5px; font-size:${isOnePage ? '10px' : '11px'};">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-            <div><strong>Page ${pageNum} of ${totalPages}</strong> &nbsp;|&nbsp; <strong>Location:</strong> ${storeLabel}</div>
-            <div><strong>Date:</strong> ${dateStr} &nbsp;|&nbsp; <strong>Shift:</strong> ${shiftVal}</div>
-          </div>
-          <div style="display:flex; justify-content:space-between; gap:16px;">
-            <div>Cashier Signature: __________________________________</div>
-            <div>Verifier / Manager: ________________________________</div>
-          </div>
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  printContainer.innerHTML = pagesHtml;
-  window.print();
+function setPrintPageRule(cssRuleText) {
+  let pageStyle = document.getElementById('lotto-page-size-style');
+  if (!pageStyle) {
+    pageStyle = document.createElement('style');
+    pageStyle.id = 'lotto-page-size-style';
+    document.head.appendChild(pageStyle);
+  }
+  pageStyle.textContent = cssRuleText;
 }
 
-// 2. PRINT SHIFT AUDIT REPORT (80MM THERMAL RECEIPT OR SINGLE-PAGE US LETTER)
-function executeShiftAuditPrint(format = 'letter') {
+function executeSelectedPrint(format) {
   closePrintChoiceModal();
-  if (!activeStoreState) return;
-  recalculateAllBoxes();
+  const data = pendingPrintPayload || buildCurrentShiftPrintData();
+  if (!data) return;
 
-  const printContainer = document.getElementById('print-container');
-  if (!printContainer) return;
-
-  const r = activeStoreState.reconciliation || {};
-  const { totalTickets, totalSales } = getShiftTotals();
-  const onlineSales = Number(r.onlineSales) || 0;
-  const totalPayouts = Number(r.totalPayouts) || 0;
-  const grossSales = totalSales + onlineSales;
-  const netExpectedCash = grossSales - totalPayouts;
-  const actualCashDropped = Number(r.actualCash) || 0;
-  const variance = actualCashDropped - netExpectedCash;
-
-  const storeLabel = `${activeStoreState.locationName} (#${activeStoreState.locationCode})`;
-  const activeBoxes = (activeStoreState.boxes || []).filter(
-    b => b.gameNum || b.ticketsSold > 0 || (b.rollovers && b.rollovers.length > 0)
-  );
-
-  if (format === '80mm') {
-    const linesHtml = activeBoxes.map(b => {
-      const hasRoll = b.rollovers && b.rollovers.length > 0;
-      const rollTag = hasRoll ? ` [+${b.rollovers.length}R]` : '';
-      return `
-        <div style="border-bottom:1px dashed #000; padding:3px 0; font-size:11px;">
-          <div style="display:flex; justify-content:space-between; font-weight:800;">
-            <span>B${b.label || ''} #${b.gameNum || '-'} ($${b.price || 0})${rollTag}</span>
-            <span>$${(Number(b.salesAmount) || 0).toFixed(2)}</span>
-          </div>
-          <div style="font-size:10px;">
-            ${b.gameName || 'Game'} | ${b.startTicket || 0}→${b.endTicket || 0} (${b.ticketsSold || 0} tix)
-          </div>
-        </div>
-      `;
-    }).join('');
-
-    printContainer.innerHTML = `
-      <div style="width:76mm; margin:0 auto; font-family:'Courier New', monospace; color:#000; font-size:11px; line-height:1.3;">
-        <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:5px; margin-bottom:5px;">
-          <div style="font-size:14px; font-weight:900;">UR STORE CENTRAL</div>
-          <div style="font-weight:800;">LOTTO SHIFT AUDIT RECEIPT</div>
-          <div>${storeLabel}</div>
-          <div>${r.auditDate || getLocalDateStr()} | ${r.shiftType || 'Shift'}</div>
-          <div>Cashier: ${r.cashierOut || 'Unspecified'}</div>
-        </div>
-
-        ${linesHtml || '<div style="text-align:center; padding:8px 0;">No active box counts recorded.</div>'}
-
-        <div style="border-top:2px solid #000; margin-top:6px; padding-top:5px; font-size:11px;">
-          <div style="display:flex; justify-content:space-between;"><span>Total Tickets Sold:</span><strong>${totalTickets}</strong></div>
-          <div style="display:flex; justify-content:space-between;"><span>Scratch Sales:</span><strong>$${totalSales.toFixed(2)}</strong></div>
-          <div style="display:flex; justify-content:space-between;"><span>Online / Draw Sales:</span><strong>$${onlineSales.toFixed(2)}</strong></div>
-          <div style="display:flex; justify-content:space-between; font-size:12px; border-top:1px solid #000; margin-top:3px; padding-top:3px;">
-            <span>TOTAL GROSS LOTTO:</span><strong>$${grossSales.toFixed(2)}</strong>
-          </div>
-          <div style="display:flex; justify-content:space-between;"><span>Less Total Cashes:</span><span>-$${totalPayouts.toFixed(2)}</span></div>
-          <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:900;">
-            <span>NET EXPECTED CASH:</span><span>$${netExpectedCash.toFixed(2)}</span>
-          </div>
-          <div style="display:flex; justify-content:space-between;"><span>Actual Cash Dropped:</span><span>$${actualCashDropped.toFixed(2)}</span></div>
-          <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:900; border-top:1px dashed #000; margin-top:3px; padding-top:3px;">
-            <span>OVER / SHORT:</span><span>${variance >= 0 ? '+' : ''}$${variance.toFixed(2)}</span>
-          </div>
-        </div>
-
-        ${r.signatureDataUrl ? `
-          <div style="margin-top:8px; text-align:center;">
-            <img src="${r.signatureDataUrl}" style="max-height:42px; max-width:65mm;" />
-            <div style="border-top:1px solid #000; font-size:10px;">Cashier Signature</div>
-          </div>
-        ` : `
-          <div style="margin-top:18px; border-top:1px solid #000; font-size:10px;">Cashier Signature</div>
-        `}
-        <div style="text-align:center; font-size:9px; margin-top:6px;">Printed ${formatDisplayDateTime(new Date())}</div>
-      </div>
-    `;
+  if (format === 'thermal') {
+    printThermalReceipt(data);
   } else {
-    const rowsHtml = (activeStoreState.boxes || []).map((b, idx) => {
-      const hasRoll = b.rollovers && b.rollovers.length > 0;
-      return `
-        <tr>
-          <td style="border:1px solid #000; padding:2px 4px; text-align:center; font-weight:800;">${b.label || idx + 1}</td>
-          <td style="border:1px solid #000; padding:2px 4px;">${b.gameNum || '-'}</td>
-          <td style="border:1px solid #000; padding:2px 4px;">${b.gameName || 'Empty'}${hasRoll ? ` (+${b.rollovers.length} Roll)` : ''}</td>
-          <td style="border:1px solid #000; padding:2px 4px; text-align:center;">${b.price ? `$${b.price}` : '-'}</td>
-          <td style="border:1px solid #000; padding:2px 4px; text-align:center;">${b.startTicket || 0}</td>
-          <td style="border:1px solid #000; padding:2px 4px; text-align:center;">${b.endTicket ?? 0}</td>
-          <td style="border:1px solid #000; padding:2px 4px; text-align:center; font-weight:700;">${b.ticketsSold || 0}</td>
-          <td style="border:1px solid #000; padding:2px 4px; text-align:right; font-weight:800;">$${(Number(b.salesAmount) || 0).toFixed(2)}</td>
-        </tr>
-      `;
-    }).join('');
-
-    printContainer.innerHTML = `
-      <div style="font-family:Arial, sans-serif; color:#000; max-width:8.5in; margin:0 auto; font-size:10px;">
-        <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000; padding-bottom:4px; margin-bottom:6px;">
-          <div>
-            <div style="font-size:14px; font-weight:900;">UR STORE CENTRAL LOTTO AUDIT — SHIFT REPORT</div>
-            <div style="font-size:11px; font-weight:800;">${storeLabel}</div>
-          </div>
-          <div style="text-align:right; font-size:10px;">
-            <div><strong>Date:</strong> ${r.auditDate || getLocalDateStr()} | <strong>Shift:</strong> ${r.shiftType || ''}</div>
-            <div><strong>Cashier:</strong> ${r.cashierOut || 'Unspecified'} | <strong>Cashier In:</strong> ${r.cashierIn || 'N/A'}</div>
-          </div>
-        </div>
-
-        <table style="width:100%; border-collapse:collapse; font-size:9px; margin-bottom:6px;">
-          <thead>
-            <tr style="background:#e2e8f0;">
-              <th style="border:1px solid #000; padding:3px; width:36px;">BOX</th>
-              <th style="border:1px solid #000; padding:3px; width:50px;">GAME #</th>
-              <th style="border:1px solid #000; padding:3px; text-align:left;">GAME NAME</th>
-              <th style="border:1px solid #000; padding:3px; width:40px;">PRICE</th>
-              <th style="border:1px solid #000; padding:3px; width:52px;">START</th>
-              <th style="border:1px solid #000; padding:3px; width:52px;">END</th>
-              <th style="border:1px solid #000; padding:3px; width:45px;">SOLD</th>
-              <th style="border:1px solid #000; padding:3px; width:64px; text-align:right;">SALES $</th>
-            </tr>
-          </thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>
-
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:10px; border:1px solid #000; padding:6px; background:#f8fafc;">
-          <div>
-            <div><strong>Total Tickets Sold:</strong> ${totalTickets}</div>
-            <div><strong>Scratch Sales:</strong> $${totalSales.toFixed(2)}</div>
-            <div><strong>Online / Draw Sales:</strong> $${onlineSales.toFixed(2)}</div>
-            <div><strong>Total Gross Lotto:</strong> $${grossSales.toFixed(2)}</div>
-          </div>
-          <div>
-            <div><strong>Total Cashes Paid Out:</strong> -$${totalPayouts.toFixed(2)}</div>
-            <div><strong>Net Expected Cash:</strong> $${netExpectedCash.toFixed(2)}</div>
-            <div><strong>Actual Cash Dropped:</strong> $${actualCashDropped.toFixed(2)}</div>
-            <div style="font-size:11px; font-weight:900;">Over / Short Variance: ${variance >= 0 ? '+' : ''}$${variance.toFixed(2)}</div>
-          </div>
-        </div>
-
-        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:10px; font-size:10px;">
-          <div>
-            ${r.signatureDataUrl ? `<img src="${r.signatureDataUrl}" style="max-height:36px; display:block;" />` : ''}
-            <div>Cashier Signature: __________________________________</div>
-          </div>
-          <div>Manager / Verifier: ________________________________</div>
-        </div>
-      </div>
-    `;
+    printStandardWorksheet(data);
   }
-
-  window.print();
 }
 
-function reprintArchivedShiftReport(recordId) {
-  const rec = activeStoreState?.history?.find(h => h.id === recordId);
-  if (!rec) return;
-  executeShiftAuditPrint('letter');
+/* Aliases so any legacy button onclick in index.html works seamlessly */
+function printAuditReport() { openWorksheetPrintChoiceModal(); }
+function handlePrintShiftReport() { openWorksheetPrintChoiceModal(); }
+function triggerThermalPrint() {
+  const data = buildCurrentShiftPrintData();
+  if (data) printThermalReceipt(data);
+}
+function triggerLetterPrint() {
+  const data = buildCurrentShiftPrintData();
+  if (data) printStandardWorksheet(data);
 }
 
-/* ========================= END OF PART 8 OF 10 ========================= */
-
-/* ============================================================================
-   PART 9 OF 10: SETUP / GAMES ADMIN VIEW, BOX LABEL AUTO-CASCADE & CATALOG CRUD
-   ============================================================================ */
-
-function applyUiFontSize(sizeStr, persist = true) {
-  const validSizes = ['12px', '14px', '16px', '18px', '20px', '22px'];
-  const chosen = validSizes.includes(sizeStr) ? sizeStr : '14px';
-  document.documentElement.style.fontSize = chosen;
-  if (persist) {
-    localStorage.setItem(STORAGE_KEYS.UI_FONT_SIZE, chosen);
-  }
-  const selectEl = document.getElementById('admin-ui-font-size');
-  if (selectEl) selectEl.value = chosen;
-}
-
-function renderAdminView() {
-  if (!activeStoreState) return;
-  const boxCountInput = document.getElementById('admin-total-boxes-input');
-  if (boxCountInput) boxCountInput.value = activeStoreState.boxCount || 40;
-  const uiFontSelect = document.getElementById('admin-ui-font-size');
-  if (uiFontSelect) {
-    uiFontSelect.value = localStorage.getItem(STORAGE_KEYS.UI_FONT_SIZE) || '14px';
-  }
-  const receiptFontSelect = document.getElementById('admin-receipt-font-size');
-  if (receiptFontSelect) {
-    receiptFontSelect.value = localStorage.getItem(STORAGE_KEYS.RECEIPT_FONT_SIZE) || '11';
-  }
-  renderAdminBoxLabelsGrid();
-  renderAdminSavedCashiersTags();
-  renderAdminMasterGamesTable();
-}
-
-function renderAdminBoxLabelsGrid() {
-  const grid = document.getElementById('admin-box-labels-grid');
-  if (!grid || !activeStoreState) return;
-  const count = Number(activeStoreState.boxCount) || 40;
-  if (!Array.isArray(activeStoreState.boxLabels) || activeStoreState.boxLabels.length !== count) {
-    activeStoreState.boxLabels = generateDefaultCustomBoxLabels(count);
-  }
-  grid.innerHTML = activeStoreState.boxLabels.map((lbl, idx) => `
-    <div class="bg-white border border-slate-300 rounded-lg p-1.5 text-center shadow-sm">
-      <div class="text-[9px] font-bold text-slate-400 uppercase mb-0.5">Slot ${idx + 1}</div>
-      <input
-        type="text"
-        id="admin-box-label-${idx}"
-        value="${String(lbl).replace(/"/g, '&quot;')}"
-        oninput="handleAdminBoxLabelInput(${idx}, this.value)"
-        class="w-full border border-slate-300 rounded px-1 py-1 text-center text-xs font-black text-slate-900 uppercase focus:border-blue-500 focus:outline-none"
-      />
-    </div>
-  `).join('');
-}
-
-function handleAdminBoxLabelInput(startIdx, rawVal) {
-  if (!activeStoreState) return;
-  const val = String(rawVal || '').trim();
-  activeStoreState.boxLabels[startIdx] = val;
-
-  if (/^\d+$/.test(val)) {
-    const baseNum = parseInt(val, 10);
-    for (let i = startIdx + 1; i < activeStoreState.boxLabels.length; i++) {
-      const nextVal = String(baseNum + (i - startIdx));
-      activeStoreState.boxLabels[i] = nextVal;
-      const inp = document.getElementById(`admin-box-label-${i}`);
-      if (inp) inp.value = nextVal;
+function printThermalReceipt(data) {
+  ensurePrintInfrastructure();
+  setPrintPageRule(`
+    @media print {
+      @page { size: 80mm auto; margin: 2mm 3mm; }
+      body { margin: 0 !important; padding: 0 !important; width: 74mm !important; }
     }
-  } else if (/^[A-Za-z]$/.test(val)) {
-    const isUpper = val === val.toUpperCase();
-    const baseCode = val.toUpperCase().charCodeAt(0);
-    for (let i = startIdx + 1; i < activeStoreState.boxLabels.length; i++) {
-      const nextCode = baseCode + (i - startIdx);
-      if (nextCode <= 90) {
-        const ch = String.fromCharCode(nextCode);
-        const formatted = isUpper ? ch : ch.toLowerCase();
-        activeStoreState.boxLabels[i] = formatted;
-        const inp = document.getElementById(`admin-box-label-${i}`);
-        if (inp) inp.value = formatted;
-      }
-    }
-  }
-}
+  `);
 
-function applyDefaultCustomBoxPattern() {
-  if (!activeStoreState) return;
-  const count = Number(activeStoreState.boxCount) || 40;
-  activeStoreState.boxLabels = generateDefaultCustomBoxLabels(count);
-  renderAdminBoxLabelsGrid();
-  saveAdminSettingsAndRefresh();
-}
-
-function handleAdminBoxCountChange(newCountRaw) {
-  if (!activeStoreState) return;
-  const newCount = Math.min(100, Math.max(1, parseInt(newCountRaw, 10) || 40));
-  const currentLabels = Array.isArray(activeStoreState.boxLabels) ? [...activeStoreState.boxLabels] : [];
-  const defaultPattern = generateDefaultCustomBoxLabels(newCount);
-  const updatedLabels = [];
-  for (let i = 0; i < newCount; i++) {
-    updatedLabels.push(currentLabels[i] !== undefined ? currentLabels[i] : defaultPattern[i]);
-  }
-  const updatedBoxes = [];
-  for (let i = 0; i < newCount; i++) {
-    const existing = activeStoreState.boxes[i];
-    if (existing) {
-      existing.id = i + 1;
-      existing.label = updatedLabels[i];
-      updatedBoxes.push(existing);
-    } else {
-      updatedBoxes.push({
-        id: i + 1,
-        label: updatedLabels[i],
-        gameNum: '',
-        gameName: '',
-        price: 0,
-        packCount: 0,
-        startTicket: 0,
-        endTicket: '',
-        rollovers: [],
-        ticketsSold: 0,
-        salesAmount: 0
-      });
-    }
-  }
-  activeStoreState.boxCount = newCount;
-  activeStoreState.boxLabels = updatedLabels;
-  activeStoreState.boxes = updatedBoxes;
-  saveActiveStoreState();
-  renderAdminBoxLabelsGrid();
-  renderDispenserGrid();
-}
-
-function saveAdminSettingsAndRefresh() {
-  if (!activeStoreState) return;
-  const receiptFontSelect = document.getElementById('admin-receipt-font-size');
-  if (receiptFontSelect) {
-    localStorage.setItem(STORAGE_KEYS.RECEIPT_FONT_SIZE, receiptFontSelect.value);
-  }
-  const uiFontSelect = document.getElementById('admin-ui-font-size');
-  if (uiFontSelect) {
-    applyUiFontSize(uiFontSelect.value, true);
-  }
-  activeStoreState.boxes.forEach((box, idx) => {
-    const lbl = activeStoreState.boxLabels[idx];
-    box.label = lbl && String(lbl).trim() !== '' ? String(lbl).trim() : String(idx + 1);
-  });
-  saveActiveStoreState();
-  renderDispenserGrid();
-  updateHeaderAndBottomSummary();
-  alert(`✔ Configuration saved for ${activeStoreState.locationName}!`);
-}
-
-function renderAdminSavedCashiersTags() {
-  const wrap = document.getElementById('admin-saved-cashiers-tags');
-  if (!wrap) return;
-  wrap.innerHTML = savedCashiersList.map((name, idx) => `
-    <span class="inline-flex items-center gap-1 bg-white border border-slate-300 rounded-full px-2.5 py-0.5 text-xs font-bold text-slate-800">
-      <span>${name}</span>
-      <button type="button" onclick="removeSavedCashierFromAdmin(${idx})" class="text-red-500 hover:text-red-700 font-black">×</button>
-    </span>
-  `).join('');
-}
-
-function addSavedCashierFromAdmin() {
-  const input = document.getElementById('admin-new-cashier-input');
-  const name = (input?.value || '').trim();
-  if (!name) return;
-  if (!savedCashiersList.some(c => c.toLowerCase() === name.toLowerCase())) {
-    savedCashiersList.push(name);
-    localStorage.setItem(STORAGE_KEYS.SAVED_CASHIERS, JSON.stringify(savedCashiersList));
-    populatePromptCashiersDatalist();
-  }
-  input.value = '';
-  renderAdminSavedCashiersTags();
-}
-
-function removeSavedCashierFromAdmin(idx) {
-  savedCashiersList.splice(idx, 1);
-  localStorage.setItem(STORAGE_KEYS.SAVED_CASHIERS, JSON.stringify(savedCashiersList));
-  populatePromptCashiersDatalist();
-  renderAdminSavedCashiersTags();
-}
-
-function renderAdminMasterGamesTable() {
-  const tbody = document.getElementById('admin-master-games-tbody');
-  if (!tbody) return;
-  const query = (document.getElementById('admin-game-search')?.value || '').trim().toLowerCase();
-  const filtered = masterGamesCatalog.filter(g => {
-    if (!query) return true;
-    return String(g.gameNum).toLowerCase().includes(query) || String(g.name).toLowerCase().includes(query);
-  });
-  tbody.innerHTML = filtered.map(g => {
-    const packValue = (Number(g.price) || 0) * (Number(g.count) || 0);
+  const activeBoxes = (data.boxes || []).filter(b => b.gameName || Number(b.price) > 0 || Number(b.soldCount) > 0);
+  const rowsHtml = activeBoxes.map(b => {
+    const sold = Number(b.soldCount) || 0;
+    const sales = Number(b.soldAmount) || 0;
     return `
-      <tr class="hover:bg-slate-50">
-        <td class="p-2 font-mono font-extrabold text-slate-900">${g.gameNum}</td>
-        <td class="p-2 font-bold text-slate-800">${g.name}</td>
-        <td class="p-2 text-center font-bold">$${Number(g.price).toFixed(0)}</td>
-        <td class="p-2 text-center font-mono">${g.count}</td>
-        <td class="p-2 text-center font-mono font-bold text-emerald-700">$${packValue.toFixed(0)}</td>
-        <td class="p-2 text-right space-x-2">
-          <button type="button" onclick="editMasterGameInAdmin('${g.gameNum}')" class="text-blue-600 hover:text-blue-800 font-bold">Edit</button>
-          <button type="button" onclick="deleteMasterGameFromAdmin('${g.gameNum}')" class="text-red-600 hover:text-red-800 font-bold">Delete</button>
-        </td>
+      <tr style="border-bottom:1px dashed #999;">
+        <td style="padding:2px 0;font-weight:bold;">#${b.boxNumber}</td>
+        <td style="padding:2px 2px;">${escapeHtml((b.gameName || 'Game').slice(0, 14))} ($${b.price || 0})</td>
+        <td style="padding:2px 2px;text-align:right;">${b.startNum ?? '-'}-${b.endNum ?? '-'}</td>
+        <td style="padding:2px 0;text-align:right;font-weight:bold;">${sold} ($${sales.toFixed(0)})</td>
       </tr>
     `;
   }).join('');
+
+  const sign = data.variance > 0 ? '+' : '';
+  const container = document.getElementById('lotto-print-container');
+  container.innerHTML = `
+    <div style="width:72mm;margin:0 auto;font-family:'Courier New',monospace;font-size:11px;line-height:1.3;color:#000;">
+      <div style="text-align:center;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:6px;">
+        <div style="font-size:15px;font-weight:900;letter-spacing:0.5px;">${escapeHtml(data.locationName.toUpperCase())}</div>
+        <div style="font-size:12px;font-weight:bold;">LOTTERY SHIFT AUDIT RECEIPT</div>
+        <div style="font-size:10px;">Date: ${escapeHtml(data.auditDate)} | ${escapeHtml(data.shiftType)}</div>
+        <div style="font-size:10px;">Printed: ${escapeHtml(data.printedAt)}</div>
+      </div>
+
+      <div style="margin-bottom:6px;font-size:11px;">
+        <div><strong>Cashier Out:</strong> ${escapeHtml(data.cashierOut)}</div>
+        ${data.cashierIn ? `<div><strong>Cashier In:</strong> ${escapeHtml(data.cashierIn)}</div>` : ''}
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:8px;">
+        <thead>
+          <tr style="border-top:1px solid #000;border-bottom:1px solid #000;">
+            <th style="text-align:left;padding:2px 0;">Box</th>
+            <th style="text-align:left;padding:2px 2px;">Game</th>
+            <th style="text-align:right;padding:2px 2px;">S-E</th>
+            <th style="text-align:right;padding:2px 0;">Sold</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml || '<tr><td colspan="4" style="text-align:center;padding:6px;">No active boxes</td></tr>'}
+        </tbody>
+      </table>
+
+      <div style="border-top:2px solid #000;border-bottom:2px solid #000;padding:5px 0;margin-bottom:6px;font-size:11px;">
+        <div style="display:flex;justify-content:space-between;"><span>Total Tickets Sold:</span><strong>${data.totalTickets}</strong></div>
+        <div style="display:flex;justify-content:space-between;"><span>Scratch-Off Sales:</span><strong>$${data.scratchSales.toFixed(2)}</strong></div>
+        <div style="display:flex;justify-content:space-between;"><span>Online Lotto Sales:</span><span>$${data.onlineSales.toFixed(2)}</span></div>
+        <div style="display:flex;justify-content:space-between;"><span>Total Payouts (-):</span><span>-$${data.totalPayouts.toFixed(2)}</span></div>
+        <div style="display:flex;justify-content:space-between;border-top:1px dashed #000;margin-top:3px;padding-top:3px;">
+          <span>NET EXPECTED CASH:</span><strong>$${data.netExpected.toFixed(2)}</strong>
+        </div>
+        <div style="display:flex;justify-content:space-between;"><span>ACTUAL CASH DROP:</span><strong>$${data.actualCash.toFixed(2)}</strong></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-top:2px;">
+          <span>OVER / SHORT:</span><strong>${sign}$${data.variance.toFixed(2)}</strong>
+        </div>
+      </div>
+
+      ${data.notes ? `<div style="font-size:10px;margin-bottom:6px;"><strong>Notes:</strong> ${escapeHtml(data.notes)}</div>` : ''}
+
+      <div style="margin-top:8px;">
+        <div style="font-size:10px;font-weight:bold;">Cashier Signature:</div>
+        ${data.signatureDataUrl
+          ? `<img src="${data.signatureDataUrl}" style="width:100%;max-height:55px;object-fit:contain;border-bottom:1px solid #000;" />`
+          : `<div style="height:36px;border-bottom:1px solid #000;"></div>`
+        }
+      </div>
+      <div style="text-align:center;font-size:9px;margin-top:8px;">*** END OF LOTTERY SHIFT AUDIT ***</div>
+    </div>
+  `;
+
+  setTimeout(() => window.print(), 120);
 }
 
-function upsertMasterGameFromAdmin() {
-  const num = (document.getElementById('admin-game-num')?.value || '').trim();
-  const name = (document.getElementById('admin-game-name')?.value || '').trim().toUpperCase();
-  const price = parseFloat(document.getElementById('admin-game-price')?.value);
-  const count = parseInt(document.getElementById('admin-game-count')?.value, 10);
-  if (!num || !name || isNaN(price) || isNaN(count)) {
-    alert('Please fill in Game #, Game Name, Price ($), and Pack Size (Tix).');
-    return;
-  }
-  const idx = masterGamesCatalog.findIndex(g => String(g.gameNum) === num);
-  const entry = { gameNum: num, name, price, count };
-  if (idx >= 0) {
-    masterGamesCatalog[idx] = entry;
-  } else {
-    masterGamesCatalog.push(entry);
-  }
-  saveMasterGamesCatalog();
-  recalculateAllBoxes();
-  saveActiveStoreState();
-  document.getElementById('admin-game-num').value = '';
-  document.getElementById('admin-game-name').value = '';
-  document.getElementById('admin-game-price').value = '';
-  document.getElementById('admin-game-count').value = '';
-  renderAdminMasterGamesTable();
-  renderDispenserGrid();
-  updateHeaderAndBottomSummary();
+function printStandardWorksheet(data) {
+  ensurePrintInfrastructure();
+  setPrintPageRule(`
+    @media print {
+      @page { size: letter portrait; margin: 0.35in; }
+      body { margin: 0 !important; padding: 0 !important; }
+    }
+  `);
+
+  const rowsHtml = (data.boxes || []).map(b => {
+    const sold = Number(b.soldCount) || 0;
+    const sales = Number(b.soldAmount) || 0;
+    return `
+      <tr>
+        <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-weight:bold;">${b.boxNumber}</td>
+        <td style="border:1px solid #333;padding:2px 4px;">${escapeHtml(b.gameName || '-')}</td>
+        <td style="border:1px solid #333;padding:2px 4px;text-align:center;">$${Number(b.price) || 0}</td>
+        <td style="border:1px solid #333;padding:2px 4px;text-align:center;">${b.startNum ?? ''}</td>
+        <td style="border:1px solid #333;padding:2px 4px;text-align:center;">${b.endNum ?? ''}</td>
+        <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-weight:bold;">${sold}</td>
+        <td style="border:1px solid #333;padding:2px 4px;text-align:right;font-weight:bold;">$${sales.toFixed(2)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const sign = data.variance > 0 ? '+' : '';
+  const container = document.getElementById('lotto-print-container');
+  container.innerHTML = `
+    <div style="font-family:Arial,Helvetica,sans-serif;font-size:10px;color:#000;width:100%;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #000;padding-bottom:4px;margin-bottom:6px;">
+        <div>
+          <div style="font-size:16px;font-weight:900;">${escapeHtml(data.locationName)} — LOTTERY SHIFT AUDIT</div>
+          <div style="font-size:11px;"><strong>Date:</strong> ${escapeHtml(data.auditDate)} &nbsp;|&nbsp; <strong>Shift:</strong> ${escapeHtml(data.shiftType)}</div>
+        </div>
+        <div style="text-align:right;font-size:10px;">
+          <div><strong>Cashier Out:</strong> ${escapeHtml(data.cashierOut)}</div>
+          <div><strong>Cashier In:</strong> ${escapeHtml(data.cashierIn || '________')}</div>
+        </div>
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;font-size:9.5px;margin-bottom:8px;">
+        <thead>
+          <tr style="background:#e2e8f0;">
+            <th style="border:1px solid #333;padding:3px;">Box</th>
+            <th style="border:1px solid #333;padding:3px;text-align:left;">Game Name</th>
+            <th style="border:1px solid #333;padding:3px;">Price</th>
+            <th style="border:1px solid #333;padding:3px;">Start #</th>
+            <th style="border:1px solid #333;padding:3px;">End #</th>
+            <th style="border:1px solid #333;padding:3px;">Sold</th>
+            <th style="border:1px solid #333;padding:3px;text-align:right;">Sales ($)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+      </table>
+
+      <div style="display:flex;justify-content:space-between;gap:16px;border-top:2px solid #000;padding-top:6px;">
+        <div style="flex:1;">
+          <div style="font-weight:bold;margin-bottom:2px;">Shift Notes:</div>
+          <div style="border:1px solid #666;min-height:42px;padding:4px;font-size:9.5px;">${escapeHtml(data.notes || '')}</div>
+          <div style="margin-top:6px;font-weight:bold;">Cashier Signature:</div>
+          ${data.signatureDataUrl
+            ? `<img src="${data.signatureDataUrl}" style="max-height:45px;border-bottom:1px solid #000;" />`
+            : `<div style="height:28px;border-bottom:1px solid #000;width:240px;"></div>`
+          }
+        </div>
+
+        <table style="width:260px;border-collapse:collapse;font-size:10px;">
+          <tr><td style="border:1px solid #333;padding:3px;">Total Tickets Sold</td><td style="border:1px solid #333;padding:3px;text-align:right;font-weight:bold;">${data.totalTickets}</td></tr>
+          <tr><td style="border:1px solid #333;padding:3px;">Scratch-Off Sales</td><td style="border:1px solid #333;padding:3px;text-align:right;font-weight:bold;">$${data.scratchSales.toFixed(2)}</td></tr>
+          <tr><td style="border:1px solid #333;padding:3px;">Online Lotto Sales</td><td style="border:1px solid #333;padding:3px;text-align:right;">$${data.onlineSales.toFixed(2)}</td></tr>
+          <tr><td style="border:1px solid #333;padding:3px;">Total Payouts (-)</td><td style="border:1px solid #333;padding:3px;text-align:right;">-$${data.totalPayouts.toFixed(2)}</td></tr>
+          <tr style="background:#f1f5f9;"><td style="border:1px solid #333;padding:3px;font-weight:bold;">Net Expected Cash</td><td style="border:1px solid #333;padding:3px;text-align:right;font-weight:bold;">$${data.netExpected.toFixed(2)}</td></tr>
+          <tr><td style="border:1px solid #333;padding:3px;font-weight:bold;">Actual Cash Drop</td><td style="border:1px solid #333;padding:3px;text-align:right;font-weight:bold;">$${data.actualCash.toFixed(2)}</td></tr>
+          <tr style="background:#e2e8f0;"><td style="border:1px solid #333;padding:3px;font-weight:bold;">Over / Short</td><td style="border:1px solid #333;padding:3px;text-align:right;font-weight:bold;">${sign}$${data.variance.toFixed(2)}</td></tr>
+        </table>
+      </div>
+    </div>
+  `;
+
+  setTimeout(() => window.print(), 120);
 }
-
-function editMasterGameInAdmin(gameNum) {
-  const game = findGameByNumber(gameNum);
-  if (!game) return;
-  document.getElementById('admin-game-num').value = game.gameNum;
-  document.getElementById('admin-game-name').value = game.name;
-  document.getElementById('admin-game-price').value = game.price;
-  document.getElementById('admin-game-count').value = game.count;
-  document.getElementById('admin-game-num').focus();
-}
-
-function deleteMasterGameFromAdmin(gameNum) {
-  if (!confirm(`Remove Game #${gameNum} from Master Catalog?`)) return;
-  masterGamesCatalog = masterGamesCatalog.filter(g => String(g.gameNum) !== String(gameNum));
-  saveMasterGamesCatalog();
-  renderAdminMasterGamesTable();
-}
-
-/* ========================= END OF PART 9 OF 10 ========================= */
-
+/* ========================= END OF PART 9 OF 11 ========================= */
 /* ============================================================================
-   PART 10 OF 10: EXPORT/IMPORT, BACKUP/RESTORE, MULTI-STORE & BOOTLOADER
+   PART 10 OF 11: STORE-ISOLATED BOX SETTINGS & NEW SHIFT ROLLOVER
    ============================================================================ */
+function renderSettingsGrid() {
+  const container = document.getElementById('settings-boxes-container');
+  if (!container || !activeStoreState) return;
 
-function exportMasterGamesUniversal() {
-  const payload = {
-    exportedAt: new Date().toISOString(),
-    app: 'UR Store Central Lotto Audit',
-    gamesCount: masterGamesCatalog.length,
-    games: masterGamesCatalog
-  };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `UR_Lotto_Master_Games_${getLocalDateStr()}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function importMasterGamesUniversal(event) {
-  const file = event.target?.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const parsed = JSON.parse(e.target.result);
-      const list = Array.isArray(parsed) ? parsed : parsed.games;
-      if (!Array.isArray(list) || list.length === 0) {
-        alert('Invalid Master Games JSON file.');
-        return;
-      }
-      masterGamesCatalog = sanitizeMasterGamesList(list);
-      saveMasterGamesCatalog();
-      recalculateAllBoxes();
-      saveActiveStoreState();
-      renderAdminMasterGamesTable();
-      renderDispenserGrid();
-      updateHeaderAndBottomSummary();
-      alert(`✔ Imported ${masterGamesCatalog.length} lottery games into Master Catalog!`);
-    } catch (err) {
-      alert('Error reading JSON file: ' + err.message);
-    } finally {
-      event.target.value = '';
-    }
-  };
-  reader.readAsText(file);
-}
-
-function exportCurrentLocationBackup() {
-  if (!activeStoreState) return;
-  saveActiveStoreState();
-  const payload = {
-    backupAt: new Date().toISOString(),
-    app: 'UR Store Central Lotto Audit',
-    locationState: activeStoreState
-  };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const safeName = activeStoreState.locationName.replace(/[^a-zA-Z0-9_-]/g, '_');
-  a.download = `UR_Lotto_Backup_${safeName}_${getLocalDateStr()}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function importLocationBackupFile(event) {
-  const file = event.target?.files?.[0];
-  if (!file || !activeStoreState) return;
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    try {
-      const parsed = JSON.parse(e.target.result);
-      const incoming = parsed.locationState || parsed;
-      if (!incoming || !Array.isArray(incoming.boxes)) {
-        alert('Invalid location backup file.');
-        return;
-      }
-      if (!confirm(`Restore backup into ${activeStoreState.locationName}? This will overwrite current boxes and history for this store.`)) {
-        return;
-      }
-      incoming.locationId = activeStoreState.locationId;
-      incoming.locationName = activeStoreState.locationName;
-      incoming.locationCode = activeStoreState.locationCode;
-      activeStoreState = incoming;
-      saveActiveStoreState();
-      syncReconciliationFormFromState();
-      recalculateAllBoxes();
-      renderDispenserGrid();
-      updateHeaderAndBottomSummary();
-      alert(`✔ Backup restored for ${activeStoreState.locationName}!`);
-    } catch (err) {
-      alert('Failed to restore backup: ' + err.message);
-    } finally {
-      event.target.value = '';
-    }
-  };
-  reader.readAsText(file);
-}
-
-function openMultiStoreManagerModal() {
-  const modal = document.getElementById('modal-locations');
-  if (!modal) return;
-  renderLocationsManagerList();
-  modal.classList.remove('hidden');
-}
-
-function closeMultiStoreManagerModal() {
-  const modal = document.getElementById('modal-locations');
-  if (modal) modal.classList.add('hidden');
-}
-
-function renderLocationsManagerList() {
-  const list = document.getElementById('locations-manager-list');
-  if (!list) return;
-  list.innerHTML = appLocations.map(loc => `
-    <div class="p-2.5 flex items-center justify-between text-xs bg-white">
-      <div>
-        <strong class="text-slate-900">${loc.name}</strong>
-        <span class="ml-1.5 font-mono text-slate-500">(#${loc.code})</span>
+  const boxes = Array.isArray(activeStoreState.boxes) ? activeStoreState.boxes : [];
+  container.innerHTML = boxes.map((box, idx) => `
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+      <div class="flex items-center gap-2 sm:w-24 shrink-0">
+        <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-600 text-amber-400 font-extrabold text-xs">
+          Box #${box.boxNumber}
+        </span>
       </div>
-      <div class="flex items-center gap-2">
-        <button
-          type="button"
-          onclick="handleLocationSwitch('${loc.id}'); closeMultiStoreManagerModal();"
-          class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 py-1 rounded"
-        >
-          Open
-        </button>
-        ${appLocations.length > 1 ? `
-          <button
-            type="button"
-            onclick="deleteStoreLocation('${loc.id}')"
-            class="text-red-600 hover:text-red-800 font-bold px-1.5"
-          >
-            Delete
-          </button>
-        ` : ''}
+
+      <div class="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <input type="text"
+          value="${escapeHtml(box.gameName || '')}"
+          placeholder="Game Name (e.g. $20 Million)"
+          onchange="updateStoreBoxConfig(${idx}, 'gameName', this.value)"
+          class="bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none" />
+
+        <div class="flex items-center gap-1.5">
+          <label class="text-xs text-slate-400 shrink-0">Price $</label>
+          <input type="number" min="0" step="1"
+            value="${Number(box.price) || 0}"
+            onchange="updateStoreBoxConfig(${idx}, 'price', this.value)"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none" />
+        </div>
+
+        <div class="flex items-center gap-1.5">
+          <label class="text-xs text-slate-400 shrink-0">Pack Size</label>
+          <input type="number" min="1" step="1"
+            value="${Number(box.packSize) || getDefaultPackSizeForPrice(box.price)}"
+            onchange="updateStoreBoxConfig(${idx}, 'packSize', this.value)"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2.5 py-1.5 text-sm text-white focus:border-blue-500 focus:outline-none" />
+        </div>
       </div>
+
+      <button onclick="clearSingleBoxNumbers(${idx})"
+        title="Clear Start/End numbers for this box"
+        class="px-2.5 py-1.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-xs font-bold text-slate-200 shrink-0">
+        Clear #s
+      </button>
     </div>
   `).join('');
 }
 
-function addNewStoreLocation() {
-  const name = (document.getElementById('new-store-name')?.value || '').trim();
-  const code = (document.getElementById('new-store-code')?.value || '').trim() || String(100 + appLocations.length + 1);
-  if (!name) {
-    alert('Please enter a Store Name.');
+function updateStoreBoxConfig(index, field, rawValue) {
+  if (!activeStoreState || !activeStoreState.boxes[index]) return;
+  const box = activeStoreState.boxes[index];
+
+  if (field === 'gameName') {
+    box.gameName = String(rawValue || '').trim();
+  } else if (field === 'price') {
+    const newPrice = Math.max(0, parseFloat(rawValue) || 0);
+    box.price = newPrice;
+    if (!box.packSize || box.packSize <= 0) {
+      box.packSize = getDefaultPackSizeForPrice(newPrice);
+    }
+  } else if (field === 'packSize') {
+    box.packSize = Math.max(1, parseInt(rawValue, 10) || 1);
+  }
+
+  recalculateSingleBox(box);
+  saveActiveStoreState();
+  renderGrid();
+  updateHeaderAndBottomSummary();
+}
+
+function addDispenserBoxToCurrentStore() {
+  if (!activeStoreState) return;
+  const nextNum = activeStoreState.boxes.length + 1;
+  activeStoreState.boxes.push({
+    boxNumber: nextNum,
+    gameName: '',
+    price: 0,
+    packSize: 30,
+    startNum: '',
+    endNum: '',
+    midRollOver: false,
+    soldCount: 0,
+    soldAmount: 0
+  });
+  saveActiveStoreState();
+  renderAllUI();
+}
+
+function removeLastDispenserBoxFromCurrentStore() {
+  if (!activeStoreState || activeStoreState.boxes.length <= 1) {
+    alert('You must keep at least 1 dispenser box.');
     return;
   }
-  const newId = `store_${Date.now()}`;
-  appLocations.push({ id: newId, name, code });
-  saveLocationsCatalog();
-  document.getElementById('new-store-name').value = '';
-  document.getElementById('new-store-code').value = '';
-  renderLocationSwitcher();
-  renderLocationsManagerList();
+  const lastBox = activeStoreState.boxes[activeStoreState.boxes.length - 1];
+  if (!confirm(`Remove Box #${lastBox.boxNumber} from ${activeStoreState.locationName}?`)) return;
+  activeStoreState.boxes.pop();
+  saveActiveStoreState();
+  renderAllUI();
 }
 
-function deleteStoreLocation(locId) {
-  if (appLocations.length <= 1) return;
-  if (!confirm('Delete this store location?')) return;
-  appLocations = appLocations.filter(l => l.id !== locId);
-  saveLocationsCatalog();
-  localStorage.removeItem(STORAGE_KEYS.LOCATION_PREFIX + locId);
-  if (activeLocationId === locId) {
-    handleLocationSwitch(appLocations[0].id);
-  }
-  renderLocationSwitcher();
-  renderLocationsManagerList();
+function clearSingleBoxNumbers(index) {
+  if (!activeStoreState || !activeStoreState.boxes[index]) return;
+  const box = activeStoreState.boxes[index];
+  box.startNum = '';
+  box.endNum = '';
+  box.midRollOver = false;
+  box.soldCount = 0;
+  box.soldAmount = 0;
+  saveActiveStoreState();
+  renderAllUI();
 }
 
-function switchMainView(viewName) {
-  activeMainView = viewName;
-  const views = {
-    grid: document.getElementById('view-grid'),
-    reconcile: document.getElementById('view-reconcile'),
-    reports: document.getElementById('view-reports'),
-    admin: document.getElementById('view-admin')
-  };
-  const navBtns = {
-    grid: document.getElementById('nav-btn-grid'),
-    reconcile: document.getElementById('nav-btn-reconcile'),
-    reports: document.getElementById('nav-btn-reports'),
-    admin: document.getElementById('nav-btn-admin')
-  };
-  Object.keys(views).forEach(key => {
-    if (views[key]) views[key].classList.toggle('hidden', key !== viewName);
-    if (navBtns[key]) {
-      navBtns[key].className = key === viewName
-        ? 'bg-blue-600 text-white font-bold text-xs px-3.5 py-1.5 rounded shadow-sm transition'
-        : 'bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3 py-1.5 rounded shadow-sm transition';
+function startNextShiftRollover() {
+  if (!activeStoreState) return;
+  const confirmMsg =
+    `Start Next Shift for ${activeStoreState.locationName}?\n\n` +
+    `• Each box's Ending # becomes the new Starting #\n` +
+    `• Ending # fields are cleared for the incoming cashier\n` +
+    `• Online sales, payouts, actual cash & signature are reset`;
+
+  if (!confirm(confirmMsg)) return;
+
+  activeStoreState.boxes.forEach((box) => {
+    const prevEnd = String(box.endNum ?? '').trim();
+    if (prevEnd !== '') {
+      box.startNum = prevEnd;
     }
+    box.endNum = '';
+    box.midRollOver = false;
+    box.soldCount = 0;
+    box.soldAmount = 0;
   });
-  if (viewName === 'grid') {
-    renderDispenserGrid();
-    updateHeaderAndBottomSummary();
-  } else if (viewName === 'reconcile') {
-    syncReconciliationFormFromState();
-    setTimeout(initSignaturePad, 30);
-  } else if (viewName === 'reports') {
-    renderHistoricalReports();
-  } else if (viewName === 'admin') {
-    renderAdminView();
-  }
+
+  const prevCashierIn = (activeStoreState.reconciliation?.cashierIn || '').trim();
+  const prevShift = activeStoreState.reconciliation?.shiftType || 'Shift 1 (Morning)';
+  const nextShift = prevShift.includes('Shift 1')
+    ? 'Shift 2 (Evening)'
+    : prevShift.includes('Shift 2')
+      ? 'Shift 3 (Overnight)'
+      : 'Shift 1 (Morning)';
+
+  activeStoreState.reconciliation = {
+    auditDate: getLocalDateStr(),
+    shiftType: nextShift,
+    cashierOut: prevCashierIn,
+    cashierIn: '',
+    onlineSales: 0,
+    totalPayouts: 0,
+    actualCash: 0,
+    notes: '',
+    signatureDataUrl: ''
+  };
+
+  shiftSessionConfirmed = Boolean(prevCashierIn);
+  saveActiveStoreState();
+  clearSignaturePad();
+  renderAllUI();
+  alert(`✔ Ready for ${nextShift}! Ending numbers have been carried over to Starting numbers.`);
 }
-
-// Application Bootloader
-document.addEventListener('DOMContentLoaded', () => {
-  loadGlobalAppCatalogs();
-  activeStoreState = loadStoreStateForLocation(activeLocationId);
-  shiftSessionConfirmed = Boolean((activeStoreState.reconciliation?.cashierOut || '').trim());
-
-  renderLocationSwitcher();
-  populatePromptCashiersDatalist();
-  syncReconciliationFormFromState();
-  recalculateAllBoxes();
-  renderDispenserGrid();
-  updateHeaderAndBottomSummary();
-  initSignaturePad();
-  startMidnightRolloverWatcher();
-});
-
-/* ========================= END OF PART 10 OF 10 ========================= */
-
+/* ========================= END OF PART 10 OF 11 ========================= */
 /* ============================================================================
-   PART 11: TENNESSEE CLICKWRAP NDA GATE, PERSISTENT DEVICE MEMORY & TIMER
+   PART 11 OF 11: TAB NAVIGATION, UI ORCHESTRATION & INITIALIZATION
    ============================================================================ */
-
-const LEGAL_GATE_STORAGE_KEY = 'ur_lotto_nda_acceptance_v1';
-const LEGAL_AUDIT_LOG_KEY = 'ur_lotto_security_audit_logs_v1';
-
-const AUTHORIZED_PILOT_CODES = {
-  'REGAS-OWNER-2026': { label: 'Regas Enterprise (Owner)', retailerId: 'OWNER', days: 0, active: true },
-  'TN-124749': { label: 'Regas Shell (#124749)', retailerId: '124749', days: 0, active: true },
-  'TN-124750': { label: 'Regas Exxon (#124750)', retailerId: '124750', days: 0, active: true },
-  'TN-122547': { label: 'Regas Xpress Amoco (#122547)', retailerId: '122547', days: 0, active: true },
-  'TN-104': { label: 'Regas Xpress (#104)', retailerId: '104', days: 0, active: true },
-  'PILOT-30-01': { label: 'Pilot Store (30-Day Trial)', retailerId: 'PILOT-30', days: 30, active: true },
-  'PILOT-60-01': { label: 'Pilot Store (60-Day Trial)', retailerId: 'PILOT-60', days: 60, active: true },
-  'PILOT-90-01': { label: 'Pilot Store (90-Day Trial)', retailerId: 'PILOT-90', days: 90, active: true },
-  'PILOT-120-01': { label: 'Pilot Store (120-Day Trial)', retailerId: 'PILOT-120', days: 120, active: true },
-  'PILOT-365-01': { label: 'Pilot Store (365-Day License)', retailerId: 'PILOT-365', days: 365, active: true }
-};
-
-let legalBoxScrolledToBottom = false;
-let ndaPadHasStroke = false;
-
-function handleLegalScrollCheck(el) {
-  if (!el) return;
-  if (el.scrollTop + el.clientHeight >= el.scrollHeight - 16) {
-    legalBoxScrolledToBottom = true;
-    const hint = document.getElementById('legal-scroll-hint');
-    if (hint) {
-      hint.textContent = '✔ Agreement reviewed. Sign and complete the fields below.';
-      hint.className = 'text-[11px] font-bold text-emerald-700';
-    }
-  }
-}
-
-function injectEnhancedNdaControlsIntoGate() {
-  const modalBody = document.querySelector('#modal-legal-nda-gate .p-5');
-  if (!modalBody || document.getElementById('legal-drawn-sig-wrap')) return;
-
-  const agreeLabel = document.getElementById('legal-agree-checkbox')?.closest('label');
-  if (!agreeLabel) return;
-
-  const extraBlock = document.createElement('div');
-  extraBlock.id = 'legal-drawn-sig-wrap';
-  extraBlock.className = 'space-y-3';
-  extraBlock.innerHTML = `
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <div>
-        <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">TN Lottery Retailer # *</label>
-        <input
-          type="text"
-          id="legal-retailer-num"
-          placeholder="e.g. 124749"
-          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono font-bold bg-white"
-        />
-      </div>
-      <div>
-        <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Requested Access Length *</label>
-        <select
-          id="legal-requested-days"
-          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold bg-white"
-        >
-          <option value="30">30 Days (Trial)</option>
-          <option value="60">60 Days</option>
-          <option value="90">90 Days</option>
-          <option value="120">120 Days</option>
-          <option value="365">365 Days (1 Year)</option>
-          <option value="0">Unlimited Access</option>
-        </select>
-      </div>
-    </div>
-
-    <div>
-      <div class="flex items-center justify-between mb-1">
-        <label class="text-[11px] font-extrabold uppercase text-slate-700">Draw Electronic Signature (Finger, Stylus, or Mouse) *</label>
-        <button
-          type="button"
-          onclick="clearLegalNdaSignature()"
-          class="text-[11px] font-bold text-slate-600 hover:text-slate-900 underline"
-        >
-          Clear Signature
-        </button>
-      </div>
-      <div class="bg-white border-2 border-dashed border-slate-400 rounded-xl overflow-hidden" style="height: 110px;">
-        <canvas id="legal-nda-sig-canvas" class="w-full h-full touch-none cursor-crosshair block"></canvas>
-      </div>
-    </div>
-
-    <div id="legal-expiration-banner" class="hidden bg-red-50 border border-red-300 text-red-800 rounded-xl px-3.5 py-2 text-xs font-bold">
-      ⏰ Your pilot access period has expired. Please sign and click "Request Access Code" below for renewal.
-    </div>
-  `;
-
-  modalBody.insertBefore(extraBlock, agreeLabel);
-
-  const submitBtn = modalBody.querySelector('button[onclick="submitLegalNdaGate()"]');
-  if (submitBtn && submitBtn.parentElement) {
-    submitBtn.parentElement.innerHTML = `
-      <button
-        type="button"
-        onclick="signAndEmailPilotRequest()"
-        class="bg-slate-800 hover:bg-slate-700 text-amber-300 font-extrabold text-xs px-4 py-2.5 rounded-xl shadow transition"
-      >
-        📩 Need a Code? Sign &amp; Email Request
-      </button>
-      <button
-        type="button"
-        onclick="submitLegalNdaGate()"
-        class="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-lg transition"
-      >
-        ✔ Have a Code? Enter App
-      </button>
-    `;
-  }
-
-  initLegalNdaSignatureCanvas();
-}
-
-function initLegalNdaSignatureCanvas() {
-  const canvas = document.getElementById('legal-nda-sig-canvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  let drawing = false;
-
-  const resize = () => {
-    const r = canvas.parentElement.getBoundingClientRect();
-    if (r.width > 0 && r.height > 0) {
-      canvas.width = r.width;
-      canvas.height = r.height;
-      ctx.lineWidth = 2.5;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.strokeStyle = '#0f172a';
-    }
-  };
-  resize();
-  window.addEventListener('resize', resize);
-
-  const pos = (e) => {
-    const r = canvas.getBoundingClientRect();
-    const cx = e.touches ? e.touches[0].clientX : e.clientX;
-    const cy = e.touches ? e.touches[0].clientY : e.clientY;
-    return { x: cx - r.left, y: cy - r.top };
-  };
-
-  canvas.addEventListener('mousedown', (e) => {
-    drawing = true;
-    ndaPadHasStroke = true;
-    const p = pos(e);
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y);
-  });
-  canvas.addEventListener('mousemove', (e) => {
-    if (!drawing) return;
-    const p = pos(e);
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-  });
-  window.addEventListener('mouseup', () => { drawing = false; });
-
-  canvas.addEventListener('touchstart', (e) => {
-    drawing = true;
-    ndaPadHasStroke = true;
-    const p = pos(e);
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y);
-  }, { passive: false });
-  canvas.addEventListener('touchmove', (e) => {
-    if (!drawing) return;
-    if (e.cancelable) e.preventDefault();
-    const p = pos(e);
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-  }, { passive: false });
-  canvas.addEventListener('touchend', () => { drawing = false; });
-}
-
-function clearLegalNdaSignature() {
-  const canvas = document.getElementById('legal-nda-sig-canvas');
-  if (canvas) {
-    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-  }
-  ndaPadHasStroke = false;
-}
-
-function getDeviceFingerprintSummary() {
-  return {
-    userAgent: navigator.userAgent || 'Unknown',
-    platform: navigator.platform || 'Unknown',
-    language: navigator.language || 'en-US',
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown',
-    screen: `${window.screen?.width || 0}x${window.screen?.height || 0}`,
-    originUrl: window.location.href
-  };
-}
-
-function recordSecurityAuditEvent(eventType, details = {}) {
-  try {
-    const existing = JSON.parse(localStorage.getItem(LEGAL_AUDIT_LOG_KEY) || '[]');
-    const acceptance = JSON.parse(localStorage.getItem(LEGAL_GATE_STORAGE_KEY) || 'null');
-    const entry = {
-      eventId: `sec_${Date.now()}`,
-      eventType,
-      timestampLocal: formatDisplayDateTime(new Date()),
-      timestampIso: new Date().toISOString(),
-      inviteCode: acceptance?.inviteCode || details.inviteCode || 'UNAUTHENTICATED',
-      signerName: acceptance?.signerName || details.signerName || '',
-      storeName: acceptance?.storeName || details.storeName || '',
-      retailerNum: acceptance?.retailerNum || details.retailerNum || '',
-      contactInfo: acceptance?.contactInfo || details.contactInfo || '',
-      device: getDeviceFingerprintSummary(),
-      ...details
-    };
-    existing.unshift(entry);
-    localStorage.setItem(LEGAL_AUDIT_LOG_KEY, JSON.stringify(existing.slice(0, 500)));
-  } catch (e) {}
-}
-
-function getRemainingLicenseDays(acceptance) {
-  if (!acceptance || !acceptance.expiresAtMs || Number(acceptance.accessDays) === 0) {
-    return null;
-  }
-  const msLeft = Number(acceptance.expiresAtMs) - Date.now();
-  return Math.ceil(msLeft / (1000 * 60 * 60 * 24));
-}
-
-function applyLicensedPilotWatermark(acceptance) {
-  if (!acceptance) return;
-  const footer = document.querySelector('footer .max-w-7xl');
-  if (!footer) return;
-
-  let badge = document.getElementById('pilot-license-watermark');
-  if (!badge) {
-    badge = document.createElement('div');
-    badge.id = 'pilot-license-watermark';
-    badge.className = 'text-[10px] font-mono font-bold text-amber-300 bg-slate-800 border border-slate-700 px-2.5 py-0.5 rounded';
-    footer.appendChild(badge);
-  }
-
-  const daysLeft = getRemainingLicenseDays(acceptance);
-  const expiryText = daysLeft === null
-    ? 'Unlimited Access'
-    : `Expires: ${acceptance.expiresDateStr} (${daysLeft}d left)`;
-
-  badge.textContent = `Licensed Pilot: ${acceptance.storeName} (${acceptance.inviteCode}) • ${expiryText}`;
-}
-
-function verifyLegalNdaGateOnLoad() {
-  const modal = document.getElementById('modal-legal-nda-gate');
-  if (!modal) return;
-
-  try {
-    const raw = localStorage.getItem(LEGAL_GATE_STORAGE_KEY);
-    const saved = raw ? JSON.parse(raw) : null;
-
-    if (saved && saved.agreed === true && saved.inviteCode && saved.signerName) {
-      const codeKey = String(saved.inviteCode).trim().toUpperCase();
-      const codeRecord = AUTHORIZED_PILOT_CODES[codeKey];
-
-      if (codeRecord && codeRecord.active) {
-        const accessDays = Number(codeRecord.days) || 0;
-        const isExpired = accessDays > 0 && saved.expiresAtMs && Date.now() > Number(saved.expiresAtMs);
-
-        if (!isExpired) {
-          modal.classList.add('hidden');
-          modal.style.display = 'none';
-          applyLicensedPilotWatermark(saved);
-          recordSecurityAuditEvent('APP_OPENED_REMEMBERED_DEVICE', { inviteCode: codeKey });
-          return;
-        }
-
-        recordSecurityAuditEvent('PILOT_ACCESS_EXPIRED', { inviteCode: codeKey });
-        injectEnhancedNdaControlsIntoGate();
-        document.getElementById('legal-expiration-banner')?.classList.remove('hidden');
-        if (document.getElementById('legal-store-name')) document.getElementById('legal-store-name').value = saved.storeName || '';
-        if (document.getElementById('legal-signer-name')) document.getElementById('legal-signer-name').value = saved.signerName || '';
-        if (document.getElementById('legal-contact-info')) document.getElementById('legal-contact-info').value = saved.contactInfo || '';
-        if (document.getElementById('legal-retailer-num')) document.getElementById('legal-retailer-num').value = saved.retailerNum || '';
-        modal.style.display = 'flex';
-        modal.classList.remove('hidden');
-        setTimeout(initLegalNdaSignatureCanvas, 30);
-        return;
+function switchTab(tabName) {
+  const tabs = ['grid', 'reconcile', 'history', 'settings'];
+  tabs.forEach((t) => {
+    const panel = document.getElementById(`tab-panel-${t}`);
+    const btn = document.getElementById(`tab-btn-${t}`);
+    if (panel) {
+      if (t === tabName) {
+        panel.classList.remove('hidden');
+      } else {
+        panel.classList.add('hidden');
       }
     }
-  } catch (e) {}
-
-  injectEnhancedNdaControlsIntoGate();
-  modal.style.display = 'flex';
-  modal.classList.remove('hidden');
-  setTimeout(initLegalNdaSignatureCanvas, 30);
-  recordSecurityAuditEvent('GATE_DISPLAYED_UNAUTHENTICATED');
-}
-
-function validateGateCommonFields() {
-  const storeName = (document.getElementById('legal-store-name')?.value || '').trim();
-  const signerName = (document.getElementById('legal-signer-name')?.value || '').trim();
-  const contactInfo = (document.getElementById('legal-contact-info')?.value || '').trim();
-  const retailerNum = (document.getElementById('legal-retailer-num')?.value || '').trim();
-  const agreed = Boolean(document.getElementById('legal-agree-checkbox')?.checked);
-
-  if (!legalBoxScrolledToBottom) {
-    alert('Please scroll to the bottom of the Legal Agreement box before signing.');
-    document.getElementById('legal-nda-scroll-box')?.focus();
-    return null;
-  }
-  if (!storeName || !signerName || !contactInfo || !retailerNum) {
-    alert('Please fill in Store Name, TN Lottery Retailer #, Full Legal Name, and Email/Phone.');
-    return null;
-  }
-  if (!ndaPadHasStroke) {
-    alert('Please draw your signature inside the signature box.');
-    return null;
-  }
-  if (!agreed) {
-    alert('Please check the agreement box to accept the Tennessee NDA terms.');
-    return null;
-  }
-
-  const canvas = document.getElementById('legal-nda-sig-canvas');
-  const signatureDataUrl = canvas ? canvas.toDataURL('image/png') : '';
-
-  return { storeName, signerName, contactInfo, retailerNum, signatureDataUrl };
-}
-
-function downloadSignedNdaReceiptHtml(data, modeLabel, codeOrDaysLabel) {
-  const timestamp = formatDisplayDateTime(new Date());
-  const html = `
-    <html><body style="font-family:Arial,sans-serif;padding:24px;max-width:720px;margin:auto;border:2px solid #000;">
-      <h2 style="margin-bottom:4px;">UR STORE CENTRAL — SIGNED PILOT NDA (${modeLabel})</h2>
-      <p style="margin-top:0;color:#333;">Confidentiality, Non-Disclosure &amp; Limited Pilot Evaluation Agreement (Tennessee)</p>
-      <hr/>
-      <p><strong>Timestamp:</strong> ${timestamp}</p>
-      <p><strong>Full Legal Name:</strong> ${data.signerName}</p>
-      <p><strong>Store / Business Name:</strong> ${data.storeName}</p>
-      <p><strong>TN Lottery Retailer #:</strong> ${data.retailerNum}</p>
-      <p><strong>Email / Phone:</strong> ${data.contactInfo}</p>
-      <p><strong>Access / Duration:</strong> ${codeOrDaysLabel}</p>
-      <p><strong>Legal Acceptance:</strong> Licensee agrees not to copy, reproduce, share access, reverse-engineer, or pitch any part of UR Store Central without prior written consent from Dimitrios "Jimmy" Regas (Governed by Tennessee Law).</p>
-      <div style="margin-top:16px;"><strong>Electronic Signature:</strong><br/>
-        <img src="${data.signatureDataUrl}" style="max-height:95px;border-bottom:1px solid #000;margin-top:6px;"/>
-      </div>
-    </body></html>
-  `;
-  const blob = new Blob([html], { type: 'text/html' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `Signed_NDA_${data.storeName.replace(/[^a-zA-Z0-9]/g, '_')}_${data.retailerNum}.html`;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-function signAndEmailPilotRequest() {
-  const fields = validateGateCommonFields();
-  if (!fields) return;
-
-  const daysVal = document.getElementById('legal-requested-days')?.value || '30';
-  const daysLabel = daysVal === '0' ? 'Unlimited Access' : `${daysVal} Days`;
-  const timestamp = formatDisplayDateTime(new Date());
-
-  recordSecurityAuditEvent('NDA_SIGNED_ACCESS_REQUESTED', {
-    ...fields,
-    requestedDays: daysVal
+    if (btn) {
+      if (t === tabName) {
+        btn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+        btn.classList.remove('bg-slate-800', 'text-slate-300');
+      } else {
+        btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
+        btn.classList.add('bg-slate-800', 'text-slate-300');
+      }
+    }
   });
 
-  downloadSignedNdaReceiptHtml(fields, 'ACCESS REQUEST', daysLabel);
-
-  const subject = encodeURIComponent(`[Signed Pilot NDA] ${fields.storeName} (#${fields.retailerNum}) — ${fields.signerName}`);
-  const body = encodeURIComponent(
-    `Hello Dimitrios "Jimmy" Regas,\n\n` +
-    `I have reviewed and signed the UR Store Central Confidentiality & Pilot Evaluation Agreement (Tennessee). Please issue my Pilot Access Code:\n\n` +
-    `• Full Legal Name: ${fields.signerName}\n` +
-    `• Store / Business Name: ${fields.storeName}\n` +
-    `• TN Lottery Retailer #: ${fields.retailerNum}\n` +
-    `• Email / Phone: ${fields.contactInfo}\n` +
-    `• Requested Access Length: ${daysLabel} (days: ${daysVal})\n` +
-    `• Signed Timestamp: ${timestamp}\n\n` +
-    `(Note: A signed copy of my NDA form with my drawn signature was just downloaded to my device.)`
-  );
-
-  window.location.href = `mailto:dimitriosregas@gmail.com?subject=${subject}&body=${body}`;
+  if (tabName === 'reconcile') {
+    syncReconciliationFormFromState();
+    setTimeout(() => initSignaturePad(), 30);
+  } else if (tabName === 'history') {
+    renderHistoryList();
+  } else if (tabName === 'settings') {
+    renderSettingsGrid();
+  }
 }
 
-function submitLegalNdaGate() {
-  const codeRaw = (document.getElementById('legal-invite-code')?.value || '').trim().toUpperCase();
-  if (!codeRaw) {
-    alert('Enter your assigned Pilot Access Code, or click "Need a Code? Sign & Email Request".');
-    document.getElementById('legal-invite-code')?.focus();
-    return;
-  }
-
-  const fields = validateGateCommonFields();
-  if (!fields) return;
-
-  const codeEntry = AUTHORIZED_PILOT_CODES[codeRaw];
-  if (!codeEntry || !codeEntry.active) {
-    recordSecurityAuditEvent('INVALID_CODE_ATTEMPT', { attemptedCode: codeRaw, ...fields });
-    alert('Invalid or inactive Pilot Access Code. Click "Need a Code? Sign & Email Request" to request one.');
-    document.getElementById('legal-invite-code')?.focus();
-    return;
-  }
-
-  const accessDays = Number(codeEntry.days) || 0;
-  const nowMs = Date.now();
-  const expiresAtMs = accessDays > 0 ? nowMs + accessDays * 24 * 60 * 60 * 1000 : null;
-  const expiresDateStr = expiresAtMs ? getLocalDateStr(new Date(expiresAtMs)) : 'Unlimited';
-
-  const acceptancePayload = {
-    agreed: true,
-    agreementVersion: 'v1.0-TN-2026',
-    inviteCode: codeRaw,
-    registeredLabel: codeEntry.label,
-    ...fields,
-    accessDays,
-    expiresAtMs,
-    expiresDateStr,
-    acceptedAtLocal: formatDisplayDateTime(new Date(nowMs)),
-    acceptedAtIso: new Date(nowMs).toISOString(),
-    device: getDeviceFingerprintSummary()
-  };
-
-  localStorage.setItem(LEGAL_GATE_STORAGE_KEY, JSON.stringify(acceptancePayload));
-  recordSecurityAuditEvent('NDA_SIGNED_AND_UNLOCKED', acceptancePayload);
-
-  const durationText = accessDays === 0 ? `Unlimited Access (${codeRaw})` : `${accessDays} Days — Expires ${expiresDateStr} (${codeRaw})`;
-  downloadSignedNdaReceiptHtml(fields, 'ACTIVATED LICENSE', durationText);
-
-  const modal = document.getElementById('modal-legal-nda-gate');
-  if (modal) {
-    modal.classList.add('hidden');
-    modal.style.display = 'none';
-  }
-  applyLicensedPilotWatermark(acceptancePayload);
-
-  alert(
-    accessDays === 0
-      ? `✔ Welcome, ${fields.signerName}!\n\nUnlimited Access activated and saved on this device for ${fields.storeName} (${codeRaw}).`
-      : `✔ Welcome, ${fields.signerName}!\n\nYour ${accessDays}-day pilot license for ${fields.storeName} is active through ${expiresDateStr} and saved on this device.`
-  );
+function handleStoreLocationChange(newLocationId) {
+  if (!newLocationId) return;
+  saveActiveStoreState();
+  loadStoreState(newLocationId);
+  shiftSessionConfirmed = Boolean((activeStoreState?.reconciliation?.cashierOut || '').trim());
+  renderAllUI();
 }
 
-function exportSecurityAuditLogs() {
-  const logs = JSON.parse(localStorage.getItem(LEGAL_AUDIT_LOG_KEY) || '[]');
-  const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `UR_Lotto_Security_NDA_Logs_${getLocalDateStr()}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+function wireUpAllPrintButtons() {
+  ensurePrintInfrastructure();
+  const printBtnIds = [
+    'btn-print-worksheet',
+    'btn-print-report',
+    'btn-reconcile-print',
+    'header-print-btn',
+    'footer-print-btn'
+  ];
+  printBtnIds.forEach((id) => {
+    const btn = document.getElementById(id);
+    if (btn) {
+      btn.onclick = (e) => {
+        e.preventDefault();
+        openWorksheetPrintChoiceModal();
+      };
+    }
+  });
+}
+
+function renderAllUI() {
+  if (!activeStoreState) return;
+  const storeSelect = document.getElementById('store-location-select');
+  if (storeSelect && storeSelect.value !== activeStoreState.locationId) {
+    storeSelect.value = activeStoreState.locationId;
+  }
+
+  renderGrid();
+  syncReconciliationFormFromState();
+  renderHistoryList();
+  renderSettingsGrid();
+  updateHeaderAndBottomSummary();
+  wireUpAllPrintButtons();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  verifyLegalNdaGateOnLoad();
+  const storeSelect = document.getElementById('store-location-select');
+  const initialStoreId = storeSelect?.value || localStorage.getItem('lotto_last_active_store') || 'regas_shell';
+
+  loadStoreState(initialStoreId);
+  shiftSessionConfirmed = Boolean((activeStoreState?.reconciliation?.cashierOut || '').trim());
+
+  ensurePrintInfrastructure();
+  initSignaturePad();
+  renderAllUI();
+  switchTab('grid');
 });
+/* ========================= END OF PART 11 OF 11 ========================= */
