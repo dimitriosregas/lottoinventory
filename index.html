@@ -203,40 +203,11 @@
         <div class="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
-            onclick="exportMasterGamesUniversal()"
-            class="bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs px-2.5 py-1.5 rounded shadow-sm transition"
-          >
-            <span>⬇ Export Games</span>
-          </button>
-          <input
-            type="file"
-            id="universal-import-games-input"
-            accept=".json,application/json"
-            class="hidden"
-            onchange="importMasterGamesUniversal(event)"
-          />
-          <button
-            type="button"
-            onclick="document.getElementById('universal-import-games-input').click()"
-            class="bg-teal-700 hover:bg-teal-600 text-white font-bold text-xs px-2.5 py-1.5 rounded shadow-sm transition"
-          >
-            <span>⬆ Import Games</span>
-          </button>
-          <button
-            type="button"
             id="nav-btn-grid"
             onclick="switchMainView('grid')"
-            class="bg-blue-600 text-white font-bold text-xs px-3 py-1.5 rounded shadow-sm transition"
+            class="bg-blue-600 text-white font-bold text-xs px-3.5 py-1.5 rounded shadow-sm transition"
           >
-            Boxes Grid
-          </button>
-          <button
-            type="button"
-            id="dispenser-view-toggle-btn"
-            onclick="toggleDispenserView()"
-            class="bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs px-3 py-1.5 rounded shadow-sm transition"
-          >
-            🔲 Grid View
+            Boxes
           </button>
           <button
             type="button"
@@ -274,10 +245,10 @@
           <div class="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onclick="printWorksheet()"
+              onclick="printManualBackupWorksheet()"
               class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2 rounded-lg shadow-sm"
             >
-              <span>🖨 Print</span>
+              <span>🖨 Print Backup Sheet</span>
             </button>
             <button
               type="button"
@@ -321,677 +292,564 @@
           </div>
         </div>
 
+        <!-- DEDICATED LIST / BOX VIEW TOGGLE BAR RIGHT ABOVE BOX # -->
+        <div class="flex items-center justify-between bg-slate-200/80 border border-slate-300 rounded-lg px-3 py-1.5">
+          <div class="inline-flex rounded-lg bg-slate-900 p-0.5 shadow-inner" role="group" aria-label="Dispenser Layout Switcher">
+            <button
+              type="button"
+              id="btn-view-mode-list"
+              onclick="setDispenserViewMode('list')"
+              class="px-3.5 py-1 rounded-md text-xs font-extrabold transition bg-blue-600 text-white"
+            >
+              📋 List
+            </button>
+            <button
+              type="button"
+              id="btn-view-mode-grid"
+              onclick="setDispenserViewMode('grid')"
+              class="px-3.5 py-1 rounded-md text-xs font-extrabold transition text-slate-300 hover:text-white"
+            >
+              🔲 Box
+            </button>
+          </div>
+          <span class="text-[11px] font-bold text-slate-600">Switch between compact table or individual box cards</span>
+        </div>
+
         <div id="dispenser-grid-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"></div>
       </section>
 <!-- ========================= END OF PART 1 OF 4 ========================= -->
- <!-- ==========================================================================
+<!-- ==========================================================================
      PART 2 OF 4: VIEW 2 (RECONCILIATION) & VIEW 3 (HISTORICAL REPORTS)
      ========================================================================== -->
 
-      <!-- VIEW 2: RECONCILIATION -->
+      <!-- VIEW 2: RECONCILIATION & SIGNATURE -->
       <section id="view-reconcile" class="hidden space-y-4">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
-          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-5">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
             <div>
-              <h2 class="text-lg font-extrabold text-slate-900">Shift Audit, POS Reconciliation &amp; Final Sign-Off</h2>
-              <p class="text-xs text-slate-500">Verify totals and sign below to archive this shift report.</p>
+              <h2 class="text-lg font-extrabold text-slate-900">Shift Reconciliation &amp; Cashier Sign-Off</h2>
+              <p class="text-xs text-slate-500">Verify scratch-off sales, online terminal figures, cash drops, and capture cashier signature.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                onclick="finalizeAndSaveShiftReport()"
-                class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs sm:text-sm px-4 py-2.5 rounded-lg shadow-md transition"
+                onclick="openWorksheetPrintChoiceModal()"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-lg shadow-sm"
               >
-                ✔ Finalize, Archive &amp; Auto-Backup Shift
+                🖨 Print Shift Report (80mm / Legal)
               </button>
               <button
                 type="button"
-                onclick="printFinalReport()"
-                class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm px-4 py-2.5 rounded-lg shadow-md transition"
+                onclick="finalizeAndSaveShiftAudit()"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-4 py-2.5 rounded-lg shadow-sm"
               >
-                🖨 Print
+                ✔ Finalize &amp; Archive Shift
               </button>
             </div>
           </div>
 
-          <!-- Multi-Shift Scratch Sales & Daily Total Inputs -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3 mb-4">
-            <h4 class="font-bold text-slate-900 text-sm border-b pb-2">📊 Shift Scratch Sales &amp; Multi-Shift Breakdown</h4>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Cumulative Daily Scratch Total ($):</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  id="rec-daily-scratch-total"
-                  oninput="recalculateReconciliationTotals()"
-                  placeholder="0.00"
-                  class="w-full border border-slate-300 rounded-lg p-2 font-mono font-bold lotto-input"
-                />
-              </div>
-              <div>
-                <label class="block font-bold text-slate-700 mb-1">Previous Shifts Sales Deduction ($):</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  id="rec-previous-shifts-sales"
-                  oninput="recalculateReconciliationTotals()"
-                  placeholder="0.00"
-                  class="w-full border border-slate-300 rounded-lg p-2 font-mono font-bold text-slate-600 lotto-input"
-                />
-              </div>
-              <div>
-                <label class="block font-bold text-blue-700 mb-1">This Shift's Net Scratch Sales ($):</label>
-                <div
-                  id="rec-net-shift-scratch"
-                  class="w-full bg-blue-50 border border-blue-300 rounded-lg p-2 font-mono font-black text-blue-900 text-sm"
-                >
-                  $0.00
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
             <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Report Date</label>
+              <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Audit Date</label>
               <input
                 type="date"
-                id="rec-report-date"
+                id="rec-audit-date"
                 onchange="saveReconciliationDraft()"
-                class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold bg-slate-50 lotto-input"
+                class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold bg-white"
               />
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Shift Type</label>
+              <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Shift</label>
               <select
                 id="rec-shift-type"
                 onchange="handleShiftTypeChange(this.value)"
-                class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold bg-slate-50 lotto-input"
+                class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold bg-white"
               >
                 <option value="Shift 1 (Morning)">Shift 1 (Morning)</option>
                 <option value="Shift 2 (Evening)">Shift 2 (Evening)</option>
                 <option value="Shift 3 (Night)">Shift 3 (Night)</option>
-                <option value="Mid-Shift Audit">Mid-Shift Audit</option>
-                <option value="Full Day Close">Full Day Close</option>
               </select>
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Outgoing Cashier</label>
+              <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Cashier On Duty</label>
               <input
                 type="text"
                 id="rec-cashier-out"
-                placeholder="Outgoing cashier..."
-                oninput="saveReconciliationDraft()"
-                class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold lotto-input"
+                list="rec-cashiers-datalist"
+                placeholder="Cashier name..."
+                oninput="saveReconciliationDraft(); updateBottomShiftSummaryBar();"
+                class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold bg-white"
               />
+              <datalist id="rec-cashiers-datalist"></datalist>
             </div>
             <div>
-              <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Incoming Cashier</label>
+              <label class="block text-[11px] font-bold uppercase text-slate-600 mb-1">Verified By (Next Cashier / Mgr)</label>
               <input
                 type="text"
                 id="rec-cashier-in"
-                placeholder="Incoming cashier..."
+                list="rec-cashiers-datalist"
+                placeholder="Optional verifier..."
                 oninput="saveReconciliationDraft()"
-                class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-semibold lotto-input"
+                class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold bg-white"
               />
             </div>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-3">
-              <h3 class="font-bold text-sm text-slate-800 border-b border-slate-200 pb-2">1. Scratch-Off &amp; Online Terminal Figures</h3>
-              <div class="flex items-center justify-between text-sm py-1">
-                <span class="text-slate-600 font-medium">Calculated Scratch-Off Sales:</span>
-                <span id="rec-scratch-sales" class="font-mono font-extrabold text-slate-900 text-base">$0.00</span>
-              </div>
-              <div class="flex items-center justify-between text-sm py-1">
-                <label for="rec-online-sales" class="text-slate-600 font-medium">Online / Draw Sales ($):</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  id="rec-online-sales"
-                  placeholder="0.00"
-                  oninput="recalculateReconciliationTotals()"
-                  class="w-32 text-right font-mono font-bold border border-slate-300 rounded px-2.5 py-1 bg-white lotto-input"
-                />
-              </div>
-              <div class="flex items-center justify-between text-sm py-1">
-                <label for="rec-scratch-cashed" class="text-slate-600 font-medium">Less: Scratch Prizes Cashed ($):</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  id="rec-scratch-cashed"
-                  placeholder="0.00"
-                  oninput="recalculateReconciliationTotals()"
-                  class="w-32 text-right font-mono font-bold border border-slate-300 rounded px-2.5 py-1 bg-white lotto-input"
-                />
-              </div>
-              <div class="flex items-center justify-between text-sm py-1">
-                <label for="rec-online-cashed" class="text-slate-600 font-medium">Less: Online Prizes Cashed ($):</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  id="rec-online-cashed"
-                  placeholder="0.00"
-                  oninput="recalculateReconciliationTotals()"
-                  class="w-32 text-right font-mono font-bold border border-slate-300 rounded px-2.5 py-1 bg-white lotto-input"
-                />
-              </div>
-              <div class="border-t border-slate-300 pt-2 flex items-center justify-between text-sm">
-                <span class="font-bold text-slate-800">Expected Net Lottery Revenue:</span>
-                <span id="rec-expected-total" class="font-mono font-extrabold text-blue-700 text-base">$0.00</span>
-              </div>
-              <div class="pt-2 flex items-center justify-between text-sm">
-                <label for="rec-pos-actual" class="font-bold text-slate-800">POS Actual Total ($):</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  id="rec-pos-actual"
-                  placeholder="0.00"
-                  oninput="recalculateReconciliationTotals()"
-                  class="w-36 text-right font-mono font-extrabold border-2 border-blue-500 rounded px-2.5 py-1.5 bg-white text-base lotto-input"
-                />
-              </div>
-              <div class="bg-white rounded-lg p-3 border border-slate-200 flex items-center justify-between mt-2">
-                <span class="font-extrabold text-sm text-slate-800">Shift Variance (Over / Short):</span>
-                <div class="text-right">
-                  <div id="rec-variance-display" class="font-mono font-black text-lg text-emerald-600">$0.00</div>
-                  <div id="rec-accounted-total" class="hidden">$0.00</div>
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-2">
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+              <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-700">Lottery &amp; Cash Balance</h3>
+              <div class="grid grid-cols-2 gap-3 text-xs">
+                <div class="bg-white border border-slate-200 rounded-lg p-2.5">
+                  <div class="text-slate-500 font-semibold">Calculated Scratch Sales</div>
+                  <div id="rec-calc-scratch-sales" class="font-mono font-extrabold text-base text-emerald-700 mt-0.5">$0.00</div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-lg p-2.5">
+                  <div class="text-slate-500 font-semibold">Total Tickets Sold</div>
+                  <div id="rec-calc-total-tickets" class="font-mono font-extrabold text-base text-slate-900 mt-0.5">0</div>
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Online / Draw Sales ($)</label>
+                  <input type="number" step="0.01" id="rec-online-sales" value="0" oninput="recalculateReconciliationMath()" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono font-bold bg-white" />
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Total Cashes / Payouts ($)</label>
+                  <input type="number" step="0.01" id="rec-total-payouts" value="0" oninput="recalculateReconciliationMath()" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono font-bold bg-white" />
+                </div>
+                <div>
+                  <label class="block font-bold text-slate-700 mb-1">Actual Cash / Drops ($)</label>
+                  <input type="number" step="0.01" id="rec-actual-cash" value="0" oninput="recalculateReconciliationMath()" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono font-bold bg-white" />
+                </div>
+                <div class="bg-white border border-slate-200 rounded-lg p-2.5">
+                  <div class="text-slate-500 font-semibold">Net Cash Expected / Over-Short</div>
+                  <div class="flex items-center justify-between mt-0.5 font-mono font-extrabold text-sm">
+                    <span id="rec-net-expected">$0.00</span>
+                    <span id="rec-variance-badge" class="px-2 py-0.5 rounded bg-slate-200 text-slate-800">$0.00</span>
+                  </div>
                 </div>
               </div>
               <div>
-                <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Shift Audit Notes</label>
-                <textarea
-                  id="rec-shift-notes"
-                  rows="2"
-                  placeholder="Optional notes..."
-                  oninput="saveReconciliationDraft()"
-                  class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white lotto-input"
-                ></textarea>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Shift Notes / Discrepancy Explanation</label>
+                <textarea id="rec-shift-notes" rows="2" oninput="saveReconciliationDraft()" placeholder="Enter any damaged tickets, pack activations, or variance notes..." class="w-full border border-slate-300 rounded-lg p-2 text-xs bg-white"></textarea>
               </div>
             </div>
 
-            <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 flex flex-col justify-between">
-              <div>
-                <div class="flex items-center justify-between border-b border-slate-200 pb-2 mb-3">
-                  <h3 class="font-bold text-sm text-slate-800">2. Cashier Digital Signature</h3>
-                  <button
-                    type="button"
-                    onclick="clearSignaturePad()"
-                    class="text-xs font-bold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2.5 py-1 rounded border border-red-200"
-                  >
-                    Clear Signature
-                  </button>
+            <!-- CASHIER SIGNATURE PAD -->
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col justify-between space-y-3">
+              <div class="flex items-center justify-between">
+                <div>
+                  <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-700">Cashier Digital Signature</h3>
+                  <p class="text-[11px] text-slate-500">Sign below using finger, stylus, or mouse before printing or finalizing.</p>
                 </div>
-                <div class="bg-white border-2 border-dashed border-slate-400 rounded-lg overflow-hidden relative">
-                  <canvas id="signature-pad" width="500" height="160" class="w-full h-40 cursor-crosshair touch-none block"></canvas>
-                </div>
-                <div class="mt-3 p-3 bg-amber-50 border border-amber-300 rounded-lg text-xs text-slate-800 leading-relaxed font-medium">
-                  <strong>Certification:</strong> By signing above, I certify that all ticket counts and shift figures are true and correct.
-                </div>
+                <button
+                  type="button"
+                  onclick="clearSignaturePad()"
+                  class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs px-3 py-1.5 rounded-lg"
+                >
+                  Clear Signature
+                </button>
               </div>
-              <div class="mt-4 pt-3 border-t border-slate-200 text-xs text-slate-500 flex justify-between">
-                <span>Archived automatically to device history.</span>
-                <span id="last-archived-indicator" class="font-semibold text-emerald-700"></span>
+              <div class="bg-white border-2 border-dashed border-slate-300 rounded-xl overflow-hidden relative" style="height: 150px;">
+                <canvas id="cashier-signature-canvas" class="w-full h-full touch-none cursor-crosshair"></canvas>
+              </div>
+              <div class="flex items-center justify-between text-[11px] text-slate-500">
+                <span>By signing, cashier certifies the above opening and closing ticket counts are accurate.</span>
+                <button
+                  type="button"
+                  onclick="openWorksheetPrintChoiceModal()"
+                  class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg"
+                >
+                  🖨 Print Signed Report
+                </button>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- VIEW 3: REPORTS -->
+      <!-- VIEW 3: HISTORICAL REPORTS (DAILY & MONTHLY COMBINED) -->
       <section id="view-reports" class="hidden space-y-4">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6">
-          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-5">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
             <div>
-              <h2 class="text-lg font-extrabold text-slate-900">Historical Shift, Daily &amp; Monthly Audit Reports</h2>
-              <p class="text-xs text-slate-500">Filter and review historical shift records.</p>
+              <h2 class="text-lg font-extrabold text-slate-900">Shift, Daily &amp; Monthly Combined Reports</h2>
+              <p class="text-xs text-slate-500">Days automatically roll over at midnight (12:00 AM local time). All shifts on a date combine automatically.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onclick="triggerMonthlyEmailDispatchManually()"
-                class="bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm"
-              >
-                ✉ Email Full Backup
-              </button>
-              <button
-                type="button"
-                onclick="exportHistoricalReportsJSON()"
-                class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs px-3 py-2 rounded-lg shadow-sm"
-              >
-                💾 Export Reports JSON
-              </button>
-            </div>
-          </div>
-
-          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-              <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Report Mode</label>
-                <select
-                  id="report-filter-mode"
-                  onchange="handleReportFilterModeChange(this.value)"
-                  class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold bg-white lotto-input"
+              <div class="inline-flex rounded-lg bg-slate-100 p-1 border border-slate-300">
+                <button
+                  type="button"
+                  id="report-mode-daily-btn"
+                  onclick="setReportViewMode('daily')"
+                  class="px-3 py-1 rounded-md text-xs font-extrabold bg-blue-600 text-white transition"
                 >
-                  <option value="daily">Single Day Report</option>
-                  <option value="shift">Specific Shift Lookup</option>
-                  <option value="monthly">Monthly Aggregate Summary</option>
-                </select>
+                  Daily Report
+                </button>
+                <button
+                  type="button"
+                  id="report-mode-monthly-btn"
+                  onclick="setReportViewMode('monthly')"
+                  class="px-3 py-1 rounded-md text-xs font-extrabold text-slate-700 hover:text-slate-900 transition"
+                >
+                  Monthly Report
+                </button>
               </div>
-              <div id="filter-date-container">
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Select Date</label>
+
+              <div id="report-daily-picker-wrap" class="flex items-center gap-1.5">
                 <input
                   type="date"
                   id="report-filter-date"
-                  onchange="executeReportLookup()"
-                  class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white lotto-input"
+                  onchange="renderHistoricalReports()"
+                  class="border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold bg-white"
                 />
               </div>
-              <div id="filter-month-container" class="hidden">
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Select Month</label>
+
+              <div id="report-monthly-picker-wrap" class="hidden flex items-center gap-1.5">
                 <input
                   type="month"
                   id="report-filter-month"
-                  onchange="executeReportLookup()"
-                  class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-semibold bg-white lotto-input"
+                  onchange="renderHistoricalReports()"
+                  class="border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold bg-white"
                 />
               </div>
-              <div id="filter-shift-container" class="hidden">
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Select Shift</label>
-                <select
-                  id="report-filter-shift-type"
-                  onchange="executeReportLookup()"
-                  class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold bg-white lotto-input"
-                >
-                  <option value="ALL">All Shifts</option>
-                  <option value="Shift 1 (Morning)">Shift 1 (Morning)</option>
-                  <option value="Shift 2 (Evening)">Shift 2 (Evening)</option>
-                  <option value="Shift 3 (Night)">Shift 3 (Night)</option>
-                  <option value="Mid-Shift Audit">Mid-Shift Audit</option>
-                  <option value="Full Day Close">Full Day Close</option>
-                </select>
-              </div>
-              <div>
-                <button
-                  type="button"
-                  onclick="executeReportLookup()"
-                  class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2 px-3 rounded-lg shadow-sm"
-                >
-                  🔍 Run Report Lookup
-                </button>
-              </div>
+
+              <button
+                type="button"
+                onclick="printCombinedPeriodReport()"
+                class="bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-3.5 py-2 rounded-lg shadow-sm"
+              >
+                🖨 Print Combined Report
+              </button>
             </div>
           </div>
 
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <div class="text-[11px] font-bold text-blue-800 uppercase">Shifts Recorded</div>
-              <div id="rep-summary-shift-count" class="text-xl font-black text-blue-950 font-mono mt-0.5">0</div>
-            </div>
-            <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
-              <div class="text-[11px] font-bold text-emerald-800 uppercase">Scratch Sales</div>
-              <div id="rep-summary-scratch-sales" class="text-xl font-black text-emerald-950 font-mono mt-0.5">$0.00</div>
-            </div>
-            <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-3">
-              <div class="text-[11px] font-bold text-indigo-800 uppercase">Expected Net</div>
-              <div id="rep-summary-expected-revenue" class="text-xl font-black text-indigo-950 font-mono mt-0.5">$0.00</div>
-            </div>
-            <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <div class="text-[11px] font-bold text-amber-800 uppercase">Net Variance</div>
-              <div id="rep-summary-variance" class="text-xl font-black text-amber-950 font-mono mt-0.5">$0.00</div>
-            </div>
-          </div>
+          <!-- COMBINED SUMMARY KPI STRIP -->
+          <div id="report-combined-summary-cards" class="grid grid-cols-2 sm:grid-cols-5 gap-3"></div>
 
-          <div class="border border-slate-200 rounded-xl overflow-hidden mb-5">
-            <div class="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2">
-              <h3 class="text-xs font-extrabold uppercase text-slate-800">Shift Records Breakdown</h3>
-              <div class="flex flex-wrap items-center gap-1.5">
-                <button
-                  type="button"
-                  onclick="printFilteredReportSummary()"
-                  class="text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1 rounded"
-                >
-                  🖨 Print Historical Summary
-                </button>
-              </div>
-            </div>
-            <div class="overflow-x-auto">
-              <table class="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px]">
-                    <th class="p-2.5 text-center">Date</th>
-                    <th class="p-2.5">Shift</th>
-                    <th class="p-2.5">Outgoing Cashier</th>
-                    <th class="p-2.5 text-center">Tickets</th>
-                    <th class="p-2.5 text-right">Scratch $</th>
-                    <th class="p-2.5 text-right">Online $</th>
-                    <th class="p-2.5 text-right">Expected Net</th>
-                    <th class="p-2.5 text-right">POS Actual</th>
-                    <th class="p-2.5 text-right">Variance</th>
-                    <th class="p-2.5 text-center">Signature</th>
-                    <th class="p-2.5 text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody id="historical-reports-tbody" class="divide-y divide-slate-200 font-medium">
-                  <tr><td colspan="11" class="p-6 text-center text-slate-400">No shift reports found.</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <!-- SHIFT / DAY BREAKDOWN TABLE -->
+          <div id="historical-reports-container" class="space-y-3"></div>
         </div>
       </section>
 <!-- ========================= END OF PART 2 OF 4 ========================= -->
 <!-- ==========================================================================
-     PART 3 OF 4: VIEW 4 (ADMIN SETUP / GAMES) & MODALS
+     PART 3 OF 4: VIEW 4 (SETUP / GAMES) & CHECK-IN / PRINT MODALS
      ========================================================================== -->
 
-      <!-- VIEW 4: ADMIN SETUP -->
+      <!-- VIEW 4: SETUP / GAMES -->
       <section id="view-admin" class="hidden space-y-4">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 sm:p-6 space-y-6">
-          <div class="border-b border-slate-200 pb-4 flex flex-wrap items-center justify-between gap-3">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-5">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
             <div>
-              <h2 class="text-lg font-extrabold text-slate-900">Store Profile, Cashiers, Master Games &amp; System Configuration</h2>
-              <p class="text-xs text-slate-500">Manage master games, saved cashiers, active store profile, and custom slot/box numbers.</p>
+              <h2 class="text-lg font-extrabold text-slate-900">Store Setup, Box Labels &amp; Master Game Catalog</h2>
+              <p class="text-xs text-slate-500">Configure dispenser labels, receipt print sizing, saved cashiers, and master lottery games.</p>
             </div>
-          </div>
-
-          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-4">
-            <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Active Store Profile</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-end">
-              <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Store Name</label>
-                <input type="text" id="admin-store-name" class="w-full border rounded-lg px-3 py-2 text-xs font-bold bg-white lotto-input" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Store Number</label>
-                <input type="text" id="admin-store-number" class="w-full border rounded-lg px-3 py-2 text-xs font-bold bg-white lotto-input" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Address</label>
-                <input type="text" id="admin-store-address" class="w-full border rounded-lg px-3 py-2 text-xs font-bold bg-white lotto-input" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Email</label>
-                <input type="email" id="admin-store-email" class="w-full border rounded-lg px-3 py-2 text-xs font-bold bg-white lotto-input" />
-              </div>
-              <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Password</label>
-                <input type="password" id="admin-store-pass" class="w-full border rounded-lg px-3 py-2 text-xs font-bold bg-white lotto-input" />
-              </div>
-              <div class="sm:col-span-2 lg:col-span-3">
-                <button type="button" onclick="saveActiveStoreProfile()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 px-4 rounded-lg shadow-sm">💾 Save Store Profile</button>
-              </div>
-            </div>
-
-            <div class="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
-              <div class="text-xs font-extrabold text-slate-800">Dispenser Box Quantity Control</div>
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-slate-700">Active Boxes: <strong id="admin-box-count-badge" class="font-mono text-blue-700 text-sm">40</strong></span>
-                <button type="button" onclick="removeBoxSlot()" class="bg-red-100 text-red-700 font-bold text-xs px-3 py-1.5 rounded">− Remove Box</button>
-                <button type="button" onclick="addBoxSlot()" class="bg-emerald-600 text-white font-bold text-xs px-3.5 py-1.5 rounded">+ Add Box</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- THERMAL PRINT FONT SIZE CONTROL -->
-          <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-2">
-            <label class="block text-xs font-extrabold text-slate-800 uppercase tracking-wider">🖨 Thermal Print Font Size (pt)</label>
-            <div class="flex items-center gap-3">
-              <input type="number" id="admin-print-fontsize-input" min="8" max="36" value="13" onchange="savePrintFontSizeSetting(this.value)" class="w-28 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono font-bold lotto-input bg-white" />
-              <span class="text-xs font-bold text-slate-600">pt (Points — 8 to 36)</span>
-            </div>
-          </div>
-
-          <!-- SAVED CASHIERS MANAGEMENT -->
-          <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-3">
-            <div class="flex items-center justify-between border-b border-slate-200 pb-2">
-              <h3 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Saved Cashiers List (<span id="admin-cashiers-count">0</span>)</h3>
-            </div>
-            <div class="flex gap-2">
-              <input type="text" id="new-cashier-name-input" placeholder="Enter cashier full name..." class="flex-1 border rounded-lg px-3 py-1.5 text-xs font-bold lotto-input" />
-              <button type="button" onclick="addNewCashierManual()" class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs px-4 py-1.5 rounded-lg">+ Add Cashier</button>
-            </div>
-            <div class="max-h-48 overflow-y-auto border border-slate-200 rounded-lg">
-              <table class="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px]">
-                    <th class="p-2.5">Cashier Name</th>
-                    <th class="p-2.5 text-center w-24">Action</th>
-                  </tr>
-                </thead>
-                <tbody id="admin-cashiers-tbody" class="divide-y divide-slate-200 font-medium"></tbody>
-              </table>
-            </div>
-          </div>
-
-          <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3">Add or Edit Game in Master Catalog ($300 / $600 / $900 Roll Pools)</h3>
-            <div class="grid grid-cols-2 sm:grid-cols-6 gap-3 items-end">
-              <div>
-                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Game #</label>
-                <input type="text" id="new-game-num" placeholder="e.g. 1542" class="w-full border rounded px-2.5 py-1.5 text-xs font-mono font-bold lotto-input" />
-              </div>
-              <div class="col-span-2">
-                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Game Name</label>
-                <input type="text" id="new-game-name" placeholder="e.g. JUMBO BUCKS" class="w-full border rounded px-2.5 py-1.5 text-xs font-bold uppercase lotto-input" />
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Price ($)</label>
-                <input type="number" id="new-game-price" placeholder="5" oninput="autoFillNewGameRollCount()" class="w-full border rounded px-2.5 py-1.5 text-xs font-bold lotto-input" />
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-600 uppercase mb-1">Tickets / Roll</label>
-                <input type="number" id="new-game-count" placeholder="60" class="w-full border rounded px-2.5 py-1.5 text-xs font-bold lotto-input" />
-              </div>
-              <div>
-                <button type="button" onclick="saveNewMasterGameManual()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-2 px-3 rounded">+ Save Game</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- SCREEN WAKE LOCK / KEEP SCREEN ON CONTROL -->
-          <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm space-y-2">
-            <div class="flex items-center justify-between">
-              <label class="block text-xs font-extrabold text-slate-800 uppercase tracking-wider">
-                ☀️ Keep Screen On (Wake Lock Timer)
-              </label>
-              <span id="admin-wakelock-status" class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                Normal Sleep
-              </span>
-            </div>
-            <p class="text-[11px] text-slate-500">
-              Keeps the screen awake for the selected time after any tap or keypress, then returns to normal sleep when closed or idle.
-            </p>
-            <div class="flex flex-wrap items-center gap-3 pt-1">
-              <select
-                id="admin-wakelock-select"
-                onchange="setScreenKeepAwakeMinutes(this.value)"
-                class="border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold lotto-input bg-white"
+            <div class="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onclick="saveAdminSettingsAndRefresh()"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs px-4 py-2 rounded-lg shadow-sm"
               >
-                <option value="0">Off (Device Default)</option>
-                <option value="5">5 Minutes</option>
-                <option value="10" selected>10 Minutes (Recommended)</option>
-                <option value="15">15 Minutes</option>
-                <option value="30">30 Minutes</option>
-              </select>
+                💾 Save Store Configuration
+              </button>
             </div>
           </div>
 
-          <!-- MASTER GAMES CATALOG -->
-          <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-            <div class="bg-slate-100 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
-              <h3 class="text-xs font-extrabold uppercase text-slate-800">Master Games Catalog (<span id="admin-games-count">0</span> Games)</h3>
-              <input type="text" id="admin-games-filter" placeholder="Search games..." oninput="renderAdminGamesTable(this.value)" class="border rounded px-2.5 py-1 text-xs bg-white w-48 font-medium lotto-input" />
+          <!-- IMPORT / EXPORT GAMES BAR (MOVED RIGHT ABOVE BOX/SLOT NUMBER CONFIGURATION) -->
+          <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 class="text-xs font-extrabold uppercase tracking-wider text-emerald-900">Master Games Backup &amp; Sync</h3>
+              <p class="text-[11px] text-emerald-700">Export your game list to share across locations or import an updated JSON game catalog.</p>
             </div>
-            <div class="max-h-80 overflow-y-auto">
+            <div class="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onclick="exportMasterGamesUniversal()"
+                class="bg-emerald-700 hover:bg-emerald-600 text-white font-extrabold text-xs px-3.5 py-2 rounded-lg shadow-sm transition"
+              >
+                ⬇ Export Games
+              </button>
+              <input
+                type="file"
+                id="universal-import-games-input"
+                accept=".json,application/json"
+                class="hidden"
+                onchange="importMasterGamesUniversal(event)"
+              />
+              <button
+                type="button"
+                onclick="document.getElementById('universal-import-games-input').click()"
+                class="bg-teal-700 hover:bg-teal-600 text-white font-extrabold text-xs px-3.5 py-2 rounded-lg shadow-sm transition"
+              >
+                ⬆ Import Games
+              </button>
+            </div>
+          </div>
+
+          <!-- BOX / SLOT NUMBER CONFIGURATION -->
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-800">Box / Slot Number Configuration</h3>
+                <p class="text-[11px] text-slate-500">
+                  Default pattern: <strong>A&amp;B, C, D, E, F, 1, 2, 3...</strong> Typing a single letter or number automatically increments all slots to the right.
+                </p>
+              </div>
+              <div class="flex flex-wrap items-center gap-2">
+                <label class="text-xs font-bold text-slate-700">Total Boxes:</label>
+                <input
+                  type="number"
+                  id="admin-total-boxes-input"
+                  min="1"
+                  max="100"
+                  value="40"
+                  onchange="handleAdminBoxCountChange(this.value)"
+                  class="w-20 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-extrabold text-center bg-white"
+                />
+                <button
+                  type="button"
+                  onclick="applyDefaultCustomBoxPattern()"
+                  class="bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg"
+                >
+                  Reset to A&amp;B, C..F, 1..35
+                </button>
+              </div>
+            </div>
+
+            <div id="admin-box-labels-grid" class="grid grid-cols-4 sm:grid-cols-8 md:grid-cols-10 gap-2 pt-1"></div>
+          </div>
+
+          <!-- DISPLAY, RECEIPT PRINT SIZE & SAVED CASHIERS -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+              <label class="block text-xs font-extrabold uppercase text-slate-700">Screen Text Size</label>
+              <select
+                id="admin-ui-font-size"
+                onchange="applyUiFontSize(this.value)"
+                class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold bg-white"
+              >
+                <option value="12px">Compact (12px)</option>
+                <option value="14px" selected>Standard (14px)</option>
+                <option value="16px">Large (16px)</option>
+                <option value="18px">Extra Large (18px)</option>
+                <option value="20px">XXL Tablet (20px)</option>
+                <option value="22px">Max Accessibility (22px)</option>
+              </select>
+              <p class="text-[11px] text-slate-500">Adjusts on-screen table and box card text size.</p>
+            </div>
+
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+              <label class="block text-xs font-extrabold uppercase text-slate-700">80mm Receipt Print Font</label>
+              <select
+                id="admin-receipt-font-size"
+                onchange="saveAdminSettingsAndRefresh()"
+                class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold bg-white"
+              >
+                <option value="9">9 pt (Compact)</option>
+                <option value="10">10 pt</option>
+                <option value="11" selected>11 pt (Default)</option>
+                <option value="12">12 pt</option>
+                <option value="13">13 pt</option>
+                <option value="14">14 pt (Large)</option>
+              </select>
+              <p class="text-[11px] text-slate-500">Controls thermal printer font size on 80mm shift reports.</p>
+            </div>
+
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2">
+              <label class="block text-xs font-extrabold uppercase text-slate-700">Saved Cashiers List</label>
+              <div class="flex gap-1.5">
+                <input
+                  type="text"
+                  id="admin-new-cashier-input"
+                  placeholder="Add cashier name..."
+                  class="flex-1 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold bg-white"
+                />
+                <button
+                  type="button"
+                  onclick="addSavedCashierFromAdmin()"
+                  class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg"
+                >
+                  + Add
+                </button>
+              </div>
+              <div id="admin-saved-cashiers-tags" class="flex flex-wrap gap-1.5 pt-1"></div>
+            </div>
+          </div>
+
+          <!-- ADD / EDIT MASTER GAME CATALOG -->
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
+            <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-800">Add or Update Master Game</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <input type="text" id="admin-game-num" placeholder="Game # (e.g. 1409)" class="border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold bg-white" />
+              <input type="text" id="admin-game-name" placeholder="Game Name" class="sm:col-span-2 border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold bg-white uppercase" />
+              <input type="number" id="admin-game-price" placeholder="Price ($)" class="border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold bg-white" />
+              <input type="number" id="admin-game-count" placeholder="Pack Size (Tix)" class="border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold bg-white" />
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <button
+                type="button"
+                onclick="upsertMasterGameFromAdmin()"
+                class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs px-4 py-2 rounded-lg shadow-sm"
+              >
+                + Save Game to Master Catalog
+              </button>
+              <input
+                type="text"
+                id="admin-game-search"
+                oninput="renderAdminMasterGamesTable()"
+                placeholder="Search games by # or name..."
+                class="border border-slate-300 rounded-lg px-3 py-1.5 text-xs bg-white w-full sm:w-64"
+              />
+            </div>
+
+            <div class="overflow-x-auto max-h-96 border border-slate-200 rounded-lg bg-white">
               <table class="w-full text-left border-collapse text-xs">
-                <thead>
-                  <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase text-[10px]">
-                    <th class="p-2.5 text-center">Game #</th>
-                    <th class="p-2.5">Name</th>
-                    <th class="p-2.5 text-center">Price</th>
-                    <th class="p-2.5 text-center">Tickets / Pack</th>
-                    <th class="p-2.5 text-center">Actions</th>
+                <thead class="bg-slate-800 text-white sticky top-0">
+                  <tr>
+                    <th class="p-2">Game #</th>
+                    <th class="p-2">Game Name</th>
+                    <th class="p-2 text-center">Price</th>
+                    <th class="p-2 text-center">Pack Tix</th>
+                    <th class="p-2 text-center">Pack Value</th>
+                    <th class="p-2 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody id="admin-games-tbody" class="divide-y divide-slate-200 font-medium"></tbody>
+                <tbody id="admin-master-games-tbody" class="divide-y divide-slate-200"></tbody>
               </table>
             </div>
-          </div>
-
-          <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3 mb-4">
-              <div>
-                <h3 class="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Box / Slot Number Configuration</h3>
-                <p class="text-[11px] text-slate-500">Slot/Box labels can only be edited here. Press <strong>Enter</strong> inside any slot label to jump to the next slot.</p>
-              </div>
-              <div class="flex items-center gap-2">
-                <button type="button" onclick="setBoxLabelsSequential('numbers')" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs px-2.5 py-1.5 rounded">🔢 Set 1–40</button>
-                <button type="button" onclick="setBoxLabelsSequential('letters')" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs px-2.5 py-1.5 rounded">🔤 Set A–Z</button>
-              </div>
-            </div>
-            <div id="admin-box-labels-grid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-8 gap-2.5 max-h-96 overflow-y-auto p-1"></div>
           </div>
         </div>
       </section>
     </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-900 text-slate-400 text-[11px] py-3 px-4 border-t border-slate-800 mt-auto">
+      <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+        <div>Lotto Inventory &copy; 2026 Dimitrios Regas UR STORE CENTRAL. All Rights Reserved.</div>
+        <div id="footer-location-status">Local Encrypted Cache: OK</div>
+      </div>
+    </footer>
   </div>
 
-  <!-- MODALS -->
-  <div id="modal-multi-store" class="fixed inset-0 modal-backdrop hidden z-50 flex items-center justify-center p-3">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden">
+  <!-- ========================================================================
+       MODALS (CASHIER/SHIFT CHECK-IN, PRINT REPORT CHOICE, MULTI-STORE)
+       ======================================================================== -->
+
+  <!-- CASHIER & SHIFT CHECK-IN MODAL (TRIGGERS ON FIRST END # ENTRY) -->
+  <div id="modal-cashier-shift-prompt" class="fixed inset-0 modal-backdrop hidden z-50 flex items-center justify-center p-3">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden">
       <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
-        <h3 class="font-extrabold text-sm sm:text-base">Multi-Store Management</h3>
-        <button type="button" onclick="closeMultiStoreManagerModal()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
-      </div>
-      <div class="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
-        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-3">
-          <div class="text-xs font-extrabold text-slate-800 uppercase">Add New Store Location</div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <input type="text" id="new-location-name-input" placeholder="Store Name" class="text-xs border rounded px-2.5 py-1.5 bg-white lotto-input" />
-            <input type="text" id="new-location-num-input" placeholder="Store #" class="text-xs border rounded px-2.5 py-1.5 bg-white lotto-input" />
-            <input type="text" id="new-location-address-input" placeholder="Address" class="text-xs border rounded px-2.5 py-1.5 bg-white sm:col-span-2 lotto-input" />
-          </div>
-          <button type="button" onclick="createNewStoreLocation()" class="w-full bg-blue-600 text-white font-bold text-xs py-2 rounded">+ Create Location</button>
+        <div>
+          <h3 class="font-extrabold text-sm sm:text-base">Cashier &amp; Shift Check-In</h3>
+          <p class="text-[11px] text-slate-300">Enter your name and shift before typing End # counts</p>
         </div>
-        <div class="border border-slate-200 rounded-xl overflow-hidden">
-          <table class="w-full text-left text-xs">
-            <thead class="bg-slate-100 font-bold text-[10px] border-b">
-              <tr>
-                <th class="p-2.5">Store Details</th>
-                <th class="p-2.5 text-center">Status</th>
-                <th class="p-2.5 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="multi-store-list-tbody" class="divide-y font-medium"></tbody>
-          </table>
-        </div>
-      </div>
-      <div class="bg-slate-100 px-5 py-3 border-t text-right">
-        <button type="button" onclick="closeMultiStoreManagerModal()" class="bg-slate-800 text-white font-bold text-xs px-4 py-2 rounded-lg">Done</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="modal-box-rollover" class="fixed inset-0 modal-backdrop hidden z-50 flex items-center justify-center p-3">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border overflow-hidden">
-      <div class="bg-amber-600 text-white px-5 py-3.5 flex items-center justify-between">
-        <h3 id="modal-rollover-title" class="font-extrabold text-sm sm:text-base">Pack Rollover</h3>
-        <button type="button" onclick="cancelRolloverModal()" class="text-white font-bold">✕</button>
+        <button type="button" onclick="closeCashierShiftPromptModal()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
       </div>
       <div class="p-5 space-y-4">
-        <input type="hidden" id="modal-roll-box-idx" value="" />
-        <input type="hidden" id="modal-roll-pending-end" value="" />
-        <div id="modal-roll-step-1" class="space-y-3">
-          <p id="modal-roll-step1-msg" class="text-sm font-semibold text-slate-800"></p>
-          <div class="grid grid-cols-2 gap-3 pt-2">
-            <button type="button" onclick="handleRolloverStep1Answer(true)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 rounded">✔ Yes, New Roll Started</button>
-            <button type="button" onclick="handleRolloverStep1Answer(false)" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs py-2.5 rounded">✖ No (Typo)</button>
-          </div>
+        <input type="hidden" id="prompt-target-box-idx" value="" />
+        <div>
+          <label class="block text-xs font-extrabold text-slate-700 uppercase mb-1">Cashier Name</label>
+          <input
+            type="text"
+            id="prompt-cashier-name-input"
+            list="prompt-cashiers-datalist"
+            placeholder="Select or type your name..."
+            onkeydown="if(event.key==='Enter'){event.preventDefault();confirmCashierShiftPrompt();}"
+            class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold bg-white lotto-input"
+          />
+          <datalist id="prompt-cashiers-datalist"></datalist>
         </div>
-        <div id="modal-roll-step-2" class="hidden space-y-3">
-          <p class="text-xs font-bold text-slate-700">Is the new roll the SAME game or a NEW game?</p>
-          <div class="grid grid-cols-2 gap-3">
-            <button type="button" onclick="handleRolloverGameChoice(true)" class="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2.5 rounded">🔄 Same Game</button>
-            <button type="button" onclick="handleRolloverGameChoice(false)" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs py-2.5 rounded">🆕 New Game</button>
-          </div>
-          <div id="modal-roll-newgame-section" class="hidden pt-3 border-t space-y-2">
-            <label class="block text-[11px] font-bold text-slate-700 uppercase">Enter New Game Number:</label>
-            <input type="text" id="modal-roll-newgame-input" placeholder="e.g. 1005" onkeydown="if(event.key==='Enter'){event.preventDefault();applyRolloverWithNewGame();}" class="w-full border rounded px-2.5 py-1.5 text-xs font-mono font-bold lotto-input" />
-            <button type="button" onclick="applyRolloverWithNewGame()" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs py-2 rounded">Apply New Game &amp; Rollover</button>
-          </div>
+        <div>
+          <label class="block text-xs font-extrabold text-slate-700 uppercase mb-1">Active Shift</label>
+          <select
+            id="prompt-shift-select"
+            class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold bg-white lotto-input"
+          >
+            <option value="Shift 1 (Morning)">Shift 1 (Morning)</option>
+            <option value="Shift 2 (Evening)">Shift 2 (Evening)</option>
+            <option value="Shift 3 (Night)">Shift 3 (Night)</option>
+          </select>
         </div>
+      </div>
+      <div class="bg-slate-100 px-5 py-3 border-t border-slate-200 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onclick="closeCashierShiftPromptModal()"
+          class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs px-4 py-2 rounded-lg"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onclick="confirmCashierShiftPrompt()"
+          class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs px-5 py-2 rounded-lg shadow-sm"
+        >
+          Continue to Count →
+        </button>
       </div>
     </div>
   </div>
 
-  <div id="modal-quick-game" class="fixed inset-0 modal-backdrop hidden z-50 flex items-center justify-center p-3">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full border overflow-hidden">
-      <div class="bg-blue-600 text-white px-4 py-3 flex items-center justify-between">
-        <h3 class="font-extrabold text-sm">Register Game</h3>
-        <button type="button" onclick="closeQuickGameModal()" class="text-white font-bold">✕</button>
+  <!-- PRINT SHIFT REPORT FORMAT CHOICE MODAL -->
+  <div id="modal-print-choice" class="fixed inset-0 modal-backdrop hidden z-50 flex items-center justify-center p-3">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-slate-200 overflow-hidden">
+      <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
+        <h3 class="font-extrabold text-sm sm:text-base">Print Shift Audit Report</h3>
+        <button type="button" onclick="closeWorksheetPrintChoiceModal()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
       </div>
-      <div class="p-4 space-y-3">
-        <input type="hidden" id="quick-game-box-idx" value="" />
-        <div>
-          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Game #</label>
-          <input type="text" id="quick-game-num" readonly class="w-full bg-slate-100 border rounded px-2.5 py-1.5 font-mono text-xs lotto-input" />
-        </div>
-        <div>
-          <label class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Game Name</label>
-          <input type="text" id="quick-game-name" placeholder="Game Name" class="w-full border rounded px-2.5 py-1.5 font-bold text-xs uppercase lotto-input" />
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Price ($)</label>
-            <input type="number" id="quick-game-price" value="5" oninput="autoFillQuickGameRollCount()" class="w-full border rounded px-2.5 py-1.5 text-xs font-bold lotto-input" />
-          </div>
-          <div>
-            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-0.5">Tickets / Roll</label>
-            <input type="number" id="quick-game-count" value="60" class="w-full border rounded px-2.5 py-1.5 text-xs font-bold lotto-input" />
-          </div>
-        </div>
+      <div class="p-5 space-y-3">
+        <p class="text-xs text-slate-600">Choose your printer format to generate the completed shift audit report with totals, cashier name, store, date, and signature:</p>
+        <button
+          type="button"
+          onclick="executeShiftReportPrint('80mm')"
+          class="w-full bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs py-3 px-4 rounded-xl flex items-center justify-between shadow-sm"
+        >
+          <span>🧾 80mm Thermal Receipt (Epson TM-m30II)</span>
+          <span>Print →</span>
+        </button>
+        <button
+          type="button"
+          onclick="executeShiftReportPrint('letter')"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-3 px-4 rounded-xl flex items-center justify-between shadow-sm"
+        >
+          <span>📄 Full Page (8.5" x 11" Letter / Legal)</span>
+          <span>Print →</span>
+        </button>
       </div>
-      <div class="bg-slate-100 px-4 py-2.5 border-t text-right space-x-2">
-        <button type="button" onclick="closeQuickGameModal()" class="bg-slate-200 text-xs font-bold px-3 py-1.5 rounded">Cancel</button>
-        <button type="button" onclick="saveQuickRegisteredGame()" class="bg-blue-600 text-white text-xs font-bold px-3.5 py-1.5 rounded">Save Game</button>
+    </div>
+  </div>
+
+  <!-- MULTI-STORE LOCATION MANAGER MODAL -->
+  <div id="modal-locations" class="fixed inset-0 modal-backdrop hidden z-50 flex items-center justify-center p-3">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden">
+      <div class="bg-slate-900 text-white px-5 py-3.5 flex items-center justify-between">
+        <h3 class="font-extrabold text-sm sm:text-base">Manage Store Locations</h3>
+        <button type="button" onclick="closeMultiStoreManagerModal()" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+      </div>
+      <div class="p-5 space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <input type="text" id="new-store-name" placeholder="Store Name (e.g. Regas Shell)" class="sm:col-span-2 border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold" />
+          <input type="text" id="new-store-code" placeholder="Store # (e.g. 105)" class="border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold" />
+        </div>
+        <button
+          type="button"
+          onclick="addNewStoreLocation()"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-2 rounded-lg"
+        >
+          + Add Store Location
+        </button>
+        <div id="locations-manager-list" class="divide-y divide-slate-200 border border-slate-200 rounded-lg max-h-60 overflow-y-auto"></div>
       </div>
     </div>
   </div>
 <!-- ========================= END OF PART 3 OF 4 ========================= -->
 <!-- ==========================================================================
-     PART 4 OF 4: PRINT CONTAINER, CORE SCRIPT LOADER & FOOTER
+     PART 4 OF 4: PRINT OUTPUT CONTAINER & SCRIPT LOADER
      ========================================================================== -->
 
+  <!-- DEDICATED PRINT OUTPUT CONTAINER (USED FOR 80MM, LETTER, BACKUP WORKSHEET & COMBINED REPORTS) -->
   <div id="print-container"></div>
-  <script src="./script.js"></script>
-  
-  <!-- STARTUP SCRIPT: Force List View by Default -->
-  <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        if (typeof currentDispenserView !== 'undefined') {
-          currentDispenserView = 'list';
-        }
-        if (typeof renderDispenserGrid === 'function') {
-          renderDispenserGrid();
-        }
-      }, 100);
-    });
-  </script>
 
-  <!-- FOOTER -->
-  <footer class="bg-slate-900 text-slate-400 text-[11px] py-4 px-4 border-t border-slate-800 mt-auto space-y-2">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-      <div>Lotto Inventory © 2026 Dimitrios Regas UR STORE CENTRAL. All Rights Reserved.</div>
-      <div>Local Encrypted Cache: OK • <span id="footer-store-display" class="text-slate-300 font-semibold">Location: Regas Shell (#101)</span></div>
-    </div>
-    <div class="max-w-7xl mx-auto text-slate-500 text-[10px] leading-relaxed border-t border-slate-800/80 pt-2 text-center sm:text-left">
-      <strong>Notice:</strong> This calculator is an operational assistant designed to help maintain accurate lottery logs, compare shift sales, and minimize shrinkage. It does not warranty or guarantee absolute perfection. In the event of a variance, please double-check calculations and notify the system administrator of any discrepancies.
-    </div>
-  </footer>
+  <!-- MAIN APPLICATION LOGIC -->
+  <script src="./script.js"></script>
 </body>
 </html>
 <!-- ========================= END OF PART 4 OF 4 ========================= -->
