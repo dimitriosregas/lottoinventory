@@ -2488,3 +2488,174 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ========================= END OF PART 10 OF 10 ========================= */
+/* ============================================================================
+   PART 11: TENNESSEE CLICKWRAP NDA GATE, ACCESS CODES, WATERMARK & AUDIT LOG
+   ============================================================================ */
+
+const LEGAL_GATE_STORAGE_KEY = 'ur_lotto_nda_acceptance_v1';
+const LEGAL_AUDIT_LOG_KEY = 'ur_lotto_security_audit_logs_v1';
+
+// Authorized Pilot Access Codes (Add or remove tester codes here anytime)
+const AUTHORIZED_PILOT_CODES = {
+  'REGAS-OWNER-2026': { label: 'Regas Enterprise (Owner)', active: true },
+  'REGAS-STORE-101': { label: 'Regas Shell #101', active: true },
+  'REGAS-STORE-102': { label: 'Regas Exxon #102', active: true },
+  'REGAS-STORE-103': { label: 'Regas Amaco #103', active: true },
+  'REGAS-STORE-104': { label: 'Regas Xpress #104', active: true },
+  'PILOT-TEST-01': { label: 'External Pilot Store 01', active: true },
+  'PILOT-TEST-02': { label: 'External Pilot Store 02', active: true }
+};
+
+let legalBoxScrolledToBottom = false;
+
+function handleLegalScrollCheck(el) {
+  if (!el) return;
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - 16) {
+    legalBoxScrolledToBottom = true;
+    const hint = document.getElementById('legal-scroll-hint');
+    if (hint) {
+      hint.textContent = '✔ Agreement reviewed. Complete the fields below to unlock.';
+      hint.className = 'text-[11px] font-bold text-emerald-700';
+    }
+  }
+}
+
+function getDeviceFingerprintSummary() {
+  return {
+    userAgent: navigator.userAgent || 'Unknown',
+    platform: navigator.platform || 'Unknown',
+    language: navigator.language || 'en-US',
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown',
+    screen: `${window.screen?.width || 0}x${window.screen?.height || 0}`,
+    originUrl: window.location.href
+  };
+}
+
+function recordSecurityAuditEvent(eventType, details = {}) {
+  try {
+    const existing = JSON.parse(localStorage.getItem(LEGAL_AUDIT_LOG_KEY) || '[]');
+    const acceptance = JSON.parse(localStorage.getItem(LEGAL_GATE_STORAGE_KEY) || 'null');
+    const entry = {
+      eventId: `sec_${Date.now()}`,
+      eventType,
+      timestampLocal: formatDisplayDateTime(new Date()),
+      timestampIso: new Date().toISOString(),
+      inviteCode: acceptance?.inviteCode || details.inviteCode || 'UNAUTHENTICATED',
+      signerName: acceptance?.signerName || details.signerName || '',
+      storeName: acceptance?.storeName || details.storeName || '',
+      contactInfo: acceptance?.contactInfo || details.contactInfo || '',
+      device: getDeviceFingerprintSummary(),
+      ...details
+    };
+    existing.unshift(entry);
+    localStorage.setItem(LEGAL_AUDIT_LOG_KEY, JSON.stringify(existing.slice(0, 500)));
+
+    if (window.location.protocol.startsWith('http')) {
+      fetch('/api/security-audit-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entry)
+      }).catch(() => {});
+    }
+  } catch (e) {}
+}
+
+function applyLicensedPilotWatermark(acceptance) {
+  if (!acceptance) return;
+  const footer = document.querySelector('footer .max-w-7xl');
+  if (footer && !document.getElementById('pilot-license-watermark')) {
+    const badge = document.createElement('div');
+    badge.id = 'pilot-license-watermark';
+    badge.className = 'text-[10px] font-mono font-bold text-amber-300 bg-slate-800 border border-slate-700 px-2.5 py-0.5 rounded';
+    badge.textContent = `Licensed Pilot: ${acceptance.storeName} (${acceptance.inviteCode}) • Signed: ${acceptance.signerName}`;
+    footer.appendChild(badge);
+  }
+}
+
+function verifyLegalNdaGateOnLoad() {
+  const modal = document.getElementById('modal-legal-nda-gate');
+  if (!modal) return;
+
+  try {
+    const saved = JSON.parse(localStorage.getItem(LEGAL_GATE_STORAGE_KEY) || 'null');
+    if (saved && saved.inviteCode && saved.signerName && saved.agreed === true) {
+      const codeRecord = AUTHORIZED_PILOT_CODES[String(saved.inviteCode).toUpperCase()];
+      if (codeRecord && codeRecord.active) {
+        modal.classList.add('hidden');
+        applyLicensedPilotWatermark(saved);
+        recordSecurityAuditEvent('APP_OPENED', { inviteCode: saved.inviteCode });
+        return;
+      }
+    }
+  } catch (e) {}
+
+  modal.classList.remove('hidden');
+  recordSecurityAuditEvent('GATE_DISPLAYED_UNAUTHENTICATED');
+}
+
+function submitLegalNdaGate() {
+  const codeRaw = (document.getElementById('legal-invite-code')?.value || '').trim().toUpperCase();
+  const storeName = (document.getElementById('legal-store-name')?.value || '').trim();
+  const signerName = (document.getElementById('legal-signer-name')?.value || '').trim();
+  const contactInfo = (document.getElementById('legal-contact-info')?.value || '').trim();
+  const agreed = Boolean(document.getElementById('legal-agree-checkbox')?.checked);
+
+  if (!legalBoxScrolledToBottom) {
+    alert('Please scroll to the bottom of the Legal Agreement box before signing.');
+    document.getElementById('legal-nda-scroll-box')?.focus();
+    return;
+  }
+
+  const codeEntry = AUTHORIZED_PILOT_CODES[codeRaw];
+  if (!codeEntry || !codeEntry.active) {
+    recordSecurityAuditEvent('INVALID_CODE_ATTEMPT', { attemptedCode: codeRaw, storeName, signerName });
+    alert('Invalid or inactive Pilot Access Code. Contact Dimitrios "Jimmy" Regas for an authorized code.');
+    document.getElementById('legal-invite-code')?.focus();
+    return;
+  }
+
+  if (!storeName || !signerName || !contactInfo) {
+    alert('Please fill in Store/Business Name, Full Legal Name, and Email/Phone.');
+    return;
+  }
+
+  if (!agreed) {
+    alert('You must check the agreement box to accept the terms and enter the application.');
+    return;
+  }
+
+  const acceptancePayload = {
+    agreed: true,
+    agreementVersion: 'v1.0-TN-2026',
+    inviteCode: codeRaw,
+    registeredLabel: codeEntry.label,
+    storeName,
+    signerName,
+    contactInfo,
+    acceptedAtLocal: formatDisplayDateTime(new Date()),
+    acceptedAtIso: new Date().toISOString(),
+    device: getDeviceFingerprintSummary()
+  };
+
+  localStorage.setItem(LEGAL_GATE_STORAGE_KEY, JSON.stringify(acceptancePayload));
+  recordSecurityAuditEvent('NDA_SIGNED_AND_ACCEPTED', acceptancePayload);
+
+  const modal = document.getElementById('modal-legal-nda-gate');
+  if (modal) modal.classList.add('hidden');
+  applyLicensedPilotWatermark(acceptancePayload);
+}
+
+function exportSecurityAuditLogs() {
+  const logs = JSON.parse(localStorage.getItem(LEGAL_AUDIT_LOG_KEY) || '[]');
+  const blob = new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `UR_Lotto_Security_NDA_Logs_${getLocalDateStr()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  verifyLegalNdaGateOnLoad();
+});
