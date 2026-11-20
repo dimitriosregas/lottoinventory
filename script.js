@@ -2489,24 +2489,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ========================= END OF PART 10 OF 10 ========================= */
 /* ============================================================================
-   PART 11: TENNESSEE CLICKWRAP NDA GATE, ACCESS CODES, WATERMARK & AUDIT LOG
+   PART 11: TENNESSEE CLICKWRAP NDA GATE, DRAWN SIGNATURE, 30/60/90/120/365 & UNLIMITED TIMER
    ============================================================================ */
 
 const LEGAL_GATE_STORAGE_KEY = 'ur_lotto_nda_acceptance_v1';
 const LEGAL_AUDIT_LOG_KEY = 'ur_lotto_security_audit_logs_v1';
 
-// Authorized Pilot Access Codes (Add or remove tester codes here anytime)
+// Authorized Pilot Access Codes (days: 0 = Unlimited Access, or 30, 60, 90, 120, 365)
 const AUTHORIZED_PILOT_CODES = {
-  'REGAS-OWNER-2026': { label: 'Regas Enterprise (Owner)', active: true },
-  'REGAS-STORE-101': { label: 'Regas Shell #101', active: true },
-  'REGAS-STORE-102': { label: 'Regas Exxon #102', active: true },
-  'REGAS-STORE-103': { label: 'Regas Amaco #103', active: true },
-  'REGAS-STORE-104': { label: 'Regas Xpress #104', active: true },
-  'PILOT-TEST-01': { label: 'External Pilot Store 01', active: true },
-  'PILOT-TEST-02': { label: 'External Pilot Store 02', active: true }
+  'REGAS-OWNER-2026': { label: 'Regas Enterprise (Owner)', retailerId: 'OWNER', days: 0, active: true },
+  'TN-124749': { label: 'Regas Shell (#124749)', retailerId: '124749', days: 0, active: true },
+  'TN-124750': { label: 'Regas Exxon (#124750)', retailerId: '124750', days: 0, active: true },
+  'TN-122547': { label: 'Regas Xpress Amoco (#122547)', retailerId: '122547', days: 0, active: true },
+  'TN-104': { label: 'Regas Xpress (#104)', retailerId: '104', days: 0, active: true },
+  'PILOT-30-01': { label: 'Pilot Store (30-Day Trial)', retailerId: 'PILOT-30', days: 30, active: true },
+  'PILOT-60-01': { label: 'Pilot Store (60-Day Trial)', retailerId: 'PILOT-60', days: 60, active: true },
+  'PILOT-90-01': { label: 'Pilot Store (90-Day Trial)', retailerId: 'PILOT-90', days: 90, active: true },
+  'PILOT-120-01': { label: 'Pilot Store (120-Day Trial)', retailerId: 'PILOT-120', days: 120, active: true },
+  'PILOT-365-01': { label: 'Pilot Store (365-Day License)', retailerId: 'PILOT-365', days: 365, active: true }
 };
 
 let legalBoxScrolledToBottom = false;
+let ndaPadHasStroke = false;
 
 function handleLegalScrollCheck(el) {
   if (!el) return;
@@ -2514,10 +2518,162 @@ function handleLegalScrollCheck(el) {
     legalBoxScrolledToBottom = true;
     const hint = document.getElementById('legal-scroll-hint');
     if (hint) {
-      hint.textContent = '✔ Agreement reviewed. Complete the fields below to unlock.';
+      hint.textContent = '✔ Agreement reviewed. Sign and complete the fields below.';
       hint.className = 'text-[11px] font-bold text-emerald-700';
     }
   }
+}
+
+function injectEnhancedNdaControlsIntoGate() {
+  const modalBody = document.querySelector('#modal-legal-nda-gate .p-5');
+  if (!modalBody || document.getElementById('legal-drawn-sig-wrap')) return;
+
+  const agreeLabel = document.getElementById('legal-agree-checkbox')?.closest('label');
+  if (!agreeLabel) return;
+
+  // Inject Retailer #, Duration Selector, and Drawn Signature Pad right above the checkbox
+  const extraBlock = document.createElement('div');
+  extraBlock.id = 'legal-drawn-sig-wrap';
+  extraBlock.className = 'space-y-3';
+  extraBlock.innerHTML = `
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div>
+        <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">TN Lottery Retailer # *</label>
+        <input
+          type="text"
+          id="legal-retailer-num"
+          placeholder="e.g. 124749"
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono font-bold bg-white"
+        />
+      </div>
+      <div>
+        <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Requested Access Length *</label>
+        <select
+          id="legal-requested-days"
+          class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold bg-white"
+        >
+          <option value="30">30 Days (Trial)</option>
+          <option value="60">60 Days</option>
+          <option value="90">90 Days</option>
+          <option value="120">120 Days</option>
+          <option value="365">365 Days (1 Year)</option>
+          <option value="0">Unlimited Access</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <div class="flex items-center justify-between mb-1">
+        <label class="text-[11px] font-extrabold uppercase text-slate-700">Draw Electronic Signature (Finger, Stylus, or Mouse) *</label>
+        <button
+          type="button"
+          onclick="clearLegalNdaSignature()"
+          class="text-[11px] font-bold text-slate-600 hover:text-slate-900 underline"
+        >
+          Clear Signature
+        </button>
+      </div>
+      <div class="bg-white border-2 border-dashed border-slate-400 rounded-xl overflow-hidden" style="height: 110px;">
+        <canvas id="legal-nda-sig-canvas" class="w-full h-full touch-none cursor-crosshair block"></canvas>
+      </div>
+    </div>
+
+    <div id="legal-expiration-banner" class="hidden bg-red-50 border border-red-300 text-red-800 rounded-xl px-3.5 py-2 text-xs font-bold">
+      ⏰ Your pilot access period has expired. Please sign and click "Request Access Code" below for renewal.
+    </div>
+  `;
+
+  modalBody.insertBefore(extraBlock, agreeLabel);
+
+  // Update bottom button bar so both "Sign & Email Request" and "I Agree & Enter App" are available
+  const submitBtn = modalBody.querySelector('button[onclick="submitLegalNdaGate()"]');
+  if (submitBtn && submitBtn.parentElement) {
+    submitBtn.parentElement.innerHTML = `
+      <button
+        type="button"
+        onclick="signAndEmailPilotRequest()"
+        class="bg-slate-800 hover:bg-slate-700 text-amber-300 font-extrabold text-xs px-4 py-2.5 rounded-xl shadow transition"
+      >
+        📩 Need a Code? Sign &amp; Email Request
+      </button>
+      <button
+        type="button"
+        onclick="submitLegalNdaGate()"
+        class="bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm px-5 py-2.5 rounded-xl shadow-lg transition"
+      >
+        ✔ Have a Code? Enter App
+      </button>
+    `;
+  }
+
+  initLegalNdaSignatureCanvas();
+}
+
+function initLegalNdaSignatureCanvas() {
+  const canvas = document.getElementById('legal-nda-sig-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let drawing = false;
+
+  const resize = () => {
+    const r = canvas.parentElement.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) {
+      canvas.width = r.width;
+      canvas.height = r.height;
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#0f172a';
+    }
+  };
+  resize();
+  window.addEventListener('resize', resize);
+
+  const pos = (e) => {
+    const r = canvas.getBoundingClientRect();
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    return { x: cx - r.left, y: cy - r.top };
+  };
+
+  canvas.addEventListener('mousedown', (e) => {
+    drawing = true;
+    ndaPadHasStroke = true;
+    const p = pos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  });
+  canvas.addEventListener('mousemove', (e) => {
+    if (!drawing) return;
+    const p = pos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  });
+  window.addEventListener('mouseup', () => { drawing = false; });
+
+  canvas.addEventListener('touchstart', (e) => {
+    drawing = true;
+    ndaPadHasStroke = true;
+    const p = pos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  }, { passive: false });
+  canvas.addEventListener('touchmove', (e) => {
+    if (!drawing) return;
+    if (e.cancelable) e.preventDefault();
+    const p = pos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  }, { passive: false });
+  canvas.addEventListener('touchend', () => { drawing = false; });
+}
+
+function clearLegalNdaSignature() {
+  const canvas = document.getElementById('legal-nda-sig-canvas');
+  if (canvas) {
+    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  }
+  ndaPadHasStroke = false;
 }
 
 function getDeviceFingerprintSummary() {
@@ -2543,44 +2699,68 @@ function recordSecurityAuditEvent(eventType, details = {}) {
       inviteCode: acceptance?.inviteCode || details.inviteCode || 'UNAUTHENTICATED',
       signerName: acceptance?.signerName || details.signerName || '',
       storeName: acceptance?.storeName || details.storeName || '',
+      retailerNum: acceptance?.retailerNum || details.retailerNum || '',
       contactInfo: acceptance?.contactInfo || details.contactInfo || '',
       device: getDeviceFingerprintSummary(),
       ...details
     };
     existing.unshift(entry);
     localStorage.setItem(LEGAL_AUDIT_LOG_KEY, JSON.stringify(existing.slice(0, 500)));
-
-    if (window.location.protocol.startsWith('http')) {
-      fetch('/api/security-audit-log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(entry)
-      }).catch(() => {});
-    }
   } catch (e) {}
+}
+
+function getRemainingLicenseDays(acceptance) {
+  if (!acceptance || !acceptance.expiresAtMs || Number(acceptance.accessDays) === 0) {
+    return null; // Unlimited access
+  }
+  const msLeft = Number(acceptance.expiresAtMs) - Date.now();
+  return Math.ceil(msLeft / (1000 * 60 * 60 * 24));
 }
 
 function applyLicensedPilotWatermark(acceptance) {
   if (!acceptance) return;
   const footer = document.querySelector('footer .max-w-7xl');
-  if (footer && !document.getElementById('pilot-license-watermark')) {
-    const badge = document.createElement('div');
+  if (!footer) return;
+
+  let badge = document.getElementById('pilot-license-watermark');
+  if (!badge) {
+    badge = document.createElement('div');
     badge.id = 'pilot-license-watermark';
     badge.className = 'text-[10px] font-mono font-bold text-amber-300 bg-slate-800 border border-slate-700 px-2.5 py-0.5 rounded';
-    badge.textContent = `Licensed Pilot: ${acceptance.storeName} (${acceptance.inviteCode}) • Signed: ${acceptance.signerName}`;
     footer.appendChild(badge);
   }
+
+  const daysLeft = getRemainingLicenseDays(acceptance);
+  const expiryText = daysLeft === null
+    ? 'Unlimited Access'
+    : `Expires: ${acceptance.expiresDateStr} (${daysLeft}d left)`;
+
+  badge.textContent = `Licensed Pilot: ${acceptance.storeName} (${acceptance.inviteCode}) • ${expiryText}`;
 }
 
 function verifyLegalNdaGateOnLoad() {
   const modal = document.getElementById('modal-legal-nda-gate');
   if (!modal) return;
 
+  injectEnhancedNdaControlsIntoGate();
+
   try {
     const saved = JSON.parse(localStorage.getItem(LEGAL_GATE_STORAGE_KEY) || 'null');
     if (saved && saved.inviteCode && saved.signerName && saved.agreed === true) {
       const codeRecord = AUTHORIZED_PILOT_CODES[String(saved.inviteCode).toUpperCase()];
       if (codeRecord && codeRecord.active) {
+        if (saved.expiresAtMs && Number(saved.accessDays) > 0 && Date.now() > Number(saved.expiresAtMs)) {
+          recordSecurityAuditEvent('PILOT_ACCESS_EXPIRED', { inviteCode: saved.inviteCode });
+          document.getElementById('legal-expiration-banner')?.classList.remove('hidden');
+          if (document.getElementById('legal-store-name')) document.getElementById('legal-store-name').value = saved.storeName || '';
+          if (document.getElementById('legal-signer-name')) document.getElementById('legal-signer-name').value = saved.signerName || '';
+          if (document.getElementById('legal-contact-info')) document.getElementById('legal-contact-info').value = saved.contactInfo || '';
+          if (document.getElementById('legal-retailer-num')) document.getElementById('legal-retailer-num').value = saved.retailerNum || '';
+          modal.classList.remove('hidden');
+          setTimeout(initLegalNdaSignatureCanvas, 30);
+          return;
+        }
+
         modal.classList.add('hidden');
         applyLicensedPilotWatermark(saved);
         recordSecurityAuditEvent('APP_OPENED', { inviteCode: saved.inviteCode });
@@ -2590,59 +2770,155 @@ function verifyLegalNdaGateOnLoad() {
   } catch (e) {}
 
   modal.classList.remove('hidden');
+  setTimeout(initLegalNdaSignatureCanvas, 30);
   recordSecurityAuditEvent('GATE_DISPLAYED_UNAUTHENTICATED');
 }
 
-function submitLegalNdaGate() {
-  const codeRaw = (document.getElementById('legal-invite-code')?.value || '').trim().toUpperCase();
+function validateGateCommonFields() {
   const storeName = (document.getElementById('legal-store-name')?.value || '').trim();
   const signerName = (document.getElementById('legal-signer-name')?.value || '').trim();
   const contactInfo = (document.getElementById('legal-contact-info')?.value || '').trim();
+  const retailerNum = (document.getElementById('legal-retailer-num')?.value || '').trim();
   const agreed = Boolean(document.getElementById('legal-agree-checkbox')?.checked);
 
   if (!legalBoxScrolledToBottom) {
     alert('Please scroll to the bottom of the Legal Agreement box before signing.');
     document.getElementById('legal-nda-scroll-box')?.focus();
-    return;
+    return null;
+  }
+  if (!storeName || !signerName || !contactInfo || !retailerNum) {
+    alert('Please fill in Store Name, TN Lottery Retailer #, Full Legal Name, and Email/Phone.');
+    return null;
+  }
+  if (!ndaPadHasStroke) {
+    alert('Please draw your signature inside the signature box.');
+    return null;
+  }
+  if (!agreed) {
+    alert('Please check the agreement box to accept the Tennessee NDA terms.');
+    return null;
   }
 
-  const codeEntry = AUTHORIZED_PILOT_CODES[codeRaw];
-  if (!codeEntry || !codeEntry.active) {
-    recordSecurityAuditEvent('INVALID_CODE_ATTEMPT', { attemptedCode: codeRaw, storeName, signerName });
-    alert('Invalid or inactive Pilot Access Code. Contact Dimitrios "Jimmy" Regas for an authorized code.');
+  const canvas = document.getElementById('legal-nda-sig-canvas');
+  const signatureDataUrl = canvas ? canvas.toDataURL('image/png') : '';
+
+  return { storeName, signerName, contactInfo, retailerNum, signatureDataUrl };
+}
+
+function downloadSignedNdaReceiptHtml(data, modeLabel, codeOrDaysLabel) {
+  const timestamp = formatDisplayDateTime(new Date());
+  const html = `
+    <html><body style="font-family:Arial,sans-serif;padding:24px;max-width:720px;margin:auto;border:2px solid #000;">
+      <h2 style="margin-bottom:4px;">UR STORE CENTRAL — SIGNED PILOT NDA (${modeLabel})</h2>
+      <p style="margin-top:0;color:#333;">Confidentiality, Non-Disclosure &amp; Limited Pilot Evaluation Agreement (Tennessee)</p>
+      <hr/>
+      <p><strong>Timestamp:</strong> ${timestamp}</p>
+      <p><strong>Full Legal Name:</strong> ${data.signerName}</p>
+      <p><strong>Store / Business Name:</strong> ${data.storeName}</p>
+      <p><strong>TN Lottery Retailer #:</strong> ${data.retailerNum}</p>
+      <p><strong>Email / Phone:</strong> ${data.contactInfo}</p>
+      <p><strong>Access / Duration:</strong> ${codeOrDaysLabel}</p>
+      <p><strong>Legal Acceptance:</strong> Licensee agrees not to copy, reproduce, share access, reverse-engineer, or pitch any part of UR Store Central without prior written consent from Dimitrios "Jimmy" Regas (Governed by Tennessee Law).</p>
+      <div style="margin-top:16px;"><strong>Electronic Signature:</strong><br/>
+        <img src="${data.signatureDataUrl}" style="max-height:95px;border-bottom:1px solid #000;margin-top:6px;"/>
+      </div>
+    </body></html>
+  `;
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `Signed_NDA_${data.storeName.replace(/[^a-zA-Z0-9]/g, '_')}_${data.retailerNum}.html`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// OPTION 1: Tester signs & emails request to dimitriosregas@gmail.com to get a code
+function signAndEmailPilotRequest() {
+  const fields = validateGateCommonFields();
+  if (!fields) return;
+
+  const daysVal = document.getElementById('legal-requested-days')?.value || '30';
+  const daysLabel = daysVal === '0' ? 'Unlimited Access' : `${daysVal} Days`;
+  const timestamp = formatDisplayDateTime(new Date());
+
+  recordSecurityAuditEvent('NDA_SIGNED_ACCESS_REQUESTED', {
+    ...fields,
+    requestedDays: daysVal
+  });
+
+  downloadSignedNdaReceiptHtml(fields, 'ACCESS REQUEST', daysLabel);
+
+  const subject = encodeURIComponent(`[Signed Pilot NDA] ${fields.storeName} (#${fields.retailerNum}) — ${fields.signerName}`);
+  const body = encodeURIComponent(
+    `Hello Dimitrios "Jimmy" Regas,\n\n` +
+    `I have reviewed and signed the UR Store Central Confidentiality & Pilot Evaluation Agreement (Tennessee). Please issue my Pilot Access Code:\n\n` +
+    `• Full Legal Name: ${fields.signerName}\n` +
+    `• Store / Business Name: ${fields.storeName}\n` +
+    `• TN Lottery Retailer #: ${fields.retailerNum}\n` +
+    `• Email / Phone: ${fields.contactInfo}\n` +
+    `• Requested Access Length: ${daysLabel} (days: ${daysVal})\n` +
+    `• Signed Timestamp: ${timestamp}\n\n` +
+    `(Note: A signed copy of my NDA form with my drawn signature was just downloaded to my device.)`
+  );
+
+  window.location.href = `mailto:dimitriosregas@gmail.com?subject=${subject}&body=${body}`;
+}
+
+// OPTION 2: User already has an authorized code -> verifies code, starts timer & unlocks app
+function submitLegalNdaGate() {
+  const codeRaw = (document.getElementById('legal-invite-code')?.value || '').trim().toUpperCase();
+  if (!codeRaw) {
+    alert('Enter your assigned Pilot Access Code, or click "Need a Code? Sign & Email Request".');
     document.getElementById('legal-invite-code')?.focus();
     return;
   }
 
-  if (!storeName || !signerName || !contactInfo) {
-    alert('Please fill in Store/Business Name, Full Legal Name, and Email/Phone.');
+  const fields = validateGateCommonFields();
+  if (!fields) return;
+
+  const codeEntry = AUTHORIZED_PILOT_CODES[codeRaw];
+  if (!codeEntry || !codeEntry.active) {
+    recordSecurityAuditEvent('INVALID_CODE_ATTEMPT', { attemptedCode: codeRaw, ...fields });
+    alert('Invalid or inactive Pilot Access Code. Click "Need a Code? Sign & Email Request" to request one.');
+    document.getElementById('legal-invite-code')?.focus();
     return;
   }
 
-  if (!agreed) {
-    alert('You must check the agreement box to accept the terms and enter the application.');
-    return;
-  }
+  const accessDays = Number(codeEntry.days) || 0;
+  const nowMs = Date.now();
+  const expiresAtMs = accessDays > 0 ? nowMs + accessDays * 24 * 60 * 60 * 1000 : null;
+  const expiresDateStr = expiresAtMs ? getLocalDateStr(new Date(expiresAtMs)) : 'Unlimited';
 
   const acceptancePayload = {
     agreed: true,
     agreementVersion: 'v1.0-TN-2026',
     inviteCode: codeRaw,
     registeredLabel: codeEntry.label,
-    storeName,
-    signerName,
-    contactInfo,
-    acceptedAtLocal: formatDisplayDateTime(new Date()),
-    acceptedAtIso: new Date().toISOString(),
+    ...fields,
+    accessDays,
+    expiresAtMs,
+    expiresDateStr,
+    acceptedAtLocal: formatDisplayDateTime(new Date(nowMs)),
+    acceptedAtIso: new Date(nowMs).toISOString(),
     device: getDeviceFingerprintSummary()
   };
 
   localStorage.setItem(LEGAL_GATE_STORAGE_KEY, JSON.stringify(acceptancePayload));
-  recordSecurityAuditEvent('NDA_SIGNED_AND_ACCEPTED', acceptancePayload);
+  recordSecurityAuditEvent('NDA_SIGNED_AND_UNLOCKED', acceptancePayload);
+
+  const durationText = accessDays === 0 ? `Unlimited Access (${codeRaw})` : `${accessDays} Days — Expires ${expiresDateStr} (${codeRaw})`;
+  downloadSignedNdaReceiptHtml(fields, 'ACTIVATED LICENSE', durationText);
 
   const modal = document.getElementById('modal-legal-nda-gate');
   if (modal) modal.classList.add('hidden');
   applyLicensedPilotWatermark(acceptancePayload);
+
+  alert(
+    accessDays === 0
+      ? `✔ Welcome, ${fields.signerName}!\n\nUnlimited Access activated for ${fields.storeName} (${codeRaw}).`
+      : `✔ Welcome, ${fields.signerName}!\n\nYour ${accessDays}-day pilot license for ${fields.storeName} is active through ${expiresDateStr}.`
+  );
 }
 
 function exportSecurityAuditLogs() {
