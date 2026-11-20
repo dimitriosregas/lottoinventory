@@ -2265,7 +2265,7 @@ function printCombinedPeriodReport() {
   openWorksheetPrintChoiceModal();
 }
 /* ============================================================================
-   PART 11 OF 11: TAB NAVIGATION, UI ORCHESTRATION, LEGAL NDA GATE & INIT
+   PART 11 OF 11: TAB NAVIGATION, UI ORCHESTRATION, NDA GATE & INITIALIZATION
    ============================================================================ */
 function escapeHtml(str) {
   return String(str ?? '')
@@ -2318,7 +2318,7 @@ function switchTab(tabName) {
   switchMainView(tabName);
 }
 
-// Mandatory Legal NDA Gate Handlers
+// Mandatory Legal NDA Gate & Master Enterprise Access Codes Check
 let legalScrolledToBottom = false;
 
 function handleLegalScrollCheck(el) {
@@ -2347,13 +2347,19 @@ function submitLegalNdaGate() {
   const signerName = (signerInput?.value || '').trim();
   const contact = (contactInput?.value || '').trim();
 
+  // Authorized Master Enterprise & Unlimited License Codes
+  const validMasterCodes = [
+    'UNLIMITED', '360', '90', '60', '30',
+    'ENTERPRISE', 'MASTER', 'OWNER', 'REGAS', 'DIMITRIOS'
+  ];
+
   if (!legalScrolledToBottom) {
     alert('Please scroll to the bottom of the NDA text in the evaluation agreement box before continuing.');
     document.getElementById('legal-nda-scroll-box')?.focus();
     return;
   }
-  if (!code) {
-    alert('Please enter your assigned Pilot Access Code.');
+  if (!code || !validMasterCodes.includes(code)) {
+    alert('Invalid or missing Pilot Access Code. Please enter an authorized Enterprise or Master tier code (e.g., UNLIMITED, 360, 90, 60, 30).');
     codeInput?.focus();
     return;
   }
@@ -2371,6 +2377,7 @@ function submitLegalNdaGate() {
     storeName,
     signerName,
     contact,
+    tier: code,
     unlockedAt: new Date().toISOString()
   };
   localStorage.setItem('ur_lotto_pilot_nda_auth_v3', JSON.stringify(authPayload));
