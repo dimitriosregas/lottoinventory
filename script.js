@@ -1598,358 +1598,323 @@ function jumpToLoggedReportDate(dateStr) {
 
 /* ========================= END OF PART 7 OF 10 ========================= */
 /* ============================================================================
-   PART 8 OF 10: PRINTING ENGINE (BACKUP WORKSHEET, 80MM/LETTER & COMBINED REPORTS)
+   PART 8 OF 10: PRINTING ENGINE (80MM THERMAL, US LETTER & BACKUP WORKSHEET)
    ============================================================================ */
 
-function openWorksheetPrintChoiceModal() {
+function openPrintChoiceModal() {
   const modal = document.getElementById('modal-print-choice');
   if (modal) modal.classList.remove('hidden');
 }
 
-function closeWorksheetPrintChoiceModal() {
+function closePrintChoiceModal() {
   const modal = document.getElementById('modal-print-choice');
   if (modal) modal.classList.add('hidden');
 }
 
-// 1. PEN-READY MANUAL BACKUP WORKSHEET (BOX#, GAME# & NAME, PRICE, START# + BLANK, BLANK END#, SOLD, SALES$)
+function openBackupWorksheetChoiceModal() {
+  const modal = document.getElementById('modal-backup-worksheet-choice');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeBackupWorksheetChoiceModal() {
+  const modal = document.getElementById('modal-backup-worksheet-choice');
+  if (modal) modal.classList.add('hidden');
+}
+
 function printManualBackupWorksheet() {
+  openBackupWorksheetChoiceModal();
+}
+
+// 1. PEN-READY MANUAL BACKUP WORKSHEET ('1page' FIT OR '2page' NUMBERED WITH REPORT TOTAL & DAY TOTAL)
+function executeManualBackupWorksheetPrint(layoutMode = '2page') {
+  closeBackupWorksheetChoiceModal();
   const printContainer = document.getElementById('print-container');
   if (!printContainer || !activeStoreState) return;
 
   const storeLabel = `${activeStoreState.locationName} (#${activeStoreState.locationCode})`;
-  const cashierName = (activeStoreState.reconciliation?.cashierOut || '').trim() || '______________________';
+  const cashierVal = (activeStoreState.reconciliation?.cashierOut || '').trim();
+  const cashierDisplay = cashierVal ? cashierVal : '______________________';
   const shiftVal = activeStoreState.reconciliation?.shiftType || '______________________';
   const dateStr = activeStoreState.reconciliation?.auditDate || getLocalDateStr();
+  const boxes = activeStoreState.boxes || [];
 
-  const rowsHtml = activeStoreState.boxes.map((box, idx) => {
-    const boxLabel = box.label || String(idx + 1);
-    const gameNum = box.gameNum || '____';
-    const gameName = box.gameName || '____________________';
-    const price = box.price ? `$${Number(box.price).toFixed(0)}` : '____';
-    const startVal = (box.startTicket !== undefined && box.startTicket !== null && box.startTicket !== '')
-      ? box.startTicket
+  const isOnePage = layoutMode === '1page';
+  const pageChunks = isOnePage
+    ? [boxes]
+    : [boxes.slice(0, Math.ceil(boxes.length / 2)), boxes.slice(Math.ceil(boxes.length / 2))];
+
+  const totalPages = pageChunks.length;
+  const rowPad = isOnePage ? '2px 4px' : '5px 6px';
+  const fontSize = isOnePage ? '9.5px' : '11.5px';
+  const blankLineHeight = isOnePage ? '12px' : '21px';
+
+  const pagesHtml = pageChunks.map((chunk, pageIdx) => {
+    const pageNum = pageIdx + 1;
+    const isLastPage = pageNum === totalPages;
+    const startOffset = pageIdx === 0 ? 0 : pageChunks[0].length;
+
+    const rowsHtml = chunk.map((box, idx) => {
+      const globalIdx = startOffset + idx;
+      const boxLabel = box.label || String(globalIdx + 1);
+      const gameNum = box.gameNum || '____';
+      const gameName = box.gameName || '____________________';
+      const price = box.price ? `$${Number(box.price).toFixed(0)}` : '____';
+
+      return `
+        <tr>
+          <td style="border:1px solid #000; padding:${rowPad}; text-align:center; font-weight:900;">${boxLabel}</td>
+          <td style="border:1px solid #000; padding:${rowPad};">
+            <strong>${gameNum}</strong> — ${gameName}
+          </td>
+          <td style="border:1px solid #000; padding:${rowPad}; text-align:center; font-weight:700;">${price}</td>
+          <td style="border:1px solid #000; padding:${rowPad};">
+            <div style="border-bottom:1px solid #000; height:${blankLineHeight};"></div>
+          </td>
+          <td style="border:1px solid #000; padding:${rowPad};">
+            <div style="border-bottom:1px solid #000; height:${blankLineHeight};"></div>
+          </td>
+          <td style="border:1px solid #000; padding:${rowPad};">
+            <div style="border-bottom:1px solid #000; height:${blankLineHeight};"></div>
+          </td>
+          <td style="border:1px solid #000; padding:${rowPad};">
+            <div style="border-bottom:1px solid #000; height:${blankLineHeight};"></div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    const totalsFooterHtml = isLastPage
+      ? `
+        <tfoot>
+          <tr style="background:#f1f5f9; font-weight:900;">
+            <td colspan="5" style="border:1px solid #000; padding:${isOnePage ? '3px 6px' : '6px'}; text-align:right;">MANUAL SHIFT TOTALS (SCRATCH):</td>
+            <td style="border:1px solid #000; padding:${isOnePage ? '3px 6px' : '6px'};">&nbsp;</td>
+            <td style="border:1px solid #000; padding:${isOnePage ? '3px 6px' : '6px'};">$</td>
+          </tr>
+        </tfoot>
+      `
       : '';
 
+    const summaryTotalsBoxHtml = isLastPage
+      ? `
+        <table style="width:100%; border-collapse:collapse; margin-top:${isOnePage ? '5px' : '10px'}; font-size:${isOnePage ? '10px' : '11.5px'}; font-weight:800;">
+          <tr>
+            <td style="border:1px solid #000; padding:${isOnePage ? '4px 6px' : '7px'}; width:25%; background:#f8fafc;">
+              SHIFT TOTAL ($):<br/><span style="font-size:${isOnePage ? '11px' : '13px'};">$_________________</span>
+            </td>
+            <td style="border:1px solid #000; padding:${isOnePage ? '4px 6px' : '7px'}; width:25%; background:#f8fafc;">
+              REPORT TOTAL ($):<br/><span style="font-size:${isOnePage ? '11px' : '13px'};">$_________________</span>
+            </td>
+            <td style="border:1px solid #000; padding:${isOnePage ? '4px 6px' : '7px'}; width:25%; background:#f8fafc;">
+              DAY TOTAL ($):<br/><span style="font-size:${isOnePage ? '11px' : '13px'};">$_________________</span>
+            </td>
+            <td style="border:1px solid #000; padding:${isOnePage ? '4px 6px' : '7px'}; width:25%; background:#f8fafc;">
+              OVER / SHORT ($):<br/><span style="font-size:${isOnePage ? '11px' : '13px'};">$_________________</span>
+            </td>
+          </tr>
+        </table>
+      `
+      : '';
+
+    const pageBreakStyle = !isLastPage ? 'page-break-after: always; break-after: page;' : '';
+
     return `
-      <tr>
-        <td style="border:1px solid #000; padding:4px 5px; text-align:center; font-weight:900;">${boxLabel}</td>
-        <td style="border:1px solid #000; padding:4px 6px;">
-          <strong>${gameNum}</strong> — ${gameName}
-        </td>
-        <td style="border:1px solid #000; padding:4px 5px; text-align:center; font-weight:700;">${price}</td>
-        <td style="border:1px solid #000; padding:4px 5px; text-align:center;">
-          <div style="font-weight:800; font-size:11px; line-height:1.1;">${startVal !== '' ? startVal : '&nbsp;'}</div>
-          <div style="border-bottom:1px solid #000; height:12px; margin-top:2px;"></div>
-        </td>
-        <td style="border:1px solid #000; padding:4px 5px;">
-          <div style="border-bottom:1px solid #000; height:22px;"></div>
-        </td>
-        <td style="border:1px solid #000; padding:4px 5px;">
-          <div style="border-bottom:1px solid #000; height:22px;"></div>
-        </td>
-        <td style="border:1px solid #000; padding:4px 5px;">
-          <div style="border-bottom:1px solid #000; height:22px;"></div>
-        </td>
-      </tr>
+      <div style="font-family: Arial, sans-serif; color: #000; padding: ${isOnePage ? '4px 8px' : '10px'}; max-width: 8.5in; margin: 0 auto; ${pageBreakStyle}">
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #000; padding-bottom:4px; margin-bottom:5px;">
+          <div>
+            <div style="font-size:${isOnePage ? '13px' : '15px'}; font-weight:900; letter-spacing:0.4px;">UR STORE CENTRAL LOTTO AUDIT — MANUAL BACKUP WORKSHEET</div>
+            <div style="font-size:${isOnePage ? '11px' : '12px'}; font-weight:800; margin-top:2px;">Location: ${storeLabel}</div>
+          </div>
+          <div style="text-align:right; font-size:${isOnePage ? '10px' : '11px'}; line-height:1.3;">
+            <div><strong>Date:</strong> ${dateStr}</div>
+            <div><strong>Shift:</strong> ${shiftVal}</div>
+            <div><strong>Cashier:</strong> ${cashierDisplay}</div>
+          </div>
+        </div>
+
+        <table style="width:100%; border-collapse:collapse; font-size:${fontSize};">
+          <thead>
+            <tr style="background:#e2e8f0;">
+              <th style="border:1px solid #000; padding:4px; width:46px; text-align:center;">BOX #</th>
+              <th style="border:1px solid #000; padding:4px; text-align:left;">GAME # &amp; NAME</th>
+              <th style="border:1px solid #000; padding:4px; width:46px; text-align:center;">PRICE</th>
+              <th style="border:1px solid #000; padding:4px; width:82px; text-align:center;">START #</th>
+              <th style="border:1px solid #000; padding:4px; width:82px; text-align:center;">END #</th>
+              <th style="border:1px solid #000; padding:4px; width:76px; text-align:center;"># SOLD</th>
+              <th style="border:1px solid #000; padding:4px; width:86px; text-align:center;">SALES $</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+          ${totalsFooterHtml}
+        </table>
+
+        ${summaryTotalsBoxHtml}
+
+        <div style="margin-top:${isOnePage ? '6px' : '12px'}; border-top:1px solid #000; padding-top:5px; font-size:${isOnePage ? '10px' : '11px'};">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <div><strong>Page ${pageNum} of ${totalPages}</strong> &nbsp;|&nbsp; <strong>Location:</strong> ${storeLabel}</div>
+            <div><strong>Date:</strong> ${dateStr} &nbsp;|&nbsp; <strong>Shift:</strong> ${shiftVal}</div>
+          </div>
+          <div style="display:flex; justify-content:space-between; gap:16px;">
+            <div>Cashier Signature: __________________________________</div>
+            <div>Verifier / Manager: ________________________________</div>
+          </div>
+        </div>
+      </div>
     `;
   }).join('');
 
-  printContainer.innerHTML = `
-    <div style="font-family: Arial, sans-serif; color: #000; padding: 10px; max-width: 8.5in; margin: 0 auto;">
-      <div style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #000; padding-bottom:6px; margin-bottom:8px;">
-        <div>
-          <div style="font-size:15px; font-weight:900; letter-spacing:0.4px;">UR STORE CENTRAL LOTTO AUDIT — MANUAL BACKUP WORKSHEET</div>
-          <div style="font-size:12px; font-weight:700; margin-top:2px;">Location: ${storeLabel}</div>
-        </div>
-        <div style="text-align:right; font-size:11px; line-height:1.45;">
-          <div><strong>Date:</strong> ${dateStr}</div>
-          <div><strong>Shift:</strong> ${shiftVal}</div>
-          <div><strong>Cashier:</strong> ${cashierName}</div>
-        </div>
-      </div>
-
-      <table style="width:100%; border-collapse:collapse; font-size:11px;">
-        <thead>
-          <tr style="background:#e2e8f0;">
-            <th style="border:1px solid #000; padding:5px; width:46px; text-align:center;">BOX #</th>
-            <th style="border:1px solid #000; padding:5px; text-align:left;">GAME # &amp; NAME</th>
-            <th style="border:1px solid #000; padding:5px; width:48px; text-align:center;">PRICE</th>
-            <th style="border:1px solid #000; padding:5px; width:76px; text-align:center;">START #</th>
-            <th style="border:1px solid #000; padding:5px; width:82px; text-align:center;">END #</th>
-            <th style="border:1px solid #000; padding:5px; width:78px; text-align:center;"># SOLD</th>
-            <th style="border:1px solid #000; padding:5px; width:88px; text-align:center;">SALES $</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rowsHtml}
-        </tbody>
-        <tfoot>
-          <tr style="background:#f1f5f9; font-weight:900;">
-            <td colspan="5" style="border:1px solid #000; padding:7px; text-align:right;">MANUAL SHIFT TOTALS:</td>
-            <td style="border:1px solid #000; padding:7px;">&nbsp;</td>
-            <td style="border:1px solid #000; padding:7px;">$</td>
-          </tr>
-        </tfoot>
-      </table>
-
-      <div style="margin-top:14px; display:flex; justify-content:space-between; font-size:11px;">
-        <div>Cashier Signature: ____________________________________</div>
-        <div>Verifier / Manager: __________________________________</div>
-      </div>
-    </div>
-  `;
-
+  printContainer.innerHTML = pagesHtml;
   window.print();
 }
 
-// 2. COMPLETED SHIFT REPORT PRINT (80MM THERMAL OR FULL LETTER PAGE WITH SIGNATURE)
-function buildShiftReportPrintHtml(reportData, format = 'letter') {
-  const receiptFontPt = Number(localStorage.getItem(STORAGE_KEYS.RECEIPT_FONT_SIZE) || 11);
-  const storeTitle = `${reportData.locationName} (#${reportData.locationCode})`;
-  const sigImgHtml = reportData.signatureDataUrl
-    ? `<img src="${reportData.signatureDataUrl}" alt="Cashier Signature" style="max-height:52px; max-width:220px; border-bottom:1px solid #000; display:block; margin-top:4px;" />`
-    : `<div style="border-bottom:1px solid #000; height:32px; width:220px; margin-top:6px;"></div>`;
+// 2. PRINT SHIFT AUDIT REPORT (80MM THERMAL RECEIPT OR SINGLE-PAGE US LETTER)
+function executeShiftAuditPrint(format = 'letter') {
+  closePrintChoiceModal();
+  if (!activeStoreState) return;
+  recalculateAllBoxes();
 
-  const activeBoxes = (reportData.boxesSnapshot || []).filter(b => b.gameNum || Number(b.ticketsSold) > 0);
+  const printContainer = document.getElementById('print-container');
+  if (!printContainer) return;
+
+  const r = activeStoreState.reconciliation || {};
+  const totals = getShiftTotalsSummary();
+  const storeLabel = `${activeStoreState.locationName} (#${activeStoreState.locationCode})`;
+  const activeBoxes = (activeStoreState.boxes || []).filter(
+    b => b.gameNum || b.ticketsSold > 0 || (b.rollovers && b.rollovers.length > 0)
+  );
 
   if (format === '80mm') {
-    const itemLines = activeBoxes.map(b => `
-      <tr>
-        <td style="padding:2px 0; font-weight:700;">${b.label}</td>
-        <td style="padding:2px 2px;">${b.gameNum || '-'}</td>
-        <td style="padding:2px 2px; text-align:center;">${b.startTicket}→${b.endTicket !== '' ? b.endTicket : '-'}</td>
-        <td style="padding:2px 2px; text-align:center;">${b.ticketsSold}</td>
-        <td style="padding:2px 0; text-align:right; font-weight:700;">$${(Number(b.salesAmount) || 0).toFixed(2)}</td>
-      </tr>
-    `).join('');
+    const linesHtml = activeBoxes.map(b => {
+      const hasRoll = b.rollovers && b.rollovers.length > 0;
+      const rollTag = hasRoll ? ` [+${b.rollovers.length}R]` : '';
+      return `
+        <div style="border-bottom:1px dashed #000; padding:3px 0; font-size:11px;">
+          <div style="display:flex; justify-content:space-between; font-weight:800;">
+            <span>B${b.label || ''} #${b.gameNum || '-'} ($${b.price || 0})${rollTag}</span>
+            <span>$${(b.salesDollars || 0).toFixed(2)}</span>
+          </div>
+          <div style="font-size:10px;">
+            ${b.gameName || 'Game'} | ${b.startNum || 0}→${b.endNum || 0} (${b.ticketsSold || 0} tix)
+          </div>
+        </div>
+      `;
+    }).join('');
 
-    return `
-      <div style="width:72mm; margin:0 auto; font-family:'Courier New', monospace; font-size:${receiptFontPt}pt; color:#000; line-height:1.25;">
-        <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:5px; margin-bottom:5px;">
-          <div style="font-weight:900; font-size:${receiptFontPt + 2}pt;">UR STORE CENTRAL</div>
-          <div style="font-weight:700;">LOTTO SHIFT AUDIT</div>
-          <div>${storeTitle}</div>
+    printContainer.innerHTML = `
+      <div style="width:76mm; margin:0 auto; font-family:'Courier New', monospace; color:#000; font-size:11px; line-height:1.3;">
+        <div style="text-align:center; border-bottom:2px solid #000; padding-bottom:5px; margin-bottom:5px;">
+          <div style="font-size:14px; font-weight:900;">UR STORE CENTRAL</div>
+          <div style="font-weight:800;">LOTTO SHIFT AUDIT RECEIPT</div>
+          <div>${storeLabel}</div>
+          <div>${r.auditDate || getLocalDateStr()} | ${r.shiftType || 'Shift'}</div>
+          <div>Cashier: ${r.cashierOut || 'Unspecified'}</div>
         </div>
-        <div style="border-bottom:1px dashed #000; padding-bottom:5px; margin-bottom:5px;">
-          <div><strong>Date:</strong> ${reportData.auditDate}</div>
-          <div><strong>Shift:</strong> ${reportData.shiftType}</div>
-          <div><strong>Cashier:</strong> ${reportData.cashierOut || 'Unspecified'}</div>
-          ${reportData.cashierIn ? `<div><strong>Verified:</strong> ${reportData.cashierIn}</div>` : ''}
+
+        ${linesHtml || '<div style="text-align:center; padding:8px 0;">No active box counts recorded.</div>'}
+
+        <div style="border-top:2px solid #000; margin-top:6px; padding-top:5px; font-size:11px;">
+          <div style="display:flex; justify-content:space-between;"><span>Total Tickets Sold:</span><strong>${totals.totalTickets}</strong></div>
+          <div style="display:flex; justify-content:space-between;"><span>Scratch Sales:</span><strong>$${totals.scratchSales.toFixed(2)}</strong></div>
+          <div style="display:flex; justify-content:space-between;"><span>Online / Draw Sales:</span><strong>$${totals.onlineSales.toFixed(2)}</strong></div>
+          <div style="display:flex; justify-content:space-between; font-size:12px; border-top:1px solid #000; margin-top:3px; padding-top:3px;">
+            <span>TOTAL GROSS LOTTO:</span><strong>$${totals.grossSales.toFixed(2)}</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;"><span>Less Total Cashes:</span><span>-$${totals.totalCashes.toFixed(2)}</span></div>
+          <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:900;">
+            <span>NET EXPECTED CASH:</span><span>$${totals.netExpectedCash.toFixed(2)}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between;"><span>Actual Cash Dropped:</span><span>$${totals.actualCashDropped.toFixed(2)}</span></div>
+          <div style="display:flex; justify-content:space-between; font-size:13px; font-weight:900; border-top:1px dashed #000; margin-top:3px; padding-top:3px;">
+            <span>OVER / SHORT:</span><span>${totals.variance >= 0 ? '+' : ''}$${totals.variance.toFixed(2)}</span>
+          </div>
         </div>
-        <table style="width:100%; border-collapse:collapse; font-size:${Math.max(8, receiptFontPt - 1)}pt; border-bottom:1px dashed #000; margin-bottom:6px;">
+
+        ${r.signatureDataUrl ? `
+          <div style="margin-top:8px; text-align:center;">
+            <img src="${r.signatureDataUrl}" style="max-height:42px; max-width:65mm;" />
+            <div style="border-top:1px solid #000; font-size:10px;">Cashier Signature</div>
+          </div>
+        ` : `
+          <div style="margin-top:18px; border-top:1px solid #000; font-size:10px;">Cashier Signature</div>
+        `}
+        <div style="text-align:center; font-size:9px; margin-top:6px;">Printed ${formatDisplayDateTime(new Date())}</div>
+      </div>
+    `;
+  } else {
+    // SINGLE-PAGE US LETTER (8.5" x 11")
+    const rowsHtml = (activeStoreState.boxes || []).map((b, idx) => {
+      const hasRoll = b.rollovers && b.rollovers.length > 0;
+      return `
+        <tr>
+          <td style="border:1px solid #000; padding:2px 4px; text-align:center; font-weight:800;">${b.label || idx + 1}</td>
+          <td style="border:1px solid #000; padding:2px 4px;">${b.gameNum || '-'}</td>
+          <td style="border:1px solid #000; padding:2px 4px;">${b.gameName || 'Empty'}${hasRoll ? ` (+${b.rollovers.length} Roll)` : ''}</td>
+          <td style="border:1px solid #000; padding:2px 4px; text-align:center;">${b.price ? `$${b.price}` : '-'}</td>
+          <td style="border:1px solid #000; padding:2px 4px; text-align:center;">${b.startNum || 0}</td>
+          <td style="border:1px solid #000; padding:2px 4px; text-align:center;">${b.endNum || 0}</td>
+          <td style="border:1px solid #000; padding:2px 4px; text-align:center; font-weight:700;">${b.ticketsSold || 0}</td>
+          <td style="border:1px solid #000; padding:2px 4px; text-align:right; font-weight:800;">$${(b.salesDollars || 0).toFixed(2)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    printContainer.innerHTML = `
+      <div style="font-family:Arial, sans-serif; color:#000; max-width:8.5in; margin:0 auto; font-size:10px;">
+        <div style="display:flex; justify-content:space-between; border-bottom:2px solid #000; padding-bottom:4px; margin-bottom:6px;">
+          <div>
+            <div style="font-size:14px; font-weight:900;">UR STORE CENTRAL LOTTO AUDIT — SHIFT REPORT</div>
+            <div style="font-size:11px; font-weight:800;">${storeLabel}</div>
+          </div>
+          <div style="text-align:right; font-size:10px;">
+            <div><strong>Date:</strong> ${r.auditDate || getLocalDateStr()} | <strong>Shift:</strong> ${r.shiftType || ''}</div>
+            <div><strong>Cashier:</strong> ${r.cashierOut || 'Unspecified'} | <strong>Verifier:</strong> ${r.verifierName || 'N/A'}</div>
+          </div>
+        </div>
+
+        <table style="width:100%; border-collapse:collapse; font-size:9px; margin-bottom:6px;">
           <thead>
-            <tr style="border-bottom:1px solid #000;">
-              <th style="text-align:left;">Box</th>
-              <th style="text-align:left;">Game</th>
-              <th style="text-align:center;">S→E</th>
-              <th style="text-align:center;">Tix</th>
-              <th style="text-align:right;">Sales</th>
+            <tr style="background:#e2e8f0;">
+              <th style="border:1px solid #000; padding:3px; width:36px;">BOX</th>
+              <th style="border:1px solid #000; padding:3px; width:50px;">GAME #</th>
+              <th style="border:1px solid #000; padding:3px; text-align:left;">GAME NAME</th>
+              <th style="border:1px solid #000; padding:3px; width:40px;">PRICE</th>
+              <th style="border:1px solid #000; padding:3px; width:52px;">START</th>
+              <th style="border:1px solid #000; padding:3px; width:52px;">END</th>
+              <th style="border:1px solid #000; padding:3px; width:45px;">SOLD</th>
+              <th style="border:1px solid #000; padding:3px; width:64px; text-align:right;">SALES $</th>
             </tr>
           </thead>
-          <tbody>${itemLines}</tbody>
+          <tbody>${rowsHtml}</tbody>
         </table>
-        <div style="border-bottom:1px dashed #000; padding-bottom:5px; margin-bottom:6px;">
-          <div style="display:flex; justify-content:space-between;"><span>Total Tickets:</span><strong>${reportData.totalTickets}</strong></div>
-          <div style="display:flex; justify-content:space-between;"><span>Scratch Sales:</span><strong>$${Number(reportData.scratchSales).toFixed(2)}</strong></div>
-          <div style="display:flex; justify-content:space-between;"><span>Online Sales:</span><span>$${Number(reportData.onlineSales).toFixed(2)}</span></div>
-          <div style="display:flex; justify-content:space-between;"><span>Payouts:</span><span>-$${Number(reportData.totalPayouts).toFixed(2)}</span></div>
-          <div style="display:flex; justify-content:space-between; border-top:1px solid #000; margin-top:3px; padding-top:3px;"><span>Net Expected:</span><strong>$${Number(reportData.netExpected).toFixed(2)}</strong></div>
-          <div style="display:flex; justify-content:space-between;"><span>Actual Cash:</span><strong>$${Number(reportData.actualCash).toFixed(2)}</strong></div>
-          <div style="display:flex; justify-content:space-between;"><span>Over / Short:</span><strong>$${Number(reportData.variance).toFixed(2)}</strong></div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:10px; border:1px solid #000; padding:6px; background:#f8fafc;">
+          <div>
+            <div><strong>Total Tickets Sold:</strong> ${totals.totalTickets}</div>
+            <div><strong>Scratch Sales:</strong> $${totals.scratchSales.toFixed(2)}</div>
+            <div><strong>Online / Draw Sales:</strong> $${totals.onlineSales.toFixed(2)}</div>
+            <div><strong>Total Gross Lotto:</strong> $${totals.grossSales.toFixed(2)}</div>
+          </div>
+          <div>
+            <div><strong>Total Cashes Paid Out:</strong> -$${totals.totalCashes.toFixed(2)}</div>
+            <div><strong>Net Expected Cash:</strong> $${totals.netExpectedCash.toFixed(2)}</div>
+            <div><strong>Actual Cash Dropped:</strong> $${totals.actualCashDropped.toFixed(2)}</div>
+            <div style="font-size:11px; font-weight:900;">Over / Short Variance: ${totals.variance >= 0 ? '+' : ''}$${totals.variance.toFixed(2)}</div>
+          </div>
         </div>
-        ${reportData.notes ? `<div style="margin-bottom:6px;"><strong>Notes:</strong> ${reportData.notes}</div>` : ''}
-        <div>
-          <div style="font-weight:700;">Cashier Signature:</div>
-          ${sigImgHtml}
+
+        <div style="display:flex; justify-content:space-between; align-items:flex-end; margin-top:10px; font-size:10px;">
+          <div>
+            ${r.signatureDataUrl ? `<img src="${r.signatureDataUrl}" style="max-height:36px; display:block;" />` : ''}
+            <div>Cashier Signature: __________________________________</div>
+          </div>
+          <div>Manager / Verifier: ________________________________</div>
         </div>
-        <div style="text-align:center; margin-top:8px; font-size:8pt;">Printed ${formatDisplayDateTime(new Date())}</div>
       </div>
     `;
   }
-
-  // Full-Page US Letter Format
-  const tableRows = activeBoxes.map(b => `
-    <tr>
-      <td style="border:1px solid #000; padding:4px; text-align:center; font-weight:800;">${b.label}</td>
-      <td style="border:1px solid #000; padding:4px;"><strong>${b.gameNum || '-'}</strong> ${b.gameName ? '— ' + b.gameName : ''}</td>
-      <td style="border:1px solid #000; padding:4px; text-align:center;">$${Number(b.price || 0).toFixed(0)}</td>
-      <td style="border:1px solid #000; padding:4px; text-align:center;">${b.startTicket}</td>
-      <td style="border:1px solid #000; padding:4px; text-align:center;">${b.endTicket !== '' ? b.endTicket : '-'}</td>
-      <td style="border:1px solid #000; padding:4px; text-align:center; font-weight:700;">${b.ticketsSold}</td>
-      <td style="border:1px solid #000; padding:4px; text-align:right; font-weight:800;">$${(Number(b.salesAmount) || 0).toFixed(2)}</td>
-    </tr>
-  `).join('');
-
-  return `
-    <div style="font-family:Arial, sans-serif; color:#000; padding:14px; max-width:8.5in; margin:0 auto;">
-      <div style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #000; padding-bottom:6px; margin-bottom:10px;">
-        <div>
-          <div style="font-size:17px; font-weight:900;">UR STORE CENTRAL LOTTO AUDIT — SHIFT REPORT</div>
-          <div style="font-size:13px; font-weight:700;">Location: ${storeTitle}</div>
-        </div>
-        <div style="text-align:right; font-size:11px; line-height:1.45;">
-          <div><strong>Audit Date:</strong> ${reportData.auditDate}</div>
-          <div><strong>Shift:</strong> ${reportData.shiftType}</div>
-          <div><strong>Cashier:</strong> ${reportData.cashierOut || 'Unspecified'}</div>
-          ${reportData.cashierIn ? `<div><strong>Verified By:</strong> ${reportData.cashierIn}</div>` : ''}
-        </div>
-      </div>
-
-      <table style="width:100%; border-collapse:collapse; font-size:11px; margin-bottom:12px;">
-        <thead>
-          <tr style="background:#e2e8f0;">
-            <th style="border:1px solid #000; padding:5px;">BOX #</th>
-            <th style="border:1px solid #000; padding:5px; text-align:left;">GAME # &amp; NAME</th>
-            <th style="border:1px solid #000; padding:5px;">PRICE</th>
-            <th style="border:1px solid #000; padding:5px;">START</th>
-            <th style="border:1px solid #000; padding:5px;">END</th>
-            <th style="border:1px solid #000; padding:5px;">SOLD</th>
-            <th style="border:1px solid #000; padding:5px; text-align:right;">SALES $</th>
-          </tr>
-        </thead>
-        <tbody>${tableRows}</tbody>
-        <tfoot>
-          <tr style="background:#f1f5f9; font-weight:900;">
-            <td colspan="5" style="border:1px solid #000; padding:6px; text-align:right;">TOTAL SCRATCH-OFF SALES:</td>
-            <td style="border:1px solid #000; padding:6px; text-align:center;">${reportData.totalTickets}</td>
-            <td style="border:1px solid #000; padding:6px; text-align:right;">$${Number(reportData.scratchSales).toFixed(2)}</td>
-          </tr>
-        </tfoot>
-      </table>
-
-      <div style="display:flex; justify-content:space-between; gap:20px; border:1px solid #000; padding:10px; background:#f8fafc; font-size:12px;">
-        <div style="space-y:4px;">
-          <div><strong>Scratch-Off Sales:</strong> $${Number(reportData.scratchSales).toFixed(2)}</div>
-          <div><strong>Online / Draw Sales:</strong> $${Number(reportData.onlineSales).toFixed(2)}</div>
-          <div><strong>Total Payouts / Cashes:</strong> -$${Number(reportData.totalPayouts).toFixed(2)}</div>
-          <div style="border-top:1px solid #000; padding-top:4px; margin-top:4px;"><strong>Net Cash Expected:</strong> $${Number(reportData.netExpected).toFixed(2)}</div>
-          <div><strong>Actual Cash Drop:</strong> $${Number(reportData.actualCash).toFixed(2)}</div>
-          <div><strong>Over / Short Variance:</strong> $${Number(reportData.variance).toFixed(2)}</div>
-          ${reportData.notes ? `<div style="margin-top:6px;"><strong>Notes:</strong> ${reportData.notes}</div>` : ''}
-        </div>
-        <div>
-          <div style="font-weight:800;">Cashier Signature:</div>
-          ${sigImgHtml}
-          <div style="font-size:10px; color:#333; margin-top:4px;">Printed: ${formatDisplayDateTime(new Date())}</div>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
-function executeShiftReportPrint(format = 'letter') {
-  closeWorksheetPrintChoiceModal();
-  if (!activeStoreState) return;
-  saveReconciliationDraft();
-
-  const rec = activeStoreState.reconciliation;
-  const { totalTickets, totalSales } = getShiftTotals();
-  const netExpected = Number((totalSales + (Number(rec.onlineSales) || 0) - (Number(rec.totalPayouts) || 0)).toFixed(2));
-  const variance = Number(((Number(rec.actualCash) || 0) - netExpected).toFixed(2));
-
-  const payload = {
-    locationName: activeStoreState.locationName,
-    locationCode: activeStoreState.locationCode,
-    auditDate: rec.auditDate || getLocalDateStr(),
-    shiftType: rec.shiftType || 'Shift 1 (Morning)',
-    cashierOut: rec.cashierOut || 'Unspecified',
-    cashierIn: rec.cashierIn || '',
-    totalTickets,
-    scratchSales: totalSales,
-    onlineSales: Number(rec.onlineSales) || 0,
-    totalPayouts: Number(rec.totalPayouts) || 0,
-    netExpected,
-    actualCash: Number(rec.actualCash) || 0,
-    variance,
-    notes: rec.notes || '',
-    signatureDataUrl: rec.signatureDataUrl || '',
-    boxesSnapshot: activeStoreState.boxes
-  };
-
-  const printContainer = document.getElementById('print-container');
-  if (!printContainer) return;
-  printContainer.innerHTML = buildShiftReportPrintHtml(payload, format);
-  window.print();
-}
-
-function reprintArchivedShiftReport(archiveId) {
-  if (!activeStoreState || !Array.isArray(activeStoreState.history)) return;
-  const found = activeStoreState.history.find(h => h.id === archiveId);
-  if (!found) return;
-
-  const printContainer = document.getElementById('print-container');
-  if (!printContainer) return;
-  printContainer.innerHTML = buildShiftReportPrintHtml(found, 'letter');
-  window.print();
-}
-
-function printCombinedPeriodReport() {
-  if (!activeStoreState) return;
-  const records = getFilteredReportRecords();
-  const totals = aggregateReportRecords(records);
-  const dateInput = document.getElementById('report-filter-date');
-  const monthInput = document.getElementById('report-filter-month');
-  const periodTitle = activeReportMode === 'monthly'
-    ? `MONTHLY COMBINED REPORT — ${monthInput?.value || getLocalMonthStr()}`
-    : `DAILY COMBINED REPORT — ${dateInput?.value || getLocalDateStr()}`;
-
-  const rowsHtml = records.map(r => `
-    <tr>
-      <td style="border:1px solid #000; padding:5px;">${getNormalizedRecordDate(r)}</td>
-      <td style="border:1px solid #000; padding:5px; font-weight:700;">${r.shiftType}</td>
-      <td style="border:1px solid #000; padding:5px;">${r.cashierOut || 'Unspecified'}</td>
-      <td style="border:1px solid #000; padding:5px; text-align:center;">${r.totalTickets}</td>
-      <td style="border:1px solid #000; padding:5px; text-align:right;">$${Number(r.scratchSales).toFixed(2)}</td>
-      <td style="border:1px solid #000; padding:5px; text-align:right;">$${Number(r.onlineSales).toFixed(2)}</td>
-      <td style="border:1px solid #000; padding:5px; text-align:right;">-$${Number(r.totalPayouts).toFixed(2)}</td>
-      <td style="border:1px solid #000; padding:5px; text-align:right;">$${Number(r.actualCash).toFixed(2)}</td>
-      <td style="border:1px solid #000; padding:5px; text-align:right; font-weight:700;">$${Number(r.variance).toFixed(2)}</td>
-    </tr>
-  `).join('');
-
-  const printContainer = document.getElementById('print-container');
-  if (!printContainer) return;
-
-  printContainer.innerHTML = `
-    <div style="font-family:Arial, sans-serif; color:#000; padding:14px; max-width:8.5in; margin:0 auto;">
-      <div style="border-bottom:2px solid #000; padding-bottom:6px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:flex-end;">
-        <div>
-          <div style="font-size:16px; font-weight:900;">UR STORE CENTRAL LOTTO AUDIT</div>
-          <div style="font-size:13px; font-weight:800;">${periodTitle}</div>
-          <div style="font-size:12px;">Location: ${activeStoreState.locationName} (#${activeStoreState.locationCode})</div>
-        </div>
-        <div style="font-size:11px; text-align:right;">Printed: ${formatDisplayDateTime(new Date())}</div>
-      </div>
-
-      <table style="width:100%; border-collapse:collapse; font-size:11px;">
-        <thead>
-          <tr style="background:#e2e8f0;">
-            <th style="border:1px solid #000; padding:5px; text-align:left;">DATE</th>
-            <th style="border:1px solid #000; padding:5px; text-align:left;">SHIFT</th>
-            <th style="border:1px solid #000; padding:5px; text-align:left;">CASHIER</th>
-            <th style="border:1px solid #000; padding:5px; text-align:center;">TIX</th>
-            <th style="border:1px solid #000; padding:5px; text-align:right;">SCRATCH</th>
-            <th style="border:1px solid #000; padding:5px; text-align:right;">ONLINE</th>
-            <th style="border:1px solid #000; padding:5px; text-align:right;">PAYOUTS</th>
-            <th style="border:1px solid #000; padding:5px; text-align:right;">ACTUAL CASH</th>
-            <th style="border:1px solid #000; padding:5px; text-align:right;">OVER/SHORT</th>
-          </tr>
-        </thead>
-        <tbody>${rowsHtml}</tbody>
-        <tfoot>
-          <tr style="background:#f1f5f9; font-weight:900;">
-            <td colspan="3" style="border:1px solid #000; padding:6px; text-align:right;">COMBINED TOTALS (${totals.shiftCount} SHIFTS):</td>
-            <td style="border:1px solid #000; padding:6px; text-align:center;">${totals.totalTickets}</td>
-            <td style="border:1px solid #000; padding:6px; text-align:right;">$${totals.scratchSales.toFixed(2)}</td>
-            <td style="border:1px solid #000; padding:6px; text-align:right;">$${totals.onlineSales.toFixed(2)}</td>
-            <td style="border:1px solid #000; padding:6px; text-align:right;">-$${totals.totalPayouts.toFixed(2)}</td>
-            <td style="border:1px solid #000; padding:6px; text-align:right;">$${totals.actualCash.toFixed(2)}</td>
-            <td style="border:1px solid #000; padding:6px; text-align:right;">$${totals.variance.toFixed(2)}</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
-  `;
 
   window.print();
 }
