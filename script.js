@@ -1586,6 +1586,7 @@ function handleJsonRestoreFile(event) {
    PART 9 OF 11: FIXED PRINT SYSTEM (80MM THERMAL RECEIPT & 8.5"x11" SHEET)
    ============================================================================ */
 let pendingPrintPayload = null;
+let currentShiftAlreadyFinalized = false;
 
 function ensurePrintInfrastructure() {
   if (!document.getElementById('lotto-print-container')) {
@@ -1614,36 +1615,43 @@ function ensurePrintInfrastructure() {
     document.head.appendChild(style);
   }
 
-  if (!document.getElementById('print-choice-modal')) {
-    const modal = document.createElement('div');
-    modal.id = 'print-choice-modal';
-    modal.className = 'fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-4';
+  // Always inject our self-contained modal with a unique ID so static HTML modals never hijack clicks
+  let modal = document.getElementById('lotto-active-print-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'lotto-active-print-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.78);padding:16px;';
     modal.innerHTML = `
-      <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-5 shadow-2xl text-white">
-        <div class="flex items-center justify-between border-b border-slate-700 pb-3 mb-4">
-          <h3 class="text-lg font-extrabold tracking-tight">🖨️ Choose Print Format</h3>
-          <button onclick="closePrintChoiceModal()" class="text-slate-400 hover:text-white text-xl font-bold px-2">&times;</button>
+      <div style="background:#0f172a;border:1px solid #334155;border-radius:16px;max-width:440px;width:100%;padding:20px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.6);color:#ffffff;font-family:system-ui,-apple-system,sans-serif;">
+        <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #334155;padding-bottom:12px;margin-bottom:14px;">
+          <h3 style="margin:0;font-size:18px;font-weight:800;">🖨️ Print Shift Audit Report</h3>
+          <button type="button" id="lotto-print-modal-close-x" style="background:none;border:none;color:#94a3b8;font-size:24px;font-weight:bold;cursor:pointer;line-height:1;">&times;</button>
         </div>
-        <p id="print-choice-subtitle" class="text-xs text-slate-300 mb-4"></p>
-        <div class="grid grid-cols-1 gap-3">
-          <button onclick="executeSelectedPrint('thermal')"
-            class="w-full p-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-left border border-emerald-400/40 shadow-lg transition">
-            <div class="font-extrabold text-base">🧾 80mm Thermal Receipt (Epson TM-m30II)</div>
-            <div class="text-xs text-emerald-100 mt-0.5">Compact 3 1/8" receipt tape with box breakdown, totals &amp; signature.</div>
+        <p id="lotto-print-modal-subtitle" style="margin:0 0 16px 0;font-size:12px;color:#cbd5e1;"></p>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <button type="button" id="lotto-btn-choose-thermal"
+            style="width:100%;padding:14px;border-radius:12px;background:#059669;color:#ffffff;text-align:left;border:1px solid #34d399;cursor:pointer;">
+            <div style="font-weight:800;font-size:15px;">🧾 80mm Thermal Receipt (Epson TM-m30II)</div>
+            <div style="font-size:12px;color:#d1fae5;margin-top:3px;">Compact 3 1/8" receipt tape with box breakdown, totals &amp; signature.</div>
           </button>
-          <button onclick="executeSelectedPrint('letter')"
-            class="w-full p-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-left border border-blue-400/40 shadow-lg transition">
-            <div class="font-extrabold text-base">📄 Single-Page Worksheet (8.5" &times; 11" Letter)</div>
-            <div class="text-xs text-blue-100 mt-0.5">Full audit grid formatted to fit cleanly on 1 standard sheet.</div>
+          <button type="button" id="lotto-btn-choose-letter"
+            style="width:100%;padding:14px;border-radius:12px;background:#2563eb;color:#ffffff;text-align:left;border:1px solid #60a5fa;cursor:pointer;">
+            <div style="font-weight:800;font-size:15px;">📄 Full Page Worksheet (8.5" &times; 11" Letter)</div>
+            <div style="font-size:12px;color:#dbeafe;margin-top:3px;">Full audit grid formatted to fit cleanly on 1 standard sheet.</div>
           </button>
         </div>
-        <button onclick="closePrintChoiceModal()"
-          class="mt-4 w-full py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold border border-slate-700">
+        <button type="button" id="lotto-print-modal-cancel"
+          style="margin-top:16px;width:100%;padding:10px;border-radius:10px;background:#1e293b;color:#cbd5e1;font-size:13px;font-weight:700;border:1px solid #334155;cursor:pointer;">
           Cancel
         </button>
       </div>
     `;
     document.body.appendChild(modal);
+
+    document.getElementById('lotto-print-modal-close-x').onclick = closePrintChoiceModal;
+    document.getElementById('lotto-print-modal-cancel').onclick = closePrintChoiceModal;
+    document.getElementById('lotto-btn-choose-thermal').onclick = () => executeSelectedPrint('thermal');
+    document.getElementById('lotto-btn-choose-letter').onclick = () => executeSelectedPrint('letter');
   }
 }
 
@@ -1661,6 +1669,7 @@ function buildCurrentShiftPrintData() {
   const variance = Number((actualCash - netExpected).toFixed(2));
 
   return {
+    isCurrentShift: true,
     locationName: activeStoreState.locationName || 'Store',
     locationCode: activeStoreState.locationCode || '',
     auditDate: (rec.auditDate || getLocalDateStr()).slice(0, 10),
@@ -1681,21 +1690,74 @@ function buildCurrentShiftPrintData() {
   };
 }
 
+function isCurrentShiftSavedInHistory() {
+  if (!activeStoreState || !Array.isArray(activeStoreState.history)) return false;
+  const rec = activeStoreState.reconciliation || {};
+  const auditDate = (rec.auditDate || getLocalDateStr()).slice(0, 10);
+  const shiftType = rec.shiftType || 'Shift 1 (Morning)';
+  return activeStoreState.history.some(
+    h => (h.auditDate || '').slice(0, 10) === auditDate && h.shiftType === shiftType
+  );
+}
+
 function openWorksheetPrintChoiceModal() {
   ensurePrintInfrastructure();
+  // Hide any legacy static modal in index.html if open
+  const legacyModal = document.getElementById('print-choice-modal');
+  if (legacyModal) legacyModal.classList.add('hidden');
+
   const data = buildCurrentShiftPrintData();
   if (!data) return;
-  pendingPrintPayload = data;
 
-  const sub = document.getElementById('print-choice-subtitle');
+  // Ask the user if they want to end & save their shift if it hasn't been finalized yet
+  if (!isCurrentShiftSavedInHistory()) {
+    const endShiftNow = confirm(
+      'This shift has NOT been ended/saved yet.\n\n' +
+      'Click OK to End & Save this shift to History before printing, or Cancel to print a draft copy without ending the shift.'
+    );
+    if (endShiftNow) {
+      if (!(data.cashierOut || '').trim() || data.cashierOut === 'Unassigned') {
+        alert('Please enter the Cashier On Duty name before ending the shift.');
+        if (typeof switchMainView === 'function') switchMainView('reconcile');
+        document.getElementById('rec-cashier-out')?.focus();
+        return;
+      }
+      // Save directly to history without triggering a recursive print prompt
+      const archiveRecord = {
+        id: `shift_${Date.now()}`,
+        savedAt: new Date().toISOString(),
+        savedLocalTime: formatDisplayDateTime(new Date()),
+        locationId: activeStoreState.locationId,
+        locationName: activeStoreState.locationName,
+        locationCode: activeStoreState.locationCode,
+        auditDate: data.auditDate,
+        shiftType: data.shiftType,
+        cashierOut: data.cashierOut,
+        cashierIn: data.cashierIn,
+        totalTickets: data.totalTickets,
+        scratchSales: data.scratchSales,
+        onlineSales: data.onlineSales,
+        totalPayouts: data.totalPayouts,
+        netExpected: data.netExpected,
+        actualCash: data.actualCash,
+        variance: data.variance,
+        notes: data.notes,
+        signatureDataUrl: data.signatureDataUrl,
+        boxesSnapshot: JSON.parse(JSON.stringify(activeStoreState.boxes || []))
+      };
+      activeStoreState.history.unshift(archiveRecord);
+      saveActiveStoreState();
+      currentShiftAlreadyFinalized = true;
+    }
+  }
+
+  pendingPrintPayload = buildCurrentShiftPrintData();
+  const sub = document.getElementById('lotto-print-modal-subtitle');
   if (sub) {
-    sub.textContent = `${data.locationName} • ${data.auditDate} • ${data.shiftType} • Cashier: ${data.cashierOut}`;
+    sub.textContent = `${pendingPrintPayload.locationName} • ${pendingPrintPayload.auditDate} • ${pendingPrintPayload.shiftType} • Cashier: ${pendingPrintPayload.cashierOut}`;
   }
-  const modal = document.getElementById('print-choice-modal');
-  if (modal) {
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-  }
+  const modal = document.getElementById('lotto-active-print-modal');
+  if (modal) modal.style.display = 'flex';
 }
 
 function openHistoryPrintChoice(index) {
@@ -1703,6 +1765,7 @@ function openHistoryPrintChoice(index) {
   if (!activeStoreState || !activeStoreState.history[index]) return;
   const item = activeStoreState.history[index];
   pendingPrintPayload = {
+    isCurrentShift: false,
     locationName: item.locationName || activeStoreState.locationName || 'Store',
     locationCode: item.locationCode || activeStoreState.locationCode || '',
     auditDate: (item.auditDate || '').slice(0, 10),
@@ -1722,23 +1785,19 @@ function openHistoryPrintChoice(index) {
     printedAt: formatDisplayDateTime(new Date())
   };
 
-  const sub = document.getElementById('print-choice-subtitle');
+  const sub = document.getElementById('lotto-print-modal-subtitle');
   if (sub) {
     sub.textContent = `Archived: ${pendingPrintPayload.locationName} • ${pendingPrintPayload.auditDate} • ${pendingPrintPayload.shiftType}`;
   }
-  const modal = document.getElementById('print-choice-modal');
-  if (modal) {
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-  }
+  const modal = document.getElementById('lotto-active-print-modal');
+  if (modal) modal.style.display = 'flex';
 }
 
 function closePrintChoiceModal() {
-  const modal = document.getElementById('print-choice-modal');
-  if (modal) {
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-  }
+  const modal = document.getElementById('lotto-active-print-modal');
+  if (modal) modal.style.display = 'none';
+  const legacyModal = document.getElementById('print-choice-modal');
+  if (legacyModal) legacyModal.classList.add('hidden');
 }
 
 function setPrintPageRule(cssRuleText) {
@@ -1763,17 +1822,11 @@ function executeSelectedPrint(format) {
   }
 }
 
-/* Aliases so any legacy button onclick in index.html works seamlessly */
+/* Aliases so any button onclick in index.html routes here */
 function printAuditReport() { openWorksheetPrintChoiceModal(); }
 function handlePrintShiftReport() { openWorksheetPrintChoiceModal(); }
-function triggerThermalPrint() {
-  const data = buildCurrentShiftPrintData();
-  if (data) printThermalReceipt(data);
-}
-function triggerLetterPrint() {
-  const data = buildCurrentShiftPrintData();
-  if (data) printStandardWorksheet(data);
-}
+function openPrintModal() { openWorksheetPrintChoiceModal(); }
+function selectPrintFormat(fmt) { executeSelectedPrint(fmt === 'receipt' || fmt === 'thermal' ? 'thermal' : 'letter'); }
 
 function printThermalReceipt(data) {
   ensurePrintInfrastructure();
@@ -1784,15 +1837,20 @@ function printThermalReceipt(data) {
     }
   `);
 
-  const activeBoxes = (data.boxes || []).filter(b => b.gameName || Number(b.price) > 0 || Number(b.soldCount) > 0);
+  const activeBoxes = (data.boxes || []).filter(
+    b => b.gameName || b.gameNum || Number(b.price) > 0 || Number(b.ticketsSold || b.soldCount) > 0
+  );
   const rowsHtml = activeBoxes.map(b => {
-    const sold = Number(b.soldCount) || 0;
-    const sales = Number(b.soldAmount) || 0;
+    const boxLbl = b.label || b.boxNumber || '';
+    const startVal = b.startTicket ?? b.startNum ?? '-';
+    const endVal = (b.endTicket !== '' && b.endTicket !== undefined) ? b.endTicket : (b.endNum ?? '-');
+    const sold = Number(b.ticketsSold ?? b.soldCount) || 0;
+    const sales = Number(b.salesAmount ?? b.soldAmount) || 0;
     return `
       <tr style="border-bottom:1px dashed #999;">
-        <td style="padding:2px 0;font-weight:bold;">#${b.boxNumber}</td>
+        <td style="padding:2px 0;font-weight:bold;">${escapeHtml(String(boxLbl))}</td>
         <td style="padding:2px 2px;">${escapeHtml((b.gameName || 'Game').slice(0, 14))} ($${b.price || 0})</td>
-        <td style="padding:2px 2px;text-align:right;">${b.startNum ?? '-'}-${b.endNum ?? '-'}</td>
+        <td style="padding:2px 2px;text-align:right;">${startVal}-${endVal}</td>
         <td style="padding:2px 0;text-align:right;font-weight:bold;">${sold} ($${sales.toFixed(0)})</td>
       </tr>
     `;
@@ -1868,15 +1926,18 @@ function printStandardWorksheet(data) {
   `);
 
   const rowsHtml = (data.boxes || []).map(b => {
-    const sold = Number(b.soldCount) || 0;
-    const sales = Number(b.soldAmount) || 0;
+    const boxLbl = b.label || b.boxNumber || '';
+    const startVal = b.startTicket ?? b.startNum ?? '';
+    const endVal = (b.endTicket !== '' && b.endTicket !== undefined) ? b.endTicket : (b.endNum ?? '');
+    const sold = Number(b.ticketsSold ?? b.soldCount) || 0;
+    const sales = Number(b.salesAmount ?? b.soldAmount) || 0;
     return `
       <tr>
-        <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-weight:bold;">${b.boxNumber}</td>
+        <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-weight:bold;">${escapeHtml(String(boxLbl))}</td>
         <td style="border:1px solid #333;padding:2px 4px;">${escapeHtml(b.gameName || '-')}</td>
         <td style="border:1px solid #333;padding:2px 4px;text-align:center;">$${Number(b.price) || 0}</td>
-        <td style="border:1px solid #333;padding:2px 4px;text-align:center;">${b.startNum ?? ''}</td>
-        <td style="border:1px solid #333;padding:2px 4px;text-align:center;">${b.endNum ?? ''}</td>
+        <td style="border:1px solid #333;padding:2px 4px;text-align:center;">${startVal}</td>
+        <td style="border:1px solid #333;padding:2px 4px;text-align:center;">${endVal}</td>
         <td style="border:1px solid #333;padding:2px 4px;text-align:center;font-weight:bold;">${sold}</td>
         <td style="border:1px solid #333;padding:2px 4px;text-align:right;font-weight:bold;">$${sales.toFixed(2)}</td>
       </tr>
@@ -2106,20 +2167,32 @@ function startNextShiftRollover() {
 /* ============================================================================
    PART 11 OF 11: TAB NAVIGATION, UI ORCHESTRATION & INITIALIZATION
    ============================================================================ */
-function switchTab(tabName) {
-  const tabs = ['grid', 'reconcile', 'history', 'settings'];
-  tabs.forEach((t) => {
-    const panel = document.getElementById(`tab-panel-${t}`);
-    const btn = document.getElementById(`tab-btn-${t}`);
-    if (panel) {
-      if (t === tabName) {
-        panel.classList.remove('hidden');
-      } else {
-        panel.classList.add('hidden');
-      }
+function escapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function applyUiFontSize(sizeStr, persist = true) {
+  document.documentElement.style.fontSize = sizeStr || '14px';
+  if (persist) {
+    localStorage.setItem(STORAGE_KEYS.UI_FONT_SIZE, sizeStr || '14px');
+  }
+}
+
+function switchMainView(viewName) {
+  activeMainView = viewName;
+  const views = ['grid', 'reconcile', 'reports', 'admin'];
+  views.forEach((v) => {
+    const el = document.getElementById(`view-${v}`) || document.getElementById(`tab-panel-${v}`);
+    const btn = document.getElementById(`nav-${v}`) || document.getElementById(`tab-btn-${v}`);
+    if (el) {
+      el.classList.toggle('hidden', v !== viewName);
     }
     if (btn) {
-      if (t === tabName) {
+      if (v === viewName) {
         btn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
         btn.classList.remove('bg-slate-800', 'text-slate-300');
       } else {
@@ -2129,52 +2202,52 @@ function switchTab(tabName) {
     }
   });
 
-  if (tabName === 'reconcile') {
+  if (viewName === 'reconcile') {
     syncReconciliationFormFromState();
     setTimeout(() => initSignaturePad(), 30);
-  } else if (tabName === 'history') {
+  } else if (viewName === 'reports' || viewName === 'history') {
+    if (typeof renderHistoricalReports === 'function') renderHistoricalReports();
     renderHistoryList();
-  } else if (tabName === 'settings') {
+  } else if (viewName === 'admin' || viewName === 'settings') {
+    if (typeof renderAdminView === 'function') renderAdminView();
     renderSettingsGrid();
   }
 }
 
-function handleStoreLocationChange(newLocationId) {
-  if (!newLocationId) return;
-  saveActiveStoreState();
-  loadStoreState(newLocationId);
-  shiftSessionConfirmed = Boolean((activeStoreState?.reconciliation?.cashierOut || '').trim());
-  renderAllUI();
+function switchTab(tabName) {
+  switchMainView(tabName);
 }
 
 function wireUpAllPrintButtons() {
   ensurePrintInfrastructure();
-  const printBtnIds = [
-    'btn-print-worksheet',
-    'btn-print-report',
-    'btn-reconcile-print',
-    'header-print-btn',
-    'footer-print-btn'
-  ];
-  printBtnIds.forEach((id) => {
-    const btn = document.getElementById(id);
-    if (btn) {
-      btn.onclick = (e) => {
-        e.preventDefault();
-        openWorksheetPrintChoiceModal();
-      };
+  // Wire any button whose id/onclick mentions print so nothing stays stagnant
+  document.querySelectorAll('button').forEach((btn) => {
+    const id = (btn.id || '').toLowerCase();
+    const onclickAttr = (btn.getAttribute('onclick') || '').toLowerCase();
+    const label = (btn.textContent || '').toLowerCase();
+    if (
+      id.includes('print') ||
+      onclickAttr.includes('print') ||
+      label.includes('print shift') ||
+      label.includes('print report') ||
+      label.includes('print worksheet')
+    ) {
+      if (!btn.id.startsWith('lotto-')) {
+        btn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          openWorksheetPrintChoiceModal();
+        };
+      }
     }
   });
 }
 
 function renderAllUI() {
   if (!activeStoreState) return;
-  const storeSelect = document.getElementById('store-location-select');
-  if (storeSelect && storeSelect.value !== activeStoreState.locationId) {
-    storeSelect.value = activeStoreState.locationId;
-  }
-
-  renderGrid();
+  renderLocationSwitcher();
+  recalculateAllBoxes();
+  renderDispenserGrid();
   syncReconciliationFormFromState();
   renderHistoryList();
   renderSettingsGrid();
@@ -2183,15 +2256,14 @@ function renderAllUI() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const storeSelect = document.getElementById('store-location-select');
-  const initialStoreId = storeSelect?.value || localStorage.getItem('lotto_last_active_store') || 'regas_shell';
-
-  loadStoreState(initialStoreId);
+  loadGlobalAppCatalogs();
+  activeStoreState = loadStoreStateForLocation(activeLocationId);
   shiftSessionConfirmed = Boolean((activeStoreState?.reconciliation?.cashierOut || '').trim());
 
   ensurePrintInfrastructure();
   initSignaturePad();
+  startMidnightRolloverWatcher();
   renderAllUI();
-  switchTab('grid');
+  switchMainView('grid');
 });
 /* ========================= END OF PART 11 OF 11 ========================= */
