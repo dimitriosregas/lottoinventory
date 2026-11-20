@@ -1,23 +1,6 @@
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 1 OF 10)
-   Storage Keys, Default Catalogs, Global State & Initialization Helpers
-   ========================================================================== */
-
-const STORAGE_KEY_LOCATIONS = 'project_lotto_locations_v1';
-const STORAGE_KEY_ACTIVE_LOC = 'project_lotto_active_loc_id_v1';
-const STORAGE_KEY_MASTER_GAMES = 'project_lotto_master_games_v1';
-const STORAGE_KEY_CASHIERS = 'project_lotto_cashiers_v1';
-const STORAGE_KEY_PRINT_FONT_SIZE = 'project_lotto_print_font_size_v1';
-const STORAGE_KEY_WAKELOCK_MINS = 'project_lotto_wakelock_mins_v1';
-
-const DEFAULT_LOCATIONS = [
-  { id: 'loc-regas-shell', name: 'Regas Shell', number: '101' },
-  { id: 'loc-regas-exxon', name: 'Regas Exxon', number: '102' },
-  { id: 'loc-regas-amaco', name: 'Regas Amaco', number: '103' },
-  { id: 'loc-regas-xpress', name: 'Regas Xpress', number: '104' }
-];
-
-const DEFAULT_CASHIERS = ['Manager', 'John Doe', 'Jane Smith', 'Shift Lead'];
+/* ============================================================================
+   PART 1 OF 10: MASTER GAMES CATALOG, DEFAULT BOX PATTERN, LOCAL DATE & STATE
+   ============================================================================ */
 
 const DEFAULT_MASTER_GAMES = [
   { gameNum: '854', name: 'BINGO JUMBO', price: 3, count: 100 },
@@ -67,3097 +50,2441 @@ const DEFAULT_MASTER_GAMES = [
   { gameNum: '1996', name: 'GIANT JUMBO', price: 5, count: 60 }
 ];
 
-let activeLocationId = 'loc-regas-shell';
-let locations = [];
-let storeProfile = { name: 'Regas Shell', number: '101', address: '', email: 'dimitriosregas@gmail.com', password: '' };
-let boxes = [];
-let masterGames = [];
-let savedCashiers = [];
-let isSetupLocked = false;
-let currentDispenserView = localStorage.getItem('user_dispenser_view') || 'list';
-let currentSignatureDataUrl = null;
-let isDrawingSignature = false;
-let sigCanvas = null;
-let sigCtx = null;
-let lastActiveViewName = 'grid';
-let globalPrintFontSizePt = 11;
+const STORAGE_KEYS = {
+  LOCATIONS: 'ur_lotto_locations_v3',
+  ACTIVE_LOCATION: 'ur_lotto_active_location_v3',
+  MASTER_GAMES: 'ur_lotto_master_games_v3',
+  SAVED_CASHIERS: 'ur_lotto_saved_cashiers_v3',
+  UI_FONT_SIZE: 'ur_lotto_ui_font_size_v3',
+  RECEIPT_FONT_SIZE: 'ur_lotto_receipt_font_size_v3',
+  VIEW_MODE: 'ur_lotto_view_mode_v3',
+  LAST_LOCAL_DATE: 'ur_lotto_last_local_date_v3',
+  LOCATION_PREFIX: 'ur_lotto_store_state_v3_'
+};
 
-function getDefaultRollCountForPrice(price) {
-  const p = Number(price);
-  if (!p || p <= 0) return 300;
-  if (p === 1) return 300;
-  if (p === 2) return 150;
-  if (p === 3) return 100;
-  if (p === 5) return 60;
-  if (p === 10) return 30;
-  if (p === 15) return 20;
-  if (p === 20) return 15;
-  if (p === 25) return 24;
-  if (p === 30) return 20;
-  if (p === 50) return 18;
-  return Math.max(1, Math.round(300 / p));
+const DEFAULT_LOCATIONS = [
+  { id: 'store_101', name: 'Regas Shell', code: '101' },
+  { id: 'store_102', name: 'Regas Exxon', code: '102' },
+  { id: 'store_103', name: 'Regas Amaco', code: '103' },
+  { id: 'store_104', name: 'Regas Xpress', code: '104' }
+];
+
+// Global App State
+let appLocations = [];
+let activeLocationId = 'store_101';
+let masterGamesCatalog = [];
+let savedCashiersList = ['Dimitrios', 'Morning Cashier', 'Evening Cashier'];
+let activeStoreState = null;
+let dispenserViewMode = 'list'; // 'list' | 'grid'
+let activeMainView = 'grid';
+let boxesInputsUnlocked = false;
+let shiftSessionConfirmed = false;
+let activeReportMode = 'daily'; // 'daily' | 'monthly'
+let currentTrackedLocalDate = '';
+
+// Local Timezone Date Helpers (Prevents UTC evening date shift)
+function getLocalDateStr(dateObj = new Date()) {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const d = String(dateObj.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
-function createDefault40Boxes() {
-  const bList = [];
-  for (let i = 1; i <= 40; i++) {
-    bList.push({
-      boxNumber: String(i),
-      gameNum: '',
-      gameName: '',
-      price: 0,
-      rollCount: 60,
-      startTicket: 0,
-      endTicket: '',
-      rollovers: [],
-      needsNewGameEntry: false
-    });
+function getLocalMonthStr(dateObj = new Date()) {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  return `${y}-${m}`;
+}
+
+function formatDisplayDateTime(dateObj = new Date()) {
+  const datePart = getLocalDateStr(dateObj);
+  const timePart = dateObj.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return `${datePart} (${timePart})`;
+}
+
+// Default Box Label Generator: A&B, C, D, E, F, 1, 2, 3, 4, 5, 6, 7...
+function generateDefaultCustomBoxLabels(count = 40) {
+  const prefix = ['A&B', 'C', 'D', 'E', 'F'];
+  const labels = [];
+  for (let i = 0; i < count; i++) {
+    if (i < prefix.length) {
+      labels.push(prefix[i]);
+    } else {
+      labels.push(String(i - prefix.length + 1));
+    }
   }
-  return bList;
+  return labels;
 }
 
-function getStoreBoxesStorageKey(locId) { return `project_lotto_boxes_${locId}`; }
-function getStoreProfileStorageKey(locId) { return `project_lotto_profile_${locId}`; }
-function getStoreHistoryStorageKey(locId) { return `project_lotto_history_${locId}`; }
-function getStoreSetupLockKey(locId) { return `project_lotto_setuplocked_${locId}`; }
-
-function sanitizeMasterGamesList(arr) {
-  if (!Array.isArray(arr)) return [];
+function sanitizeMasterGamesList(list) {
+  if (!Array.isArray(list) || list.length === 0) {
+    return JSON.parse(JSON.stringify(DEFAULT_MASTER_GAMES));
+  }
   const map = new Map();
-  arr.forEach(item => {
-    if (!item) return;
-    const num = String(item.gameNum ?? item.number ?? '').trim();
-    if (!num) return;
-    const price = Number(item.price) || 1;
-    const count = Number(item.count ?? item.rollCount) || getDefaultRollCountForPrice(price);
-    const name = String(item.name || '').trim().toUpperCase() || `GAME #${num}`;
-    map.set(num, { gameNum: num, name, price, count });
+  list.forEach(item => {
+    if (!item || !item.gameNum) return;
+    const gNum = String(item.gameNum).trim();
+    map.set(gNum, {
+      gameNum: gNum,
+      name: String(item.name || 'UNKNOWN GAME').trim().toUpperCase(),
+      price: Number(item.price) || 1,
+      count: Number(item.count) || 30
+    });
   });
   return Array.from(map.values()).sort((a, b) => Number(a.gameNum) - Number(b.gameNum));
 }
 
-function loadMasterGames() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_MASTER_GAMES);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        const combined = [...DEFAULT_MASTER_GAMES];
-        parsed.forEach(customGame => {
-          const num = String(customGame.gameNum ?? '').trim();
-          if (num && !combined.some(g => String(g.gameNum).trim() === num)) {
-            combined.push(customGame);
-          }
-        });
-        masterGames = sanitizeMasterGamesList(combined);
-        saveGamesState();
-        return;
-      }
+function findGameByNumber(gameNum) {
+  const clean = String(gameNum || '').trim();
+  if (!clean) return null;
+  return masterGamesCatalog.find(g => String(g.gameNum) === clean) || null;
+}
+
+/* ========================= END OF PART 1 OF 10 ========================= */
+/* ============================================================================
+   PART 2 OF 10: STORE STATE INITIALIZATION, STORAGE & MIDNIGHT AUTO-ROLLOVER
+   ============================================================================ */
+
+function createDefaultStoreState(locationObj) {
+  const boxCount = 40;
+  const labels = generateDefaultCustomBoxLabels(boxCount);
+  const boxes = [];
+
+  for (let i = 0; i < boxCount; i++) {
+    boxes.push({
+      id: i + 1,
+      label: labels[i],
+      gameNum: '',
+      gameName: '',
+      price: 0,
+      packCount: 0,
+      startTicket: 0,
+      endTicket: '',
+      rollovers: [],
+      ticketsSold: 0,
+      salesAmount: 0
+    });
+  }
+
+  return {
+    locationId: locationObj.id,
+    locationName: locationObj.name,
+    locationCode: locationObj.code,
+    boxCount,
+    boxLabels: labels,
+    boxes,
+    reconciliation: {
+      auditDate: getLocalDateStr(),
+      shiftType: 'Shift 1 (Morning)',
+      cashierOut: '',
+      cashierIn: '',
+      onlineSales: 0,
+      totalPayouts: 0,
+      actualCash: 0,
+      notes: '',
+      signatureDataUrl: ''
+    },
+    history: []
+  };
+}
+
+function loadStoreStateForLocation(locationId) {
+  const loc = appLocations.find(l => l.id === locationId) || appLocations[0] || DEFAULT_LOCATIONS[0];
+  const raw = localStorage.getItem(STORAGE_KEYS.LOCATION_PREFIX + loc.id);
+  let state = null;
+
+  if (raw) {
+    try {
+      state = JSON.parse(raw);
+    } catch (e) {
+      state = null;
     }
-  } catch (e) {}
-  masterGames = sanitizeMasterGamesList(DEFAULT_MASTER_GAMES);
-  saveGamesState();
-}
+  }
 
-function saveGamesState() {
-  try { localStorage.setItem(STORAGE_KEY_MASTER_GAMES, JSON.stringify(masterGames)); } catch (e) {}
-}
-
-function loadCashiersList() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_CASHIERS);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        savedCashiers = parsed;
-        return;
-      }
-    }
-  } catch (e) {}
-  savedCashiers = [...DEFAULT_CASHIERS];
-  saveCashiersState();
-}
-
-function saveCashiersState() {
-  try { localStorage.setItem(STORAGE_KEY_CASHIERS, JSON.stringify(savedCashiers)); } catch (e) {}
-}
-
-function loadLocationsRegistry() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY_LOCATIONS);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        locations = parsed;
-        return;
-      }
-    }
-  } catch (e) {}
-  locations = [...DEFAULT_LOCATIONS];
-  saveLocationsRegistry();
-}
-
-function saveLocationsRegistry() {
-  try { localStorage.setItem(STORAGE_KEY_LOCATIONS, JSON.stringify(locations)); } catch (e) {}
-}
-
-function initActiveLocation() {
-  loadLocationsRegistry();
-  loadCashiersList();
-  const savedActive = localStorage.getItem(STORAGE_KEY_ACTIVE_LOC);
-  if (savedActive && locations.some(l => l.id === savedActive)) {
-    activeLocationId = savedActive;
+  if (!state || !Array.isArray(state.boxes)) {
+    state = createDefaultStoreState(loc);
   } else {
-    activeLocationId = locations[0]?.id || 'loc-regas-shell';
-  }
-  loadActiveStoreData();
-  populateLocationSwitcherDropdown();
-}
-
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 2 OF 10)
-   Store Profile Management, Location Switching & Cashier Autocomplete
-   ========================================================================== */
-
-function loadActiveStoreData() {
-  const profKey = getStoreProfileStorageKey(activeLocationId);
-  const lockKey = getStoreSetupLockKey(activeLocationId);
-  try {
-    isSetupLocked = localStorage.getItem(lockKey) === 'true';
-  } catch (e) {
-    isSetupLocked = false;
-  }
-
-  const activeLocObj = locations.find(l => l.id === activeLocationId);
-  try {
-    const pRaw = localStorage.getItem(profKey);
-    if (pRaw) {
-      storeProfile = JSON.parse(pRaw);
-    } else if (activeLocObj) {
-      storeProfile = { name: activeLocObj.name, number: activeLocObj.number, address: activeLocObj.address || '', email: 'dimitriosregas@gmail.com', password: '' };
-    } else {
-      storeProfile = { name: 'Regas Shell', number: '101', address: '', email: 'dimitriosregas@gmail.com', password: '' };
+    state.locationId = loc.id;
+    state.locationName = loc.name;
+    state.locationCode = loc.code;
+    state.boxCount = Number(state.boxCount) || state.boxes.length || 40;
+    if (!Array.isArray(state.boxLabels) || state.boxLabels.length !== state.boxCount) {
+      state.boxLabels = generateDefaultCustomBoxLabels(state.boxCount);
     }
-  } catch (e) {
-    storeProfile = { name: activeLocObj?.name || 'Regas Shell', number: activeLocObj?.number || '101', address: '', email: 'dimitriosregas@gmail.com', password: '' };
+    state.boxes.forEach((b, idx) => {
+      b.id = idx + 1;
+      b.label = state.boxLabels[idx] || String(idx + 1);
+      if (!Array.isArray(b.rollovers)) b.rollovers = [];
+    });
+    if (!state.reconciliation) {
+      state.reconciliation = createDefaultStoreState(loc).reconciliation;
+    }
+    if (!Array.isArray(state.history)) {
+      state.history = [];
+    }
   }
 
-  const adminName = document.getElementById('admin-store-name');
-  const adminNum = document.getElementById('admin-store-number');
-  const adminAddr = document.getElementById('admin-store-address');
-  const adminEmail = document.getElementById('admin-store-email');
-  const adminPass = document.getElementById('admin-store-pass');
+  return state;
+}
 
-  if (adminName) adminName.value = storeProfile.name || '';
-  if (adminNum) adminNum.value = storeProfile.number || '';
-  if (adminAddr) adminAddr.value = storeProfile.address || '';
-  if (adminEmail) adminEmail.value = storeProfile.email || 'dimitriosregas@gmail.com';
-  if (adminPass) adminPass.value = storeProfile.password || '';
-
-  const boxKey = getStoreBoxesStorageKey(activeLocationId);
+function saveActiveStoreState() {
+  if (!activeStoreState) return;
   try {
-    const bRaw = localStorage.getItem(boxKey);
-    if (bRaw) {
-      const parsedBoxes = JSON.parse(bRaw);
-      boxes = (Array.isArray(parsedBoxes) && parsedBoxes.length > 0) ? parsedBoxes : createDefault40Boxes();
-    } else {
-      boxes = createDefault40Boxes();
+    localStorage.setItem(
+      STORAGE_KEYS.LOCATION_PREFIX + activeStoreState.locationId,
+      JSON.stringify(activeStoreState)
+    );
+    const footerStatus = document.getElementById('footer-location-status');
+    if (footerStatus) {
+      footerStatus.textContent = `Local Encrypted Cache: OK • Location: ${activeStoreState.locationName} (#${activeStoreState.locationCode})`;
     }
+  } catch (err) {
+    console.error('Failed saving store state:', err);
+  }
+}
+
+function loadGlobalAppCatalogs() {
+  try {
+    const savedLocs = JSON.parse(localStorage.getItem(STORAGE_KEYS.LOCATIONS) || 'null');
+    appLocations = Array.isArray(savedLocs) && savedLocs.length > 0 ? savedLocs : JSON.parse(JSON.stringify(DEFAULT_LOCATIONS));
   } catch (e) {
-    boxes = createDefault40Boxes();
+    appLocations = JSON.parse(JSON.stringify(DEFAULT_LOCATIONS));
   }
 
-  boxes.forEach(b => {
-    if (b.gameNum) {
-      const matched = masterGames.find(g => String(g.gameNum).trim() === String(b.gameNum).trim());
-      if (matched) {
-        b.gameName = matched.name;
-        b.price = Number(matched.price);
-        b.rollCount = Number(matched.count);
-        b.needsNewGameEntry = false;
-      } else {
-        b.needsNewGameEntry = true;
-      }
-    } else {
-      b.needsNewGameEntry = false;
+  activeLocationId = localStorage.getItem(STORAGE_KEYS.ACTIVE_LOCATION) || appLocations[0].id;
+  if (!appLocations.some(l => l.id === activeLocationId)) {
+    activeLocationId = appLocations[0].id;
+  }
+
+  try {
+    const savedGames = JSON.parse(localStorage.getItem(STORAGE_KEYS.MASTER_GAMES) || 'null');
+    masterGamesCatalog = sanitizeMasterGamesList(savedGames);
+  } catch (e) {
+    masterGamesCatalog = sanitizeMasterGamesList(null);
+  }
+
+  try {
+    const savedCashiers = JSON.parse(localStorage.getItem(STORAGE_KEYS.SAVED_CASHIERS) || 'null');
+    if (Array.isArray(savedCashiers) && savedCashiers.length > 0) {
+      savedCashiersList = savedCashiers;
     }
-  });
+  } catch (e) {}
 
-  const subTitle = document.getElementById('header-store-subtitle');
-  if (subTitle) subTitle.textContent = `${storeProfile.name} (#${storeProfile.number}) — Shift Audit Matrix`;
-  const footStore = document.getElementById('footer-store-display');
-  if (footStore) footStore.textContent = `Location: ${storeProfile.name} (#${storeProfile.number})`;
-
-  const badgeElem = document.getElementById('admin-box-count-badge');
-  if (badgeElem) badgeElem.textContent = String(boxes.length);
-
-  if (typeof renderDispenserGrid === 'function') renderDispenserGrid();
-  if (typeof renderAdminBoxLabelsGrid === 'function') renderAdminBoxLabelsGrid();
-  if (typeof renderAdminCashiersTable === 'function') renderAdminCashiersTable();
+  dispenserViewMode = localStorage.getItem(STORAGE_KEYS.VIEW_MODE) || 'list';
+  const savedUiFont = localStorage.getItem(STORAGE_KEYS.UI_FONT_SIZE) || '14px';
+  applyUiFontSize(savedUiFont, false);
 }
 
-function saveBoxesState() {
-  try { localStorage.setItem(getStoreBoxesStorageKey(activeLocationId), JSON.stringify(boxes)); } catch (e) {}
+function saveMasterGamesCatalog() {
+  masterGamesCatalog = sanitizeMasterGamesList(masterGamesCatalog);
+  localStorage.setItem(STORAGE_KEYS.MASTER_GAMES, JSON.stringify(masterGamesCatalog));
 }
 
-function saveActiveStoreProfile() {
-  const nameInp = document.getElementById('admin-store-name')?.value?.trim();
-  const numInp = document.getElementById('admin-store-number')?.value?.trim();
-  const addrInp = document.getElementById('admin-store-address')?.value?.trim() || '';
-  const emailInp = document.getElementById('admin-store-email')?.value?.trim() || 'dimitriosregas@gmail.com';
-  const passInp = document.getElementById('admin-store-pass')?.value?.trim() || '';
-
-  if (!nameInp) {
-    alert('Please enter a valid store location name.');
-    return;
-  }
-
-  storeProfile.name = nameInp;
-  storeProfile.number = numInp || '100';
-  storeProfile.address = addrInp;
-  storeProfile.email = emailInp;
-  storeProfile.password = passInp;
-
-  try { localStorage.setItem(getStoreProfileStorageKey(activeLocationId), JSON.stringify(storeProfile)); } catch (e) {}
-
-  const locIdx = locations.findIndex(l => l.id === activeLocationId);
-  if (locIdx >= 0) {
-    locations[locIdx].name = storeProfile.name;
-    locations[locIdx].number = storeProfile.number;
-    locations[locIdx].address = storeProfile.address;
-    locations[locIdx].email = storeProfile.email;
-    saveLocationsRegistry();
-  }
-
-  populateLocationSwitcherDropdown();
-  loadActiveStoreData();
-  alert(`Store Profile Saved: ${storeProfile.name} (#${storeProfile.number})`);
+function saveLocationsCatalog() {
+  localStorage.setItem(STORAGE_KEYS.LOCATIONS, JSON.stringify(appLocations));
 }
 
-function populateLocationSwitcherDropdown() {
+function renderLocationSwitcher() {
   const select = document.getElementById('location-switcher-select');
   if (!select) return;
-  select.innerHTML = locations.map(loc => `
-    <option value="${loc.id}" ${loc.id === activeLocationId ? 'selected' : ''}>
-      ${loc.name} (${loc.number})
-    </option>
-  `).join('');
+  select.innerHTML = appLocations
+    .map(loc => `<option value="${loc.id}" ${loc.id === activeLocationId ? 'selected' : ''}>${loc.name} (${loc.code})</option>`)
+    .join('');
+
+  const subtitle = document.getElementById('header-store-subtitle');
+  const currentLoc = appLocations.find(l => l.id === activeLocationId);
+  if (subtitle && currentLoc) {
+    subtitle.textContent = `${currentLoc.name} (#${currentLoc.code}) — Shift Audit Matrix`;
+  }
 }
 
 function handleLocationSwitch(newLocId) {
-  if (!newLocId || newLocId === activeLocationId) return;
-  saveBoxesState();
+  saveActiveStoreState();
   activeLocationId = newLocId;
-  localStorage.setItem(STORAGE_KEY_ACTIVE_LOC, activeLocationId);
-  loadActiveStoreData();
-  if (typeof renderDispenserGrid === 'function') renderDispenserGrid();
-  if (typeof recalculateReconciliationTotals === 'function') recalculateReconciliationTotals();
+  localStorage.setItem(STORAGE_KEYS.ACTIVE_LOCATION, activeLocationId);
+  activeStoreState = loadStoreStateForLocation(activeLocationId);
+  boxesInputsUnlocked = false;
+  shiftSessionConfirmed = Boolean((activeStoreState.reconciliation?.cashierOut || '').trim());
+
+  renderLocationSwitcher();
+  syncReconciliationFormFromState();
+  recalculateAllBoxes();
+  renderDispenserGrid();
+  updateHeaderAndBottomSummary();
+  if (activeMainView === 'reports') renderHistoricalReports();
+  if (activeMainView === 'admin') renderAdminView();
 }
 
-function renderAdminCashiersTable() {
-  const tbody = document.getElementById('admin-cashiers-tbody');
-  const countEl = document.getElementById('admin-cashiers-count');
-  if (countEl) countEl.textContent = String(savedCashiers.length);
-  if (!tbody) return;
+// Midnight Auto-Rollover Watcher (rolls audit date automatically at 12:00 AM local time)
+function startMidnightRolloverWatcher() {
+  currentTrackedLocalDate = getLocalDateStr();
+  localStorage.setItem(STORAGE_KEYS.LAST_LOCAL_DATE, currentTrackedLocalDate);
 
-  if (savedCashiers.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="2" class="p-4 text-center text-slate-400">No saved cashiers.</td></tr>`;
-    return;
-  }
+  setInterval(() => {
+    const nowLocalDate = getLocalDateStr();
+    if (nowLocalDate !== currentTrackedLocalDate) {
+      currentTrackedLocalDate = nowLocalDate;
+      localStorage.setItem(STORAGE_KEYS.LAST_LOCAL_DATE, nowLocalDate);
 
-  tbody.innerHTML = savedCashiers.map((name, idx) => `
-    <tr class="hover:bg-slate-50 border-b border-slate-100">
-      <td class="p-2.5 font-bold text-slate-800">${name}</td>
-      <td class="p-2.5 text-center">
-        <button type="button" onclick="deleteSavedCashier(${idx})" class="text-red-600 hover:text-red-800 font-bold text-[11px] px-2.5 py-1 rounded bg-red-50">Delete</button>
-      </td>
-    </tr>
-  `).join('');
-}
+      if (activeStoreState && activeStoreState.reconciliation) {
+        activeStoreState.reconciliation.auditDate = nowLocalDate;
+        const dateInput = document.getElementById('rec-audit-date');
+        if (dateInput) dateInput.value = nowLocalDate;
+        saveActiveStoreState();
+      }
 
-function addNewCashierManual() {
-  const inp = document.getElementById('new-cashier-name-input');
-  const name = inp?.value?.trim();
-  if (!name) { alert('Please enter a cashier name.'); return; }
-  if (savedCashiers.includes(name)) { alert('This cashier is already in the saved list.'); return; }
+      const reportDateInput = document.getElementById('report-filter-date');
+      if (reportDateInput) reportDateInput.value = nowLocalDate;
 
-  savedCashiers.push(name);
-  saveCashiersState();
-  if (inp) inp.value = '';
-  renderAdminCashiersTable();
-  alert(`Cashier "${name}" added successfully!`);
-}
+      const reportMonthInput = document.getElementById('report-filter-month');
+      if (reportMonthInput) reportMonthInput.value = getLocalMonthStr();
 
-function deleteSavedCashier(idx) {
-  if (savedCashiers.length <= 1) { alert('You must keep at least one saved cashier.'); return; }
-  savedCashiers.splice(idx, 1);
-  saveCashiersState();
-  renderAdminCashiersTable();
-}
-
-function handleCashierInputAutocomplete(inputId, datalistId) {
-  const inp = document.getElementById(inputId);
-  if (!inp) return;
-  let datalist = document.getElementById(datalistId);
-  if (!datalist) {
-    datalist = document.createElement('datalist');
-    datalist.id = datalistId;
-    document.body.appendChild(datalist);
-    inp.setAttribute('list', datalistId);
-  }
-  datalist.innerHTML = savedCashiers.map(c => `<option value="${c}">`).join('');
-}
-
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 3 OF 10)
-   Box Navigation, Rollover Modals & Core Ticket Calculation Engine
-   ========================================================================== */
-
-function jumpToNextBoxInput(currentIdx, inputType) {
-  const nextIdx = currentIdx + 1;
-  if (nextIdx >= boxes.length) return;
-
-  const targetId = currentDispenserView === 'list'
-    ? `list-input-${inputType}-${nextIdx}`
-    : `input-${inputType}-${nextIdx}`;
-
-  const nextInp = document.getElementById(targetId) || document.getElementById(`input-${inputType}-${nextIdx}`);
-  if (nextInp) {
-    nextInp.focus();
-    setTimeout(() => nextInp.select(), 15);
-  }
-}
-
-function handleGridEnter(event, currentIdx) {
-  if (event.key === 'Enter' || event.keyCode === 13) {
-    event.preventDefault();
-    commitBoxEndTicket(currentIdx, event.target.value);
-    jumpToNextBoxInput(currentIdx, 'endTicket');
-  }
-}
-
-function handleStartKeydown(event, currentIdx) {
-  if (event.key === 'Enter' || event.keyCode === 13) {
-    event.preventDefault();
-    jumpToNextBoxInput(currentIdx, 'startTicket');
-  }
-}
-
-function handleGameNumKeydown(event, currentIdx) {
-  if (event.key === 'Enter' || event.keyCode === 13) {
-    event.preventDefault();
-    jumpToNextBoxInput(currentIdx, 'gameNum');
-  }
-}
-
-function rollNewPackInBox(idx) {
-  const box = boxes[idx];
-  if (!box || !box.gameNum) {
-    alert('Please assign a game number to this box before recording a rollover.');
-    return;
-  }
-  openRolloverDecisionModal(idx, '');
-}
-
-function openRolloverDecisionModal(idx, typedEndValue) {
-  const box = boxes[idx];
-  if (!box) return;
-
-  const price = Number(box.price) || 0;
-  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(price);
-
-  document.getElementById('modal-roll-box-idx').value = idx;
-  document.getElementById('modal-roll-pending-end').value = typedEndValue !== undefined ? typedEndValue : '';
-  document.getElementById('modal-rollover-title').textContent = `Box ${box.boxNumber}: ${box.gameName || 'Game #' + box.gameNum}`;
-  
-  const msgElem = document.getElementById('modal-roll-step1-msg');
-  if (typedEndValue !== '' && Number(typedEndValue) >= rollCount) {
-    msgElem.innerHTML = `You entered the last ticket in the roll (<strong>#${typedEndValue}</strong> of <strong>${rollCount}</strong>).<br><br>Did this pack finish?`;
-  } else if (typedEndValue !== '') {
-    msgElem.innerHTML = `You entered ticket <strong>#${typedEndValue}</strong>, which is lower than the start ticket (<strong>#${box.startTicket}</strong>).<br><br>Did you finish the previous pack and start a new roll?`;
-  } else {
-    msgElem.innerHTML = `Did you finish the current pack in <strong>Box ${box.boxNumber}</strong>?`;
-  }
-
-  // Ensure Step 2 has the "Box is Out" button alongside Same Game / New Game
-  const step2Container = document.getElementById('modal-roll-step-2');
-  if (step2Container && !document.getElementById('btn-rollover-box-out')) {
-    const btnOut = document.createElement('button');
-    btnOut.id = 'btn-rollover-box-out';
-    btnOut.type = 'button';
-    btnOut.onclick = function() { handleRolloverBoxOut(); };
-    btnOut.className = 'w-full bg-red-600 hover:bg-red-700 text-white font-bold text-xs py-2.5 rounded mt-2';
-    btnOut.textContent = '🚫 Box is Out (No New Roll Loaded)';
-    const newGameSec = document.getElementById('modal-roll-newgame-section');
-    if (newGameSec) {
-      step2Container.insertBefore(btnOut, newGameSec);
-    } else {
-      step2Container.appendChild(btnOut);
+      if (activeMainView === 'reports') {
+        renderHistoricalReports();
+      }
     }
-  }
-
-  document.getElementById('modal-roll-step-1').classList.remove('hidden');
-  document.getElementById('modal-roll-step-2').classList.add('hidden');
-  document.getElementById('modal-roll-newgame-section').classList.add('hidden');
-  document.getElementById('modal-box-rollover').classList.remove('hidden');
+    updateHeaderAndBottomSummary();
+  }, 15000);
 }
 
-function handleRolloverStep1Answer(isYes) {
-  const idx = Number(document.getElementById('modal-roll-box-idx').value);
-  if (isNaN(idx) || !boxes[idx]) { cancelRolloverModal(); return; }
-  if (!isYes) { cancelRolloverModal(); renderDispenserGrid(); return; }
-  document.getElementById('modal-roll-step-1').classList.add('hidden');
-  document.getElementById('modal-roll-step-2').classList.remove('hidden');
-}
-
-function handleRolloverGameChoice(isSameGame) {
-  const idx = Number(document.getElementById('modal-roll-box-idx').value);
-  if (isNaN(idx) || !boxes[idx]) return;
-  if (isSameGame) {
-    finalizeRolloverAction(idx, boxes[idx].gameNum);
-  } else {
-    const sec = document.getElementById('modal-roll-newgame-section');
-    sec.classList.remove('hidden');
-    const inp = document.getElementById('modal-roll-newgame-input');
-    inp.value = '';
-    inp.focus();
-  }
-}
-
-function applyRolloverWithNewGame() {
-  const idx = Number(document.getElementById('modal-roll-box-idx').value);
-  const newGameNum = document.getElementById('modal-roll-newgame-input').value.trim();
-  if (!newGameNum) { alert('Please enter a Game Number.'); return; }
-  finalizeRolloverAction(idx, newGameNum);
-}
-
-function handleRolloverBoxOut() {
-  const idx = Number(document.getElementById('modal-roll-box-idx').value);
-  if (isNaN(idx) || !boxes[idx]) { cancelRolloverModal(); return; }
-  const box = boxes[idx];
-  const price = Number(box.price) || 0;
-  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(price);
-  const maxTicket = Math.max(1, rollCount);
-  const start = Number(box.startTicket) || 0;
-
-  const oldPackSold = (maxTicket >= start) ? (maxTicket - start) : 0;
-  const oldPackSales = oldPackSold * price;
-
-  if (!Array.isArray(box.rollovers)) box.rollovers = [];
-  box.rollovers.push({
-    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    date: new Date().toISOString().slice(0, 10),
-    gameNum: box.gameNum,
-    gameName: box.gameName,
-    price: price,
-    rollCount: rollCount,
-    startTicket: start,
-    finishedTicket: maxTicket,
-    endTicket: 'OUT',
-    ticketsSold: oldPackSold,
-    salesAmount: oldPackSales,
-    markedOut: true
-  });
-
-  // Clear active game so the box is now empty / OUT
-  box.gameNum = '';
-  box.gameName = '';
-  box.price = 0;
-  box.startTicket = 0;
-  box.endTicket = '';
-  box.isBoxOut = true;
-  box.needsNewGameEntry = false;
-
-  saveBoxesState();
-  cancelRolloverModal();
-  renderDispenserGrid();
-  updateHeaderTotalsUI();
-  recalculateReconciliationTotals();
-}
-
-function finalizeRolloverAction(idx, finalGameNum) {
-  const box = boxes[idx];
-  const pendingEnd = document.getElementById('modal-roll-pending-end').value;
-  const price = Number(box.price) || 0;
-  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(price);
-  const maxTicket = Math.max(1, rollCount);
-  const start = Number(box.startTicket) || 0;
-  
-  const oldPackSold = (maxTicket >= start) ? (maxTicket - start) : 0;
-  const oldPackSales = oldPackSold * price;
-
-  if (!Array.isArray(box.rollovers)) box.rollovers = [];
-  box.rollovers.push({
-    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    date: new Date().toISOString().slice(0, 10),
-    gameNum: box.gameNum,
-    gameName: box.gameName,
-    price: price,
-    rollCount: rollCount,
-    startTicket: start,
-    finishedTicket: maxTicket,
-    endTicket: maxTicket,
-    ticketsSold: oldPackSold,
-    salesAmount: oldPackSales
-  });
-
-  if (finalGameNum !== box.gameNum) {
-    box.gameNum = finalGameNum;
-    const matched = masterGames.find(g => String(g.gameNum).trim() === String(finalGameNum).trim());
-    if (matched) {
-      box.gameName = matched.name;
-      box.price = Number(matched.price);
-      box.rollCount = Number(matched.count);
-      box.needsNewGameEntry = false;
-    } else {
-      box.gameName = '';
-      box.price = 0;
-      box.needsNewGameEntry = true;
-    }
-  }
-
-  box.isBoxOut = false;
-  box.startTicket = 0;
-  // If rollover was triggered by entering the exact max ticket (e.g. 30 on a 30-ticket roll),
-  // the new roll starts at 0 and End # stays blank so you can enter the new roll's ending ticket (or leave at 0).
-  if (pendingEnd !== '' && Number(pendingEnd) < maxTicket) {
-    box.endTicket = Number(pendingEnd);
-  } else {
-    box.endTicket = '';
-  }
-  box.rollsReplaced = (Number(box.rollsReplaced) || 0) + 1;
-
-  saveBoxesState();
-  cancelRolloverModal();
-  renderDispenserGrid();
-  updateHeaderTotalsUI();
-  recalculateReconciliationTotals();
-}
-
-function undoLastRolloverInBox(idx) {
-  const box = boxes[idx];
-  if (!box || !Array.isArray(box.rollovers) || box.rollovers.length === 0) {
-    alert('No rollovers to undo for this box.');
-    return;
-  }
-  if (!confirm(`Are you sure you want to undo the last rollover for Box ${box.boxNumber}? This will restore the previous roll state.`)) return;
-
-  const lastRo = box.rollovers.pop();
-  box.gameNum = lastRo.gameNum;
-  box.gameName = lastRo.gameName;
-  box.price = lastRo.price;
-  box.rollCount = lastRo.rollCount || getDefaultRollCountForPrice(lastRo.price);
-  box.startTicket = lastRo.startTicket;
-  box.endTicket = '';
-  box.isBoxOut = false;
-
-  saveBoxesState();
-  renderDispenserGrid();
-  updateHeaderTotalsUI();
-  recalculateReconciliationTotals();
-  alert('Rollover successfully undone and restored!');
-}
-
-function cancelRolloverModal() {
-  document.getElementById('modal-box-rollover').classList.add('hidden');
-}
+/* ========================= END OF PART 2 OF 10 ========================= */
+/* ============================================================================
+   PART 3 OF 10: TICKET SALES & ROLLOVER MATH, BOX INPUTS & LOCK PROTECTION
+   ============================================================================ */
 
 function calculateBoxMetrics(box) {
-  if (!box) {
-    return { ticketsSold: 0, dollarSales: 0, status: 'empty', hasRollover: false, activeTicket: '-' };
-  }
-
-  const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
-  let rolloverSold = 0;
-  let rolloverSales = 0;
-  rollovers.forEach(ro => {
-    const tSold = Number(ro.ticketsSold) || 0;
-    const rPrice = Number(ro.price) || Number(box.price) || 0;
-    rolloverSold += tSold;
-    rolloverSales += (ro.salesAmount !== undefined ? Number(ro.salesAmount) : (tSold * rPrice));
-  });
-
-  // If box is currently empty (or marked OUT after a pack finished this shift)
-  if (!box.gameNum) {
-    return {
-      ticketsSold: rolloverSold,
-      dollarSales: rolloverSales,
-      status: rollovers.length > 0 ? 'rollover' : 'empty',
-      hasRollover: rollovers.length > 0,
-      activeTicket: box.isBoxOut ? 'OUT' : '-'
-    };
-  }
-
-  const price = Number(box.price) || 0;
-  const start = Number(box.startTicket) || 0;
-  const endVal = box.endTicket;
-  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(price);
-
-  if (endVal === '' || endVal === undefined || endVal === null) {
-    return {
-      ticketsSold: rolloverSold,
-      dollarSales: rolloverSales,
-      status: rollovers.length > 0 ? 'rollover' : 'pending',
-      hasRollover: rollovers.length > 0,
-      activeTicket: start
-    };
-  }
-
-  const end = Number(endVal);
-  let ticketsSold = 0;
-
-  if (end >= start) {
-    ticketsSold = (end - start);
+  const game = findGameByNumber(box.gameNum);
+  if (game) {
+    box.gameName = game.name;
+    box.price = Number(game.price) || 0;
+    box.packCount = Number(game.count) || 0;
   } else {
-    ticketsSold = (rollCount - start) + end;
+    box.gameName = box.gameNum ? 'UNKNOWN GAME' : '';
+    box.price = Number(box.price) || 0;
+    box.packCount = Number(box.packCount) || 0;
   }
 
-  const totalTicketsSold = Math.max(0, ticketsSold + rolloverSold);
-  const dollarSales = (Math.max(0, ticketsSold) * price) + rolloverSales;
+  let totalSold = 0;
 
-  let status = 'active';
-  if (totalTicketsSold >= rollCount) status = 'complete';
-  if (rollovers.length > 0) status = 'rollover';
-
-  return { ticketsSold: totalTicketsSold, dollarSales, status, hasRollover: rollovers.length > 0, activeTicket: end };
-}
-
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 4 OF 10)
-   Box Field Updates, Live End-Ticket Handling & Metrics Display
-   ========================================================================== */
-
-function updateBoxFieldDirect(idx, field, val) {
-  if (!boxes[idx]) return;
-
-  if ((field === 'gameNum' || field === 'startTicket') && typeof isBoxEditUnlocked !== 'undefined' && !isBoxEditUnlocked) {
-    renderDispenserGrid();
-    return;
-  }
-
-  if (typeof resetBoxEditTimeout === 'function') {
-    resetBoxEditTimeout();
-  }
-
-  const cleanVal = String(val).trim();
-  boxes[idx][field] = cleanVal === '' ? '' : (field === 'gameNum' ? cleanVal : val);
-
-  if (field === 'gameNum') {
-    boxes[idx].isBoxOut = false;
-    const found = masterGames.find(g => String(g.gameNum).trim() === cleanVal || (cleanVal !== '' && Number(g.gameNum) === Number(cleanVal)));
-    if (found) {
-      boxes[idx].gameName = found.name;
-      boxes[idx].price = Number(found.price) || 0;
-      boxes[idx].rollCount = Number(found.count) || getDefaultRollCountForPrice(boxes[idx].price);
-      boxes[idx].needsNewGameEntry = false;
-    } else if (cleanVal !== '') {
-      boxes[idx].gameName = '';
-      boxes[idx].price = 0;
-      boxes[idx].needsNewGameEntry = true;
-    } else {
-      boxes[idx].gameName = '';
-      boxes[idx].price = 0;
-      boxes[idx].rollCount = 60;
-      boxes[idx].needsNewGameEntry = false;
-    }
-  } else if (field === 'startTicket') {
-    boxes[idx].startTicket = cleanVal === '' ? 0 : Number(cleanVal);
-  }
-
-  saveBoxesState();
-  updateBoxMetricsDisplay(idx);
-  updateHeaderTotalsUI();
-  recalculateReconciliationTotals();
-}
-
-window.updateBoxEndTicketLive = function(idx, val) {
-  if (!boxes[idx]) return;
-  const box = boxes[idx];
-  const clean = String(val).trim();
-
-  if (clean === '') {
-    box.endTicket = '';
-  } else {
-    box.endTicket = Number(clean);
-  }
-
-  if (typeof saveBoxesState === 'function') saveBoxesState();
-  if (typeof updateBoxMetricsDisplay === 'function') updateBoxMetricsDisplay(idx);
-  if (typeof updateHeaderTotalsUI === 'function') updateHeaderTotalsUI();
-  if (typeof recalculateReconciliationTotals === 'function') recalculateReconciliationTotals();
-};
-
-function commitBoxEndTicket(idx, val) {
-  if (!boxes[idx]) return;
-  const box = boxes[idx];
-  const clean = String(val).trim();
-
-  if (clean.toUpperCase() === 'OUT') {
-    if (typeof markBoxSoldOutDirect === 'function') {
-      markBoxSoldOutDirect(idx);
-    }
-    return;
-  }
-
-  if (clean === '') {
-    box.endTicket = '';
-    saveBoxesState();
-    updateBoxMetricsDisplay(idx);
-    updateHeaderTotalsUI();
-    recalculateReconciliationTotals();
-    return;
-  }
-
-  const endNum = Number(clean);
-  const startNum = Number(box.startTicket) || 0;
-  const price = Number(box.price) || 0;
-  const rollCount = Number(box.rollCount) || getDefaultRollCountForPrice(price);
-
-  box.endTicket = endNum;
-
-  // Trigger Rollover / Out Modal if endNum is lower than startNum OR reaches the full roll count (e.g. 30 on a 30-ticket pack)
-  if (endNum < startNum || (box.gameNum && endNum >= rollCount)) {
-    openRolloverDecisionModal(idx, endNum);
-    return;
-  }
-
-  saveBoxesState();
-  updateBoxMetricsDisplay(idx);
-  updateHeaderTotalsUI();
-  recalculateReconciliationTotals();
-}
-
-function updateBoxMetricsDisplay(idx) {
-  const box = boxes[idx];
-  if (!box) return;
-  const metrics = calculateBoxMetrics(box);
-  const hasGame = Boolean(box.gameNum);
-  const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
-
-  const card = document.getElementById(`dispenser-card-${idx}`);
-  const soldBadge = document.getElementById(`box-sold-badge-${idx}`);
-  const salesBadge = document.getElementById(`box-sales-badge-${idx}`);
-  const titleEl = document.getElementById(`box-title-${idx}`);
-  const subEl = document.getElementById(`box-sub-${idx}`);
-  const unknownWrap = document.getElementById(`box-unknown-wrap-${idx}`);
-
-  if (soldBadge) soldBadge.textContent = `${metrics.ticketsSold} Sold`;
-  if (salesBadge) salesBadge.textContent = `$${metrics.dollarSales.toFixed(2)}`;
-  if (titleEl) {
-    titleEl.innerHTML = hasGame
-      ? (box.gameName || 'Game #' + box.gameNum)
-      : (box.isBoxOut ? '<span class="text-red-600 font-extrabold">BOX OUT</span>' : '<span class="text-slate-400 italic">Empty Box</span>');
-  }
-  if (subEl) subEl.textContent = hasGame ? `$${box.price} • ${box.rollCount} tix/pk` : (box.isBoxOut ? 'No active roll loaded' : 'Assign game below');
-  if (unknownWrap) {
-    if (box.needsNewGameEntry) unknownWrap.classList.remove('hidden');
-    else unknownWrap.classList.add('hidden');
-  }
-
-  if (card) {
-    card.classList.remove('status-complete', 'status-rollover', 'status-pending', 'status-alert');
-    if (box.isBoxOut) card.classList.add('status-alert');
-    else if (metrics.status === 'complete') card.classList.add('status-complete');
-    else if (metrics.status === 'rollover') card.classList.add('status-rollover');
-    else card.classList.add('status-pending');
-  }
-
-  const listName = document.getElementById(`list-gamename-${idx}`);
-  const listPrice = document.getElementById(`list-price-${idx}`);
-  const listSold = document.getElementById(`list-sold-${idx}`);
-  const listSales = document.getElementById(`list-sales-${idx}`);
-
-  if (listName) {
-    const roHistoryHtml = rollovers.map(ro =>
-      `<div class="text-[10px] font-bold ${ro.markedOut ? 'text-red-800 bg-red-50 border-red-200' : 'text-amber-800 bg-amber-50 border-amber-200'} border rounded px-1.5 py-0.5 mt-1 flex items-center justify-between">
-        <span>${ro.markedOut ? '🚫 OUT' : 'Prev'} #${ro.gameNum} (${ro.gameName || 'Pack'}): #${ro.startTicket}→#${ro.finishedTicket} (${ro.ticketsSold} sold = $${Number(ro.salesAmount || 0).toFixed(2)})</span>
-        <button type="button" onclick="undoLastRolloverInBox(${idx})" class="text-red-700 underline ml-2 hover:text-red-900">Undo Rollover</button>
-      </div>`
-    ).join('');
-    const titleHtml = hasGame
-      ? `<strong>#${box.gameNum}</strong> ${box.gameName || ''}`
-      : (box.isBoxOut ? '<span class="text-red-600 font-extrabold">🚫 BOX OUT (Empty)</span>' : '<span class="text-slate-400 italic">Empty Box</span>');
-    listName.innerHTML = titleHtml + roHistoryHtml;
-  }
-  if (listPrice) listPrice.textContent = hasGame && box.price ? '$' + box.price : '-';
-  if (listSold) listSold.textContent = `${metrics.ticketsSold}${rollovers.length > 0 ? ' *' : ''}`;
-  if (listSales) listSales.textContent = `$${metrics.dollarSales.toFixed(2)}`;
-}
-
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 5 OF 10)
-   Dispenser Grid & List View Rendering + Cashier/Shift Header Bar
-   ========================================================================== */
-
-function toggleDispenserView() {
-  // Sync current DOM inputs to memory state before switching views to prevent data loss
-  if (typeof boxes !== 'undefined' && Array.isArray(boxes)) {
-    boxes.forEach((_, idx) => {
-      const listEnd = document.getElementById(`list-input-endTicket-${idx}`);
-      const gridEnd = document.getElementById(`input-endTicket-${idx}`);
-      const val = listEnd?.value ?? gridEnd?.value;
-      if (val !== undefined && val !== '' && boxes[idx]) {
-        boxes[idx].endTicket = Number(val);
+  // Sum any mid-shift rolled packs first
+  if (Array.isArray(box.rollovers) && box.rollovers.length > 0) {
+    box.rollovers.forEach(roll => {
+      const rStart = Number(roll.startTicket) || 0;
+      const rEnd = Number(roll.endTicket) || 0;
+      if (rEnd >= rStart) {
+        totalSold += (rEnd - rStart);
       }
     });
-    if (typeof saveBoxesState === 'function') saveBoxesState();
   }
 
-  currentDispenserView = currentDispenserView === 'grid' ? 'list' : 'grid';
-  try { localStorage.setItem('user_dispenser_view', currentDispenserView); } catch (e) {}
-  const btn = document.getElementById('dispenser-view-toggle-btn');
-  if (btn) btn.textContent = currentDispenserView === 'grid' ? '📋 List View' : '🔲 Grid View';
+  // Add active pack tickets if End # is entered
+  const startNum = Number(box.startTicket) || 0;
+  const hasEnd = box.endTicket !== '' && box.endTicket !== null && box.endTicket !== undefined && !isNaN(Number(box.endTicket));
+
+  if (hasEnd) {
+    const endNum = Number(box.endTicket);
+    if (endNum >= startNum) {
+      totalSold += (endNum - startNum);
+    }
+  }
+
+  box.ticketsSold = Math.max(0, totalSold);
+  box.salesAmount = Number((box.ticketsSold * (Number(box.price) || 0)).toFixed(2));
+  return box;
+}
+
+function recalculateAllBoxes() {
+  if (!activeStoreState || !Array.isArray(activeStoreState.boxes)) return;
+  activeStoreState.boxes.forEach(box => calculateBoxMetrics(box));
+}
+
+function getShiftTotals() {
+  let totalTickets = 0;
+  let totalSales = 0;
+
+  if (activeStoreState && Array.isArray(activeStoreState.boxes)) {
+    activeStoreState.boxes.forEach(box => {
+      totalTickets += Number(box.ticketsSold) || 0;
+      totalSales += Number(box.salesAmount) || 0;
+    });
+  }
+
+  return {
+    totalTickets,
+    totalSales: Number(totalSales.toFixed(2))
+  };
+}
+
+function toggleBoxesInputsLock() {
+  boxesInputsUnlocked = !boxesInputsUnlocked;
   renderDispenserGrid();
 }
 
-function buildPairedBoxRows(boxList) {
-  const rows = [];
-  let i = 0;
-  while (i < boxList.length) {
-    const currentBox = boxList[i];
-    const currentLabel = String(currentBox.boxNumber || '').trim();
-
-    if (currentLabel.includes('&')) {
-      rows.push({ type: 'single', index: i, box: currentBox });
-      i++;
-    } else {
-      let nextBox = null;
-      let nextIdx = -1;
-      if (i + 1 < boxList.length) {
-        const potentialNext = boxList[i + 1];
-        const nextLabel = String(potentialNext.boxNumber || '').trim();
-        if (!nextLabel.includes('&')) {
-          nextBox = potentialNext;
-          nextIdx = i + 1;
+function unlockBoxesInputsIfLocked(el) {
+  if (!boxesInputsUnlocked) {
+    boxesInputsUnlocked = true;
+    renderDispenserGrid();
+    if (el && el.id) {
+      setTimeout(() => {
+        const refocused = document.getElementById(el.id);
+        if (refocused) {
+          refocused.focus();
+          refocused.select?.();
         }
-      }
-
-      if (nextBox) {
-        rows.push({ type: 'pair', leftIndex: i, leftBox: currentBox, rightIndex: nextIdx, rightBox: nextBox });
-        i += 2;
-      } else {
-        rows.push({ type: 'single', index: i, box: currentBox });
-        i++;
-      }
+      }, 20);
     }
   }
-  return rows;
+}
+
+function handleBoxGameNumChange(boxIdx, rawVal) {
+  const box = activeStoreState?.boxes?.[boxIdx];
+  if (!box) return;
+
+  const cleanNum = String(rawVal || '').trim();
+  box.gameNum = cleanNum;
+  const matched = findGameByNumber(cleanNum);
+  if (matched) {
+    box.gameName = matched.name;
+    box.price = matched.price;
+    box.packCount = matched.count;
+  } else {
+    box.gameName = cleanNum ? 'UNKNOWN GAME' : '';
+    box.price = 0;
+    box.packCount = 0;
+  }
+
+  calculateBoxMetrics(box);
+  saveActiveStoreState();
+  renderDispenserGrid();
+  updateHeaderAndBottomSummary();
+}
+
+function handleBoxStartTicketChange(boxIdx, rawVal) {
+  const box = activeStoreState?.boxes?.[boxIdx];
+  if (!box) return;
+
+  box.startTicket = rawVal === '' ? 0 : Math.max(0, parseInt(rawVal, 10) || 0);
+  calculateBoxMetrics(box);
+  saveActiveStoreState();
+  updateSingleBoxRowOrCardDisplay(boxIdx);
+  updateHeaderAndBottomSummary();
+}
+
+function handleBoxEndTicketInput(boxIdx, rawVal) {
+  const box = activeStoreState?.boxes?.[boxIdx];
+  if (!box) return;
+
+  if (rawVal === '' || rawVal === null || rawVal === undefined) {
+    box.endTicket = '';
+  } else {
+    box.endTicket = Math.max(0, parseInt(rawVal, 10) || 0);
+  }
+
+  calculateBoxMetrics(box);
+  saveActiveStoreState();
+  updateSingleBoxRowOrCardDisplay(boxIdx);
+  updateHeaderAndBottomSummary();
+}
+
+function triggerMidShiftRollover(boxIdx) {
+  const box = activeStoreState?.boxes?.[boxIdx];
+  if (!box) return;
+
+  if (!box.gameNum) {
+    alert(`Box ${box.label}: Enter a Game # before rolling over a pack.`);
+    return;
+  }
+
+  const game = findGameByNumber(box.gameNum);
+  const defaultPackEnd = game ? Number(game.count) : (Number(box.packCount) || 0);
+  const currentStart = Number(box.startTicket) || 0;
+
+  const endInputStr = prompt(
+    `Mid-Shift Pack Rollover — Box ${box.label} (${box.gameName || box.gameNum})\n` +
+    `Current Pack Start #: ${currentStart}\n` +
+    `Enter the final closing ticket # of the finished pack (usually ${defaultPackEnd}):`,
+    String(defaultPackEnd || '')
+  );
+
+  if (endInputStr === null) return;
+  const closedEnd = parseInt(endInputStr, 10);
+  if (isNaN(closedEnd) || closedEnd < currentStart) {
+    alert(`Closing ticket # must be greater than or equal to Start # (${currentStart}).`);
+    return;
+  }
+
+  const newStartStr = prompt(
+    `New Pack Opened — Box ${box.label}\nEnter the starting ticket # of the new pack (usually 0):`,
+    '0'
+  );
+  if (newStartStr === null) return;
+  const nextStart = Math.max(0, parseInt(newStartStr, 10) || 0);
+
+  box.rollovers.push({
+    gameNum: box.gameNum,
+    gameName: box.gameName,
+    price: box.price,
+    startTicket: currentStart,
+    endTicket: closedEnd,
+    sold: closedEnd - currentStart
+  });
+
+  box.startTicket = nextStart;
+  box.endTicket = '';
+
+  calculateBoxMetrics(box);
+  saveActiveStoreState();
+  renderDispenserGrid();
+  updateHeaderAndBottomSummary();
+}
+
+function advanceEndToStartForNewShift() {
+  if (!activeStoreState || !Array.isArray(activeStoreState.boxes)) return;
+
+  const ok = confirm(
+    'Roll End # → Start # for Next Shift?\n\n' +
+    'This will move every box’s current End # into Start #, clear End # and mid-shift rollovers, and reset the cashier check-in for the new shift.'
+  );
+  if (!ok) return;
+
+  activeStoreState.boxes.forEach(box => {
+    if (box.endTicket !== '' && box.endTicket !== null && box.endTicket !== undefined && !isNaN(Number(box.endTicket))) {
+      box.startTicket = Number(box.endTicket);
+    }
+    box.endTicket = '';
+    box.rollovers = [];
+    calculateBoxMetrics(box);
+  });
+
+  // Reset cashier check-in so next shift cashier is prompted on first End #
+  shiftSessionConfirmed = false;
+  if (activeStoreState.reconciliation) {
+    activeStoreState.reconciliation.cashierOut = '';
+    activeStoreState.reconciliation.cashierIn = '';
+    activeStoreState.reconciliation.onlineSales = 0;
+    activeStoreState.reconciliation.totalPayouts = 0;
+    activeStoreState.reconciliation.actualCash = 0;
+    activeStoreState.reconciliation.notes = '';
+    activeStoreState.reconciliation.signatureDataUrl = '';
+    activeStoreState.reconciliation.auditDate = getLocalDateStr();
+  }
+
+  boxesInputsUnlocked = false;
+  saveActiveStoreState();
+  syncReconciliationFormFromState();
+  renderDispenserGrid();
+  updateHeaderAndBottomSummary();
+}
+
+function handleGridFieldEnterKey(event, fieldType, boxIdx) {
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+  const nextIdx = boxIdx + 1;
+  const prefix = dispenserViewMode === 'list' ? 'list' : 'card';
+  const nextEl = document.getElementById(`${prefix}-${fieldType}-${nextIdx}`);
+  if (nextEl) {
+    nextEl.focus();
+    nextEl.select?.();
+  }
+}
+
+/* ========================= END OF PART 3 OF 10 ========================= */
+/* ============================================================================
+   PART 4 OF 10: DISPENSER LIST & BOX GRID RENDERING + VIEW MODE SWITCHER
+   ============================================================================ */
+
+function setDispenserViewMode(mode) {
+  dispenserViewMode = mode === 'grid' ? 'grid' : 'list';
+  localStorage.setItem(STORAGE_KEYS.VIEW_MODE, dispenserViewMode);
+  syncDispenserViewToggleButtons();
+  renderDispenserGrid();
+}
+
+function syncDispenserViewToggleButtons() {
+  const listBtn = document.getElementById('btn-view-mode-list');
+  const gridBtn = document.getElementById('btn-view-mode-grid');
+  if (!listBtn || !gridBtn) return;
+
+  if (dispenserViewMode === 'list') {
+    listBtn.className = 'px-3.5 py-1 rounded-md text-xs font-extrabold transition bg-blue-600 text-white shadow-sm';
+    gridBtn.className = 'px-3.5 py-1 rounded-md text-xs font-extrabold transition text-slate-300 hover:text-white';
+  } else {
+    gridBtn.className = 'px-3.5 py-1 rounded-md text-xs font-extrabold transition bg-blue-600 text-white shadow-sm';
+    listBtn.className = 'px-3.5 py-1 rounded-md text-xs font-extrabold transition text-slate-300 hover:text-white';
+  }
+}
+
+function getBoxStatusClass(box) {
+  const hasRollover = Array.isArray(box.rollovers) && box.rollovers.length > 0;
+  const hasEnd = box.endTicket !== '' && box.endTicket !== null && box.endTicket !== undefined && !isNaN(Number(box.endTicket));
+
+  if (hasEnd && Number(box.endTicket) < Number(box.startTicket)) {
+    return 'status-alert';
+  }
+  if (hasRollover) {
+    return 'status-rollover';
+  }
+  if (hasEnd) {
+    return 'status-complete';
+  }
+  return 'status-pending';
+}
+
+function formatRolloverHistoryBadge(box) {
+  if (!Array.isArray(box.rollovers) || box.rollovers.length === 0) return '';
+  const summary = box.rollovers
+    .map(r => `[${r.startTicket}→${r.endTicket} (+${r.sold})]`)
+    .join(' ');
+  return `<div class="text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-300 rounded px-1.5 py-0.5 mt-0.5">Rolled: ${summary}</div>`;
 }
 
 function renderDispenserGrid() {
   const container = document.getElementById('dispenser-grid-container');
-  if (!container) return;
+  if (!container || !activeStoreState) return;
 
-  if (!Array.isArray(boxes) || boxes.length === 0) {
-    boxes = createDefault40Boxes();
+  syncDispenserViewToggleButtons();
+
+  // Render Lock Status Banner right above the table/cards
+  let lockBar = document.getElementById('grid-lock-status-bar');
+  if (!lockBar) {
+    lockBar = document.createElement('div');
+    lockBar.id = 'grid-lock-status-bar';
+    container.parentNode.insertBefore(lockBar, container);
   }
+  lockBar.className = 'bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs text-amber-950';
+  lockBar.innerHTML = `
+    <div>
+      💡 <strong>Tip:</strong> Game # and Start # boxes are ${boxesInputsUnlocked ? 'unlocked for editing' : 'locked to prevent accidental edits'}. Tap any Game # or Start # box or click the lock button to toggle.
+    </div>
+    <button
+      type="button"
+      onclick="toggleBoxesInputsLock()"
+      class="${boxesInputsUnlocked ? 'bg-emerald-700 hover:bg-emerald-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-amber-300'} font-extrabold text-xs px-3 py-1.5 rounded-lg shadow-sm transition"
+    >
+      ${boxesInputsUnlocked ? '🔓 Game# & Start# Unlocked (Click to Lock)' : '🔒 Game# & Start# Locked'}
+    </button>
+  `;
 
-  const isUnlocked = (typeof isBoxEditUnlocked !== 'undefined' && isBoxEditUnlocked);
-  const lockAttr = isUnlocked ? '' : 'readonly';
-  const lockStyle = isUnlocked ? 'bg-white' : 'bg-slate-100 text-slate-500 cursor-pointer';
+  const readonlyAttr = boxesInputsUnlocked ? '' : 'readonly';
+  const lockedStyle = boxesInputsUnlocked
+    ? 'bg-white border-blue-400'
+    : 'bg-slate-100 text-slate-700 cursor-pointer';
 
-  if (currentDispenserView === 'list') {
-    const rowsHtml = boxes.map((box, idx) => {
-      const m = calculateBoxMetrics(box);
-      const hasGame = Boolean(box.gameNum);
-      const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
-      const tabGame = 1000 + idx + 1;
-      const tabStart = 2000 + idx + 1;
-      const tabEnd = 3000 + idx + 1;
+  if (dispenserViewMode === 'list') {
+    container.className = 'bg-white rounded-xl shadow-sm border border-slate-300 overflow-x-auto';
 
-      const roHistoryHtml = rollovers.map(ro =>
-        `<div class="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 rounded px-1.5 py-0.5 mt-1 flex items-center justify-between">
-          <span>Prev #${ro.gameNum} (${ro.gameName || 'Pack'}): #${ro.startTicket}→#${ro.finishedTicket} (${ro.ticketsSold} sold = $${Number(ro.salesAmount || 0).toFixed(2)})</span>
-          <button type="button" onclick="undoLastRolloverInBox(${idx})" class="text-red-700 underline ml-2 hover:text-red-900">Undo Rollover</button>
-        </div>`
-      ).join('');
-
-      const currentEndVal = box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '';
+    const rowsHtml = activeStoreState.boxes.map((box, idx) => {
+      const statusCls = getBoxStatusClass(box);
+      const priceDisplay = box.price ? `$${Number(box.price).toFixed(0)}` : '-';
+      const gameNameDisplay = box.gameName || '<span class="text-slate-400 italic">Empty Box</span>';
+      const endVal = box.endTicket !== '' && box.endTicket !== null && box.endTicket !== undefined ? box.endTicket : '';
 
       return `
-        <tr style="border-bottom: 1px solid #e2e8f0; background: #fff;" class="hover:bg-slate-50 transition">
-          <td style="padding: 6px 8px; text-align: center; background: #0f172a; font-family: monospace; font-weight: bold; color: #fff;">
-            ${box.boxNumber || (idx + 1)}
+        <tr id="box-row-${idx}" class="dispenser-card ${statusCls} border-b border-slate-200 hover:bg-slate-50/90">
+          <td class="p-2 text-center font-black text-slate-900 bg-slate-100/80 border-r border-slate-200 w-14">
+            ${box.label}
           </td>
-          <td style="padding: 6px 8px; text-align: center; font-family: monospace; font-weight: bold;">
-            <input type="text" inputmode="numeric" ${lockAttr} tabindex="${tabGame}" enterkeyhint="next"
-              id="list-input-gameNum-${idx}" value="${box.gameNum || ''}"
-              onclick="requestBoxEditUnlock(this)"
-              onfocus="this.select()"
-              oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'gameNum', this.value)"
-              onkeydown="handleGameNumKeydown(event, ${idx})"
+          <td class="p-1.5 w-24">
+            <input
+              type="text"
+              inputmode="numeric"
+              id="list-gameNum-${idx}"
+              data-box-idx="${idx}"
+              value="${box.gameNum || ''}"
               placeholder="Game#"
-              class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input font-bold ${lockStyle}" />
+              ${readonlyAttr}
+              onclick="unlockBoxesInputsIfLocked(this)"
+              onchange="handleBoxGameNumChange(${idx}, this.value)"
+              onkeydown="handleGridFieldEnterKey(event, 'gameNum', ${idx})"
+              class="w-full rounded px-2 py-1 text-center lotto-input ${lockedStyle}"
+            />
           </td>
-          <td id="list-gamename-${idx}" style="padding: 6px 8px; font-weight: 600;">
-            <div>${hasGame ? `<strong>#${box.gameNum}</strong> ${box.gameName || ''}` + (box.needsNewGameEntry ? ` <button type="button" tabindex="-1" onclick="openQuickGameModal(${idx})" class="ml-1 text-[10px] font-extrabold underline text-blue-700">+ Register</button>` : '') : '<span class="text-slate-400 italic">Empty Box</span>'}</div>
-            ${roHistoryHtml}
+          <td class="p-2 min-w-[160px]">
+            <div class="font-extrabold text-slate-900 leading-tight">${gameNameDisplay}</div>
+            ${formatRolloverHistoryBadge(box)}
           </td>
-          <td id="list-price-${idx}" style="padding: 6px 8px; text-align: center; font-weight: bold; color: #047857;">${hasGame && box.price ? '$' + box.price : '-'}</td>
-          <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
-            <input type="number" inputmode="numeric" ${lockAttr} tabindex="${tabStart}" enterkeyhint="next"
-              id="list-input-startTicket-${idx}" value="${box.startTicket !== '' && box.startTicket !== undefined ? box.startTicket : 0}"
-              onclick="requestBoxEditUnlock(this)"
-              onfocus="this.select()"
-              oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'startTicket', this.value)"
-              onkeydown="handleStartKeydown(event, ${idx})"
-              class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono lotto-input ${lockStyle}" />
+          <td class="p-2 text-center font-extrabold text-slate-700 w-16">
+            ${priceDisplay}
           </td>
-          <td style="padding: 6px 8px; text-align: center; font-family: monospace;">
-            <input type="number" inputmode="numeric" tabindex="${tabEnd}" enterkeyhint="next"
-              id="list-input-endTicket-${idx}" value="${currentEndVal}"
-              onfocus="this.select()"
-              oninput="updateBoxEndTicketLive(${idx}, this.value)"
-              onchange="commitBoxEndTicket(${idx}, this.value)"
-              onkeydown="handleGridEnter(event, ${idx})"
+          <td class="p-1.5 w-24">
+            <input
+              type="number"
+              inputmode="numeric"
+              id="list-startTicket-${idx}"
+              data-box-idx="${idx}"
+              value="${box.startTicket ?? 0}"
+              ${readonlyAttr}
+              onclick="unlockBoxesInputsIfLocked(this)"
+              onchange="handleBoxStartTicketChange(${idx}, this.value)"
+              onkeydown="handleGridFieldEnterKey(event, 'startTicket', ${idx})"
+              class="w-full rounded px-2 py-1 text-center lotto-input ${lockedStyle}"
+            />
+          </td>
+          <td class="p-1.5 w-28">
+            <input
+              type="number"
+              inputmode="numeric"
+              id="list-endTicket-${idx}"
+              data-field="end"
+              data-box-idx="${idx}"
+              value="${endVal}"
               placeholder="End#"
-              class="w-16 text-center text-xs border border-slate-300 rounded px-1 py-0.5 font-mono font-bold lotto-input" />
+              oninput="handleBoxEndTicketInput(${idx}, this.value)"
+              onkeydown="handleGridFieldEnterKey(event, 'endTicket', ${idx})"
+              class="w-full rounded px-2 py-1 text-center lotto-input border-blue-400"
+            />
           </td>
-          <td id="list-sold-${idx}" style="padding: 6px 8px; text-align: center; font-weight: bold;">${m.ticketsSold}${rollovers.length > 0 ? ' *' : ''}</td>
-          <td id="list-sales-${idx}" style="padding: 6px 8px; text-align: right; font-family: monospace; font-weight: 900; color: #047857;">$${m.dollarSales.toFixed(2)}</td>
-          <td style="padding: 6px 8px; text-align: center;">
-            <button type="button" tabindex="-1" onclick="rollNewPackInBox(${idx})" class="text-[10px] bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold px-2 py-1 rounded transition">Roll</button>
+          <td id="list-sold-${idx}" class="p-2 text-center font-mono font-extrabold text-slate-900 w-16">
+            ${box.ticketsSold || 0}
+          </td>
+          <td id="list-sales-${idx}" class="p-2 text-right font-mono font-extrabold text-emerald-700 w-24">
+            $${(Number(box.salesAmount) || 0).toFixed(2)}
+          </td>
+          <td class="p-1.5 text-center w-20">
+            <button
+              type="button"
+              onclick="triggerMidShiftRollover(${idx})"
+              title="Mid-Shift Pack Rollover"
+              class="bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-[11px] px-2.5 py-1 rounded shadow-sm transition"
+            >
+              Roll
+            </button>
           </td>
         </tr>
       `;
     }).join('');
 
     container.innerHTML = `
-      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden col-span-full">
-        <table class="w-full text-xs text-left border-collapse">
-          <thead>
-            <tr style="background: #f1f5f9; border-bottom: 2px solid #cbd5e1; text-transform: uppercase; font-size: 10px;">
-              <th style="padding: 8px; text-align: center; width: 60px;">Box #</th>
-              <th style="padding: 8px; text-align: center; width: 80px;">Game #</th>
-              <th style="padding: 8px;">Game Name (Current & Rolled)</th>
-              <th style="padding: 8px; text-align: center; width: 50px;">Price</th>
-              <th style="padding: 8px; text-align: center; width: 80px;">Start</th>
-              <th style="padding: 8px; text-align: center; width: 80px;">End</th>
-              <th style="padding: 8px; text-align: center; width: 60px;">Sold</th>
-              <th style="padding: 8px; text-align: right; width: 90px;">Sales $</th>
-              <th style="padding: 8px; text-align: center; width: 60px;">Action</th>
-            </tr>
-          </thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>
-      </div>
+      <table class="w-full text-left border-collapse">
+        <thead class="bg-slate-800 text-white text-[11px] uppercase tracking-wider">
+          <tr>
+            <th class="p-2.5 text-center">BOX #</th>
+            <th class="p-2.5 text-center">GAME #</th>
+            <th class="p-2.5">GAME NAME (CURRENT &amp; ROLLED)</th>
+            <th class="p-2.5 text-center">PRICE</th>
+            <th class="p-2.5 text-center">START</th>
+            <th class="p-2.5 text-center">END</th>
+            <th class="p-2.5 text-center">SOLD</th>
+            <th class="p-2.5 text-right">SALES $</th>
+            <th class="p-2.5 text-center">ACTION</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+      </table>
     `;
-    updateHeaderTotalsUI();
-    return;
+  } else {
+    container.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3';
+
+    container.innerHTML = activeStoreState.boxes.map((box, idx) => {
+      const statusCls = getBoxStatusClass(box);
+      const priceDisplay = box.price ? `$${Number(box.price).toFixed(0)}` : '-';
+      const endVal = box.endTicket !== '' && box.endTicket !== null && box.endTicket !== undefined ? box.endTicket : '';
+
+      return `
+        <div id="box-card-${idx}" class="dispenser-card ${statusCls} bg-white rounded-xl shadow-sm border border-slate-200 p-3 flex flex-col justify-between gap-2.5">
+          <div class="flex items-start justify-between gap-2 border-b border-slate-100 pb-2">
+            <div>
+              <span class="inline-block bg-slate-900 text-amber-300 font-black text-xs px-2 py-0.5 rounded">BOX ${box.label}</span>
+              <span class="ml-1.5 font-extrabold text-xs text-slate-600">${priceDisplay}</span>
+              <div class="font-extrabold text-sm text-slate-900 mt-1 leading-tight">${box.gameName || '<span class="text-slate-400 italic">Empty Box</span>'}</div>
+              ${formatRolloverHistoryBadge(box)}
+            </div>
+            <button
+              type="button"
+              onclick="triggerMidShiftRollover(${idx})"
+              class="bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-[11px] px-2.5 py-1 rounded shadow-sm shrink-0"
+            >
+              Roll
+            </button>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold uppercase text-slate-500 mb-0.5">Game #</label>
+              <input
+                type="text"
+                inputmode="numeric"
+                id="card-gameNum-${idx}"
+                data-box-idx="${idx}"
+                value="${box.gameNum || ''}"
+                placeholder="Game#"
+                ${readonlyAttr}
+                onclick="unlockBoxesInputsIfLocked(this)"
+                onchange="handleBoxGameNumChange(${idx}, this.value)"
+                onkeydown="handleGridFieldEnterKey(event, 'gameNum', ${idx})"
+                class="w-full rounded px-2 py-1 text-center lotto-input ${lockedStyle}"
+              />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold uppercase text-slate-500 mb-0.5">Start #</label>
+              <input
+                type="number"
+                inputmode="numeric"
+                id="card-startTicket-${idx}"
+                data-box-idx="${idx}"
+                value="${box.startTicket ?? 0}"
+                ${readonlyAttr}
+                onclick="unlockBoxesInputsIfLocked(this)"
+                onchange="handleBoxStartTicketChange(${idx}, this.value)"
+                onkeydown="handleGridFieldEnterKey(event, 'startTicket', ${idx})"
+                class="w-full rounded px-2 py-1 text-center lotto-input ${lockedStyle}"
+              />
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold uppercase text-blue-700 mb-0.5">End #</label>
+              <input
+                type="number"
+                inputmode="numeric"
+                id="card-endTicket-${idx}"
+                data-field="end"
+                data-box-idx="${idx}"
+                value="${endVal}"
+                placeholder="End#"
+                oninput="handleBoxEndTicketInput(${idx}, this.value)"
+                onkeydown="handleGridFieldEnterKey(event, 'endTicket', ${idx})"
+                class="w-full rounded px-2 py-1 text-center lotto-input border-blue-400"
+              />
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs">
+            <span class="text-slate-600 font-bold">Sold: <strong id="card-sold-${idx}" class="font-mono text-slate-900">${box.ticketsSold || 0}</strong></span>
+            <span class="text-slate-600 font-bold">Sales: <strong id="card-sales-${idx}" class="font-mono text-emerald-700">$${(Number(box.salesAmount) || 0).toFixed(2)}</strong></span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+function updateSingleBoxRowOrCardDisplay(boxIdx) {
+  const box = activeStoreState?.boxes?.[boxIdx];
+  if (!box) return;
+
+  const statusCls = getBoxStatusClass(box);
+  const soldText = String(box.ticketsSold || 0);
+  const salesText = `$${(Number(box.salesAmount) || 0).toFixed(2)}`;
+
+  const listSold = document.getElementById(`list-sold-${boxIdx}`);
+  const listSales = document.getElementById(`list-sales-${boxIdx}`);
+  const listRow = document.getElementById(`box-row-${boxIdx}`);
+  if (listSold) listSold.textContent = soldText;
+  if (listSales) listSales.textContent = salesText;
+  if (listRow) {
+    listRow.className = `dispenser-card ${statusCls} border-b border-slate-200 hover:bg-slate-50/90`;
   }
 
-  let html = '';
-  boxes.forEach((box, idx) => {
-    const metrics = calculateBoxMetrics(box);
-    const hasGame = Boolean(box.gameNum);
-    const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
-    let statusClass = 'status-pending';
-    if (metrics.status === 'complete') statusClass = 'status-complete';
-    else if (metrics.status === 'rollover') statusClass = 'status-rollover';
+  const cardSold = document.getElementById(`card-sold-${boxIdx}`);
+  const cardSales = document.getElementById(`card-sales-${boxIdx}`);
+  const cardBox = document.getElementById(`box-card-${boxIdx}`);
+  if (cardSold) cardSold.textContent = soldText;
+  if (cardSales) cardSales.textContent = salesText;
+  if (cardBox) {
+    cardBox.className = `dispenser-card ${statusCls} bg-white rounded-xl shadow-sm border border-slate-200 p-3 flex flex-col justify-between gap-2.5`;
+  }
+}
 
-    const tabGame = 1000 + idx + 1;
-    const tabStart = 2000 + idx + 1;
-    const tabEnd = 3000 + idx + 1;
+/* ========================= END OF PART 4 OF 10 ========================= */
+/* ============================================================================
+   PART 5 OF 10: CASHIER & SHIFT CHECK-IN ON FIRST END # + BOTTOM SUMMARY BAR
+   ============================================================================ */
 
-    const roHistoryHtml = rollovers.map(ro =>
-      `<div class="text-[10px] font-bold text-amber-900 bg-amber-50 border border-amber-300 rounded px-2 py-1 mb-1.5 flex items-center justify-between">
-        <div>
-          <div>Prev: #${ro.gameNum} ${ro.gameName || ''} ($${ro.price})</div>
-          <div>Start #${ro.startTicket} → End #${ro.finishedTicket} • ${ro.ticketsSold} Sold ($${Number(ro.salesAmount || 0).toFixed(2)})</div>
-        </div>
-        <button type="button" onclick="undoLastRolloverInBox(${idx})" class="text-red-700 underline font-extrabold text-[10px] ml-2 hover:text-red-900">Undo</button>
-      </div>`
-    ).join('');
+function populatePromptCashiersDatalist() {
+  const lists = ['prompt-cashiers-datalist', 'rec-cashiers-datalist'];
+  const optionsHtml = savedCashiersList
+    .map(name => `<option value="${String(name).replace(/"/g, '&quot;')}"></option>`)
+    .join('');
 
-    const currentEndValGrid = box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '';
-
-    html += `
-      <div id="dispenser-card-${idx}" class="dispenser-card bg-white rounded-xl border border-slate-200 p-3 shadow-sm flex flex-col justify-between ${statusClass}">
-        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
-          <div class="flex items-center gap-2">
-            <div class="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-900 text-white font-black text-xs font-mono" title="Slot / Box #">
-              ${box.boxNumber || (idx + 1)}
-            </div>
-            <div class="leading-tight">
-              <div id="box-title-${idx}" class="font-bold text-xs text-slate-800 truncate max-w-[140px]">${hasGame ? (box.gameName || 'Game #' + box.gameNum) : '<span class="text-slate-400 italic">Empty Box</span>'}</div>
-              <div id="box-sub-${idx}" class="text-[10px] text-slate-500 font-medium">${hasGame ? `$${box.price} • ${box.rollCount} tix/pk` : 'Assign game below'}</div>
-            </div>
-          </div>
-          <button type="button" tabindex="-1" onclick="rollNewPackInBox(${idx})" class="text-[11px] font-bold px-2 py-1 rounded transition border ${rollovers.length > 0 ? 'bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200' : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'}">
-            ${rollovers.length > 0 ? `★ ${rollovers.length} Rollover` : 'Roll'}
-          </button>
-        </div>
-        ${roHistoryHtml}
-        <div class="space-y-2 mb-2">
-          <div class="flex items-center gap-2">
-            <label class="text-[10px] font-bold text-slate-500 uppercase w-12">Game #:</label>
-            <input type="text" inputmode="numeric" ${lockAttr} tabindex="${tabGame}" enterkeyhint="next"
-              id="input-gameNum-${idx}" value="${box.gameNum || ''}" placeholder="e.g. 1005"
-              onclick="requestBoxEditUnlock(this)"
-              onfocus="this.select()"
-              oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'gameNum', this.value)"
-              onkeydown="handleGameNumKeydown(event, ${idx})"
-              class="flex-1 text-xs font-mono font-bold border border-slate-300 rounded px-2 py-1 lotto-input ${lockStyle}" />
-          </div>
-          <div id="box-unknown-wrap-${idx}" class="${box.needsNewGameEntry ? '' : 'hidden'} p-1.5 bg-red-50 border border-red-200 rounded text-[10px] text-red-700 flex items-center justify-between">
-            <span>Unknown Game #</span>
-            <button type="button" tabindex="-1" onclick="openQuickGameModal(${idx})" class="font-extrabold underline text-blue-700 hover:text-blue-900">+ Register</button>
-          </div>
-          <div class="grid grid-cols-2 gap-2 pt-1">
-            <div>
-              <label class="block text-[10px] font-bold text-slate-600 uppercase mb-0.5">Start #</label>
-              <input type="number" inputmode="numeric" ${lockAttr} tabindex="${tabStart}" enterkeyhint="next"
-                id="input-startTicket-${idx}" value="${box.startTicket !== undefined ? box.startTicket : 0}"
-                onclick="requestBoxEditUnlock(this)"
-                onfocus="this.select()"
-                oninput="if(typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout(); updateBoxFieldDirect(${idx}, 'startTicket', this.value)"
-                onkeydown="handleStartKeydown(event, ${idx})" placeholder="000"
-                class="w-full text-center font-mono font-bold text-xs border border-slate-300 rounded p-1.5 lotto-input ${lockStyle}" />
-            </div>
-            <div>
-              <label class="block text-[10px] font-bold text-blue-700 uppercase mb-0.5">End #</label>
-              <input type="number" inputmode="numeric" tabindex="${tabEnd}" enterkeyhint="next"
-                id="input-endTicket-${idx}" value="${currentEndValGrid}"
-                onfocus="this.select()"
-                oninput="updateBoxEndTicketLive(${idx}, this.value)"
-                onchange="commitBoxEndTicket(${idx}, this.value)"
-                onkeydown="handleGridEnter(event, ${idx})" placeholder="000"
-                class="w-full text-center font-mono font-bold text-xs border-2 border-blue-400 rounded p-1.5 lotto-input" />
-            </div>
-          </div>
-        </div>
-        <div class="bg-slate-50 rounded-lg p-2 border border-slate-200 flex items-center justify-between text-xs mt-1">
-          <span id="box-sold-badge-${idx}" class="font-mono font-bold text-slate-700">${metrics.ticketsSold} Sold</span>
-          <span id="box-sales-badge-${idx}" class="font-mono font-black text-emerald-700">$${metrics.dollarSales.toFixed(2)}</span>
-        </div>
-      </div>
-    `;
+  lists.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = optionsHtml;
   });
-
-  container.innerHTML = html;
-  updateHeaderTotalsUI();
 }
 
-function renderMainGridCashierShiftBar() {
-  let bar = document.getElementById('main-grid-cashier-shift-bar');
-  if (!bar) {
-    const container = document.getElementById('view-grid');
-    if (!container) return;
-    bar = document.createElement('div');
-    bar.id = 'main-grid-cashier-shift-bar';
-    bar.className = 'bg-white rounded-xl shadow-sm border border-slate-200 p-3 mb-4 space-y-2.5 text-xs';
-    container.insertBefore(bar, container.firstChild);
+function openCashierShiftPromptModal(targetBoxIdx = '') {
+  const modal = document.getElementById('modal-cashier-shift-prompt');
+  if (!modal) return;
+
+  populatePromptCashiersDatalist();
+  document.getElementById('prompt-target-box-idx').value = targetBoxIdx;
+
+  const existingCashier = (activeStoreState?.reconciliation?.cashierOut || '').trim();
+  const existingShift = activeStoreState?.reconciliation?.shiftType || 'Shift 1 (Morning)';
+
+  const nameInput = document.getElementById('prompt-cashier-name-input');
+  const shiftSelect = document.getElementById('prompt-shift-select');
+
+  if (nameInput) nameInput.value = existingCashier;
+  if (shiftSelect && [...shiftSelect.options].some(o => o.value === existingShift)) {
+    shiftSelect.value = existingShift;
   }
-
-  const currentCashier = document.getElementById('rec-cashier-out')?.value || '';
-  const currentShift = document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
-  const isUnlocked = (typeof window.isBoxEditUnlocked !== 'undefined' && window.isBoxEditUnlocked);
-
-  const lockBannerHtml = isUnlocked
-    ? `<div class="pt-2 border-t border-slate-100 flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-         <span class="font-bold text-amber-900">
-           🔓 <strong>Game # & Start # Unlocked</strong> by ${window.boxEditCurrentCashier || 'Cashier'} (5-Min Timer Active)
-         </span>
-         <button type="button" onclick="window.lockBoxEditsImmediately()" class="bg-amber-600 hover:bg-amber-700 text-white font-extrabold px-3 py-1 rounded-lg shadow-sm transition">
-           🔒 Done Editing — Lock Now
-         </button>
-       </div>`
-    : `<div class="pt-2 border-t border-slate-100 flex items-center justify-between bg-slate-50 rounded-lg px-3 py-1.5 text-slate-600">
-         <span>💡 <strong>Tip:</strong> Game # and Start # boxes are locked to prevent accidental edits. Tap any Game # or Start # box to unlock.</span>
-         <span class="bg-slate-200 text-slate-700 font-extrabold px-2.5 py-1 rounded text-[11px] whitespace-nowrap ml-2">
-           🔒 Game# & Start# Locked
-         </span>
-       </div>`;
-
-  bar.innerHTML = `
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-3 flex-1 min-w-[280px]">
-        <div class="flex items-center gap-1.5 flex-1">
-          <label class="font-bold text-slate-600 uppercase text-[10px]">Cashier:</label>
-          <input type="text" id="grid-cashier-input" value="${currentCashier}" placeholder="Select or type cashier..." oninput="syncMainGridCashier(this.value)" class="flex-1 border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-xs bg-slate-50 focus:bg-white" />
-        </div>
-        <div class="flex items-center gap-1.5">
-          <label class="font-bold text-slate-600 uppercase text-[10px]">Shift:</label>
-          <select id="grid-shift-select" onchange="syncMainGridShift(this.value)" class="border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold text-xs bg-white">
-            <option value="Shift 1 (Morning)" ${currentShift.includes('Morning') || currentShift.includes('1') ? 'selected' : ''}>Shift 1 (Morning)</option>
-            <option value="Shift 2 (Evening)" ${currentShift.includes('Evening') || currentShift.includes('2') ? 'selected' : ''}>Shift 2 (Evening)</option>
-            <option value="Shift 3 (Night)" ${currentShift.includes('Night') || currentShift.includes('3') ? 'selected' : ''}>Shift 3 (Night)</option>
-          </select>
-        </div>
-      </div>
-      <div class="flex items-center gap-2">
-        <button type="button" onclick="openWorksheetPrintChoiceModal()" class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold px-3 py-1.5 rounded-lg shadow-sm transition">
-          🖨 Print Worksheet...
-        </button>
-      </div>
-    </div>
-    ${lockBannerHtml}
-  `;
-  handleCashierInputAutocomplete('grid-cashier-input', 'cashier-datalist-grid');
-}
-
-function syncMainGridCashier(val) {
-  const rec = document.getElementById('rec-cashier-out');
-  if (rec) rec.value = val;
-  saveReconciliationDraft();
-}
-
-function syncMainGridShift(val) {
-  const rec = document.getElementById('rec-shift-type');
-  if (rec) {
-    rec.value = val;
-    handleShiftTypeChange(val);
-  }
-}
-
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 6 OF 10)
-   Print Choice Modal, 80mm Thermal Receipt Generator & Multi-Store Modals
-   ========================================================================== */
-
-function openWorksheetPrintChoiceModal() {
-  const modal = document.getElementById('modal-print-worksheet-choice') || createPrintChoiceModalDOM();
-  handleCashierInputAutocomplete('print-modal-cashier-input', 'cashier-datalist-print');
-  const activeCashier = document.getElementById('rec-cashier-out')?.value || document.getElementById('grid-cashier-input')?.value || '';
-  
-  const cashierInp = document.getElementById('print-modal-cashier-input');
-  if (cashierInp && !cashierInp.value) cashierInp.value = activeCashier;
 
   modal.classList.remove('hidden');
-  setTimeout(() => initPrintModalSignaturePad(), 100);
-}
-
-function createPrintChoiceModalDOM() {
-  let existing = document.getElementById('modal-print-worksheet-choice');
-  if (existing) return existing;
-
-  const div = document.createElement('div');
-  div.id = 'modal-print-worksheet-choice';
-  div.className = 'fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden';
-  div.innerHTML = `
-    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg overflow-hidden p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-        <h3 class="font-black text-slate-900 text-base">🖨 Print Shift Worksheet & Attestation</h3>
-        <button type="button" onclick="document.getElementById('modal-print-worksheet-choice').classList.add('hidden')" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
-      </div>
-      
-      <div class="space-y-3 text-xs">
-        <div>
-          <label class="block font-bold text-slate-700 mb-1">Cashier Name:</label>
-          <input type="text" id="print-modal-cashier-input" placeholder="Enter cashier name..." class="w-full border border-slate-300 rounded-lg p-2 font-bold text-xs" />
-        </div>
-        <div>
-          <label class="block font-bold text-slate-700 mb-1">Shift:</label>
-          <select id="print-modal-shift-select" class="w-full border border-slate-300 rounded-lg p-2 font-bold text-xs bg-white">
-            <option value="Shift 1 (Morning)">Shift 1 (Morning)</option>
-            <option value="Shift 2 (Evening)">Shift 2 (Evening)</option>
-            <option value="Shift 3 (Night)">Shift 3 (Night)</option>
-          </select>
-        </div>
-
-        <!-- Signature Canvas ABOVE Attestation -->
-        <div class="space-y-1 pt-1">
-          <div class="flex items-center justify-between">
-            <label class="block font-bold text-slate-700">Cashier Signature (Sign below):</label>
-            <button type="button" onclick="clearPrintModalSignature()" class="text-xs text-red-600 hover:underline font-bold">Clear Sign</button>
-          </div>
-          <div class="border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 p-1 flex justify-center">
-            <canvas id="print-modal-sig-pad" width="400" height="100" class="w-full h-24 touch-none bg-white rounded-lg cursor-crosshair"></canvas>
-          </div>
-        </div>
-
-        <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-700 leading-relaxed font-medium">
-          ⚖ <strong>Legal Attestation:</strong> "I hereby certify that the ticket counts, game numbers, and shift totals recorded are true, complete, and accurate to the best of my knowledge."
-        </div>
-      </div>
-
-      <div class="space-y-2 pt-2">
-        <button type="button" onclick="executeUnifiedPrint('thermal')" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-black py-2.5 rounded-xl text-xs transition shadow-md">
-          📜 Print 80mm Thermal Receipt
-        </button>
-        <button type="button" onclick="executeUnifiedPrint('legal')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 rounded-xl text-xs transition shadow-md">
-          📄 Print Full Legal Paper (8.5" x 11")
-        </button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(div);
-  return div;
-}
-
-let printModalSigCanvas = null;
-let printModalSigCtx = null;
-let isDrawingPrintSig = false;
-let printModalSigDataUrl = null;
-
-function initPrintModalSignaturePad() {
-  printModalSigCanvas = document.getElementById('print-modal-sig-pad');
-  if (!printModalSigCanvas) return;
-  printModalSigCtx = printModalSigCanvas.getContext('2d');
-  printModalSigCtx.strokeStyle = '#0f172a';
-  printModalSigCtx.lineWidth = 2.2;
-  printModalSigCtx.lineCap = 'round';
-
-  const getPos = (e) => {
-    const rect = printModalSigCanvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return {
-      x: (clientX - rect.left) * (printModalSigCanvas.width / rect.width),
-      y: (clientY - rect.top) * (printModalSigCanvas.height / rect.height)
-    };
-  };
-
-  const startDraw = (e) => { e.preventDefault(); isDrawingPrintSig = true; const pos = getPos(e); printModalSigCtx.beginPath(); printModalSigCtx.moveTo(pos.x, pos.y); };
-  const moveDraw = (e) => { if (!isDrawingPrintSig) return; e.preventDefault(); const pos = getPos(e); printModalSigCtx.lineTo(pos.x, pos.y); printModalSigCtx.stroke(); };
-  const endDraw = () => { if (!isDrawingPrintSig) return; isDrawingPrintSig = false; printModalSigDataUrl = printModalSigCanvas.toDataURL('image/png'); };
-
-  printModalSigCanvas.addEventListener('mousedown', startDraw);
-  printModalSigCanvas.addEventListener('mousemove', moveDraw);
-  window.addEventListener('mouseup', endDraw);
-  printModalSigCanvas.addEventListener('touchstart', startDraw, { passive: false });
-  printModalSigCanvas.addEventListener('touchmove', moveDraw, { passive: false });
-  window.addEventListener('touchend', endDraw);
-}
-
-function clearPrintModalSignature() {
-  if (!printModalSigCanvas || !printModalSigCtx) return;
-  printModalSigCtx.clearRect(0, 0, printModalSigCanvas.width, printModalSigCanvas.height);
-  printModalSigDataUrl = null;
-}
-
-function executeUnifiedPrint(formatChoice) {
-  const cashierVal = document.getElementById('print-modal-cashier-input')?.value?.trim() || 'Unspecified';
-  const shiftVal = document.getElementById('print-modal-shift-select')?.value || 'Shift 1 (Morning)';
-
-  const recCashier = document.getElementById('rec-cashier-out');
-  if (recCashier) recCashier.value = cashierVal;
-  const gridCashier = document.getElementById('grid-cashier-input');
-  if (gridCashier) gridCashier.value = cashierVal;
-  const recShift = document.getElementById('rec-shift-type');
-  if (recShift) recShift.value = shiftVal;
-  if (printModalSigDataUrl) currentSignatureDataUrl = printModalSigDataUrl;
-
-  document.getElementById('modal-print-worksheet-choice').classList.add('hidden');
-  
-  if (formatChoice === 'thermal') {
-    printThermalReceiptDirect();
-  } else {
-    printWorksheetDirect();
-  }
-
-  downloadFullTabletBackup(true);
-
   setTimeout(() => {
-    if (confirm('Worksheet printed and system backed up successfully in the background!\n\nWould you like to end the shift and start a new shift now?')) {
-      advanceEndToStartForNewShift();
-    } else {
-      switchMainView(lastActiveViewName || 'grid');
+    if (nameInput) {
+      nameInput.focus();
+      nameInput.select?.();
     }
-  }, 600);
+  }, 40);
 }
 
-function printThermalReceiptDirect() {
-  const { jsPDF } = window.jspdf;
-  if (!jsPDF) {
-    alert('jsPDF library is still loading. Please try again in a moment.');
+function closeCashierShiftPromptModal() {
+  const modal = document.getElementById('modal-cashier-shift-prompt');
+  if (modal) modal.classList.add('hidden');
+}
+
+function confirmCashierShiftPrompt() {
+  const nameInput = document.getElementById('prompt-cashier-name-input');
+  const shiftSelect = document.getElementById('prompt-shift-select');
+  const cashierName = (nameInput?.value || '').trim();
+  const shiftVal = shiftSelect?.value || 'Shift 1 (Morning)';
+
+  if (!cashierName) {
+    alert('Please select or type your Cashier Name before entering End # counts.');
+    nameInput?.focus();
     return;
   }
 
-  const totals = recalculateReconciliationTotals();
-  const dateStr = document.getElementById('rec-report-date')?.value || new Date().toLocaleDateString();
-  const shiftStr = document.getElementById('rec-shift-type')?.value || 'Shift 1';
-  const cashierStr = document.getElementById('print-modal-cashier-input')?.value || document.getElementById('grid-cashier-input')?.value || 'Manager';
-  const storeAddr = storeProfile.address || 'Sparta, TN 38583';
-  const basePt = Number(globalPrintFontSizePt) || 13;
-  const pageWidth = 80;
-  const margin = 4;
-
-  // Helper that renders the receipt onto a jsPDF doc and returns the exact final Y (in mm)
-  const renderReceiptContent = (doc) => {
-    let y = 6;
-
-    doc.setFont('Courier', 'bold');
-    doc.setFontSize(basePt + 3);
-    doc.text(`${storeProfile.name}`, pageWidth / 2, y, { align: 'center' });
-    y += 5;
-
-    doc.setFontSize(basePt + 1);
-    doc.text(`STORE #${storeProfile.number}`, pageWidth / 2, y, { align: 'center' });
-    y += 4;
-
-    if (storeAddr) {
-      doc.setFontSize(basePt - 2);
-      doc.text(storeAddr, pageWidth / 2, y, { align: 'center' });
-      y += 4;
-    }
-
-    doc.setFontSize(basePt);
-    doc.text('*** LOTTO COUNT WORKSHEET ***', pageWidth / 2, y, { align: 'center' });
-    y += 6;
-
-    doc.setFontSize(basePt - 1);
-    doc.text(`DATE: ${dateStr}`, margin, y);
-    y += 4;
-    doc.text(`SHIFT: ${shiftStr}`, margin, y);
-    y += 4;
-    doc.text(`OUT: ${cashierStr}`, margin, y);
-    y += 4;
-    doc.text(`IN: -`, margin, y);
-    y += 5;
-
-    doc.setLineDash([0.5, 0.5], 0);
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 6;
-
-    doc.setFontSize(basePt - 1);
-    boxes.forEach((box) => {
-      const m = calculateBoxMetrics(box);
-      const rollovers = Array.isArray(box.rollovers) ? box.rollovers : [];
-      if (box.gameNum || rollovers.length > 0 || box.isBoxOut) {
-        const gName = box.gameNum
-          ? String(box.gameName || 'GAME #' + box.gameNum).toUpperCase()
-          : (box.isBoxOut ? 'BOX OUT (EMPTY)' : 'EMPTY');
-        const labelGameNum = box.gameNum ? `#${box.gameNum} ` : '';
-        doc.text(`[BOX ${box.boxNumber}] ${labelGameNum}${gName}`, margin, y);
-        doc.text(box.price ? `$${box.price}` : '-', pageWidth - margin, y, { align: 'right' });
-        y += 4.5;
-
-        rollovers.forEach((ro) => {
-          doc.setFontSize(Math.max(7, basePt - 3));
-          const roTag = ro.markedOut ? 'OUT' : 'ROLLED';
-          doc.text(`* ${roTag} #${ro.gameNum}: ${ro.startTicket}->${ro.finishedTicket} (${ro.ticketsSold} Sold = $${Number(ro.salesAmount || 0).toFixed(2)})`, margin, y);
-          y += 4;
-        });
-
-        doc.setFontSize(basePt - 1);
-        const endDisplay = box.isBoxOut ? 'OUT' : (box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '_____');
-        const startDisplay = box.isBoxOut ? 'OUT' : (box.startTicket !== '' ? box.startTicket : 0);
-        const soldText = `${m.ticketsSold} Sold ($${m.dollarSales.toFixed(2)})`;
-        doc.text(`Start:${startDisplay}  End:${endDisplay}`, margin, y);
-        doc.text(soldText, pageWidth - margin, y, { align: 'right' });
-        y += 4;
-
-        doc.setFontSize(basePt - 3);
-        doc.text('-----------------------------------------------------------------', pageWidth / 2, y, { align: 'center' });
-        doc.setFontSize(basePt - 1);
-        y += 5.5;
-      }
-    });
-
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 5;
-
-    doc.setFont('Courier', 'bold');
-    doc.setFontSize(basePt);
-    
-    const drawTotalLine = (label, val) => {
-      doc.text(label, margin, y);
-      doc.text(val, pageWidth - margin, y, { align: 'right' });
-      y += 5;
-    };
-
-    drawTotalLine('TOTAL TICKETS SOLD:', String(totals.totalTickets || 0));
-    drawTotalLine('SCRATCH SALES:', `$${totals.scratchSales.toFixed(2)}`);
-    drawTotalLine('ONLINE SALES:', `$${totals.onlineSales.toFixed(2)}`);
-    drawTotalLine('SCRATCH CASHED:', `-$${totals.scratchCashed.toFixed(2)}`);
-    drawTotalLine('ONLINE CASHED:', `-$${totals.onlineCashed.toFixed(2)}`);
-    
-    y += 2;
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 5;
-
-    drawTotalLine('EXPECTED NET:', `$${totals.expectedNet.toFixed(2)}`);
-    drawTotalLine('POS ACTUAL:', `$${totals.posActual.toFixed(2)}`);
-    
-    doc.setFontSize(basePt + 2);
-    drawTotalLine('VARIANCE:', `$${totals.variance.toFixed(2)}`);
-    y += 6;
-
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 6;
-    doc.setFontSize(basePt);
-    doc.text('CASHIER SIGNATURE', pageWidth / 2, y, { align: 'center' });
-    y += 4;
-
-    if (currentSignatureDataUrl) {
-      try {
-        doc.addImage(currentSignatureDataUrl, 'PNG', (pageWidth - 45) / 2, y, 45, 16);
-        y += 19;
-      } catch (e) {
-        doc.text('___________________________', pageWidth / 2, y, { align: 'center' });
-        y += 6;
-      }
-    } else {
-      doc.text('___________________________', pageWidth / 2, y, { align: 'center' });
-      y += 6;
-    }
-
-    doc.setFontSize(basePt - 2);
-    doc.text(new Date().toLocaleString(), pageWidth / 2, y, { align: 'center' });
-    y += 6; // Exact bottom cutter margin (6mm) so thermal printer cuts immediately after timestamp
-
-    return y;
-  };
-
-  // Pass 1: Measure exact content height in mm
-  const dummyDoc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [80, 500] });
-  const exactHeightMm = Math.max(85, Math.ceil(renderReceiptContent(dummyDoc)));
-
-  // Pass 2: Generate single continuous receipt page of exact height so cutter triggers at the end
-  const doc = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: [80, exactHeightMm]
-  });
-  renderReceiptContent(doc);
-  doc.autoPrint();
-
-  const pdfBlob = doc.output('blob');
-  const pdfUrl = URL.createObjectURL(pdfBlob);
-  const timestampStr = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16);
-  const downloadLink = document.createElement('a');
-  downloadLink.href = pdfUrl;
-  downloadLink.download = `LottoReceipt_${storeProfile.number}_${timestampStr}.pdf`;
-  document.body.appendChild(downloadLink);
-  downloadLink.click();
-  document.body.removeChild(downloadLink);
-  
-  setTimeout(() => URL.revokeObjectURL(pdfUrl), 3000);
-}
-
-function openQuickGameModal(idx) {
-  const box = boxes[idx];
-  if (!box) return;
-  document.getElementById('quick-game-box-idx').value = idx;
-  document.getElementById('quick-game-num').value = box.gameNum;
-  document.getElementById('quick-game-name').value = '';
-  document.getElementById('quick-game-price').value = '5';
-  document.getElementById('quick-game-count').value = '60';
-  document.getElementById('modal-quick-game').classList.remove('hidden');
-}
-
-function closeQuickGameModal() {
-  document.getElementById('modal-quick-game').classList.add('hidden');
-}
-
-function saveQuickRegisteredGame() {
-  const idx = Number(document.getElementById('quick-game-box-idx').value);
-  if (isNaN(idx) || !boxes[idx]) return;
-  const gNum = document.getElementById('quick-game-num').value.trim();
-  const gName = (document.getElementById('quick-game-name').value.trim() || `GAME #${gNum}`).toUpperCase();
-  const price = Number(document.getElementById('quick-game-price').value) || 1;
-  const count = Number(document.getElementById('quick-game-count').value) || getDefaultRollCountForPrice(price);
-
-  const newEntry = { gameNum: gNum, name: gName, price, count };
-  const existIdx = masterGames.findIndex(g => String(g.gameNum).trim() === gNum);
-  if (existIdx >= 0) masterGames[existIdx] = newEntry;
-  else masterGames.push(newEntry);
-
-  masterGames = sanitizeMasterGamesList(masterGames);
-  saveGamesState();
-
-  boxes[idx].gameName = gName;
-  boxes[idx].price = price;
-  boxes[idx].rollCount = count;
-  boxes[idx].needsNewGameEntry = false;
-  saveBoxesState();
-
-  closeQuickGameModal();
-  renderAdminGamesTable();
-  renderDispenserGrid();
-  recalculateReconciliationTotals();
-}
-
-function openMultiStoreManagerModal() {
-  renderMultiStoreModalList();
-  document.getElementById('modal-multi-store').classList.remove('hidden');
-}
-
-function closeMultiStoreManagerModal() {
-  document.getElementById('modal-multi-store').classList.add('hidden');
-}
-
-function renderMultiStoreModalList() {
-  const tbody = document.getElementById('multi-store-list-tbody');
-  if (!tbody) return;
-  tbody.innerHTML = locations.map(loc => {
-    const isCurrent = loc.id === activeLocationId;
-    return `
-      <tr class="${isCurrent ? 'bg-blue-50/70' : 'hover:bg-slate-50'}">
-        <td class="p-2.5 space-y-0.5">
-          <div class="font-extrabold text-slate-900">${loc.name} (#${loc.number})</div>
-          <div class="text-[11px] text-slate-600">${loc.address || 'No address set'}</div>
-        </td>
-        <td class="p-2.5 text-center">
-          ${isCurrent ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-800">Active</span>' : '<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600">Standby</span>'}
-        </td>
-        <td class="p-2.5 text-right space-x-1">
-          ${!isCurrent ? `<button type="button" onclick="switchStoreFromModal('${loc.id}')" class="bg-blue-600 text-white text-[11px] px-2.5 py-1 rounded">Switch</button>` : ''}
-          <button type="button" onclick="exportSpecificLocationBackup('${loc.id}')" class="bg-slate-700 text-white text-[11px] px-2.5 py-1 rounded">⬇ Store</button>
-          <button type="button" onclick="deleteStoreLocation('${loc.id}')" class="bg-red-100 text-red-700 text-[11px] px-2 py-1 rounded">Delete</button>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
-
-function switchStoreFromModal(locId) {
-  handleLocationSwitch(locId);
-  populateLocationSwitcherDropdown();
-  renderMultiStoreModalList();
-}
-
-function createNewStoreLocation() {
-  const name = document.getElementById('new-location-name-input')?.value?.trim();
-  const number = document.getElementById('new-location-num-input')?.value?.trim() || '100';
-  const address = document.getElementById('new-location-address-input')?.value?.trim() || '';
-
-  if (!name) { alert('Please enter a store name.'); return; }
-  const cleanSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  const newId = `loc-${cleanSlug}-${Date.now().toString().slice(-4)}`;
-  locations.push({ id: newId, name, number, address, email: 'dimitriosregas@gmail.com' });
-  saveLocationsRegistry();
-
-  localStorage.setItem(getStoreProfileStorageKey(newId), JSON.stringify({ name, number, address, email: 'dimitriosregas@gmail.com' }));
-  localStorage.setItem(getStoreBoxesStorageKey(newId), JSON.stringify(createDefault40Boxes()));
-  localStorage.setItem(getStoreHistoryStorageKey(newId), JSON.stringify([]));
-
-  handleLocationSwitch(newId);
-  renderMultiStoreModalList();
-  alert(`Created and switched to new store: ${name}`);
-}
-
-function deleteStoreLocation(locId) {
-  if (locations.length <= 1) { alert('You must keep at least one store location.'); return; }
-  if (!confirm('Are you sure you want to delete this store location?')) return;
-  locations = locations.filter(l => l.id !== locId);
-  saveLocationsRegistry();
-  if (activeLocationId === locId) {
-    activeLocationId = locations[0].id;
-    localStorage.setItem(STORAGE_KEY_ACTIVE_LOC, activeLocationId);
-    loadActiveStoreData();
-  }
-  renderMultiStoreModalList();
-  populateLocationSwitcherDropdown();
-}
-
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 7 OF 10)
-   Cloud/Tablet Backups, JSON Export/Import & Automated Schedulers
-   ========================================================================== */
-
-function buildFullTabletBackupPayload() {
-  saveBoxesState();
-  saveReconciliationDraft();
-
-  const allStoresData = {};
-  locations.forEach(loc => {
-    let locProfile = { name: loc.name, number: loc.number, address: loc.address || '', email: loc.email || 'dimitriosregas@gmail.com' };
-    let locBoxes = [];
-    let locHistory = [];
-    let locDraft = null;
-    try {
-      const pRaw = localStorage.getItem(getStoreProfileStorageKey(loc.id));
-      if (pRaw) locProfile = JSON.parse(pRaw);
-    } catch (e) {}
-    try {
-      const bRaw = localStorage.getItem(getStoreBoxesStorageKey(loc.id));
-      if (bRaw) locBoxes = JSON.parse(bRaw);
-    } catch (e) {}
-    try {
-      const hRaw = localStorage.getItem(getStoreHistoryStorageKey(loc.id));
-      if (hRaw) locHistory = JSON.parse(hRaw);
-    } catch (e) {}
-    try {
-      const dRaw = localStorage.getItem(`project_lotto_recdraft_${loc.id}`);
-      if (dRaw) locDraft = JSON.parse(dRaw);
-    } catch (e) {}
-
-    allStoresData[loc.id] = {
-      profile: locProfile,
-      boxes: locBoxes.length > 0 ? locBoxes : (loc.id === activeLocationId ? boxes : createDefault40Boxes()),
-      historicalReports: locHistory,
-      reconciliationDraft: locDraft
-    };
-  });
-
-  return {
-    backupVersion: '3.0-FULL-TABLET',
-    exportedAt: new Date().toISOString(),
-    targetEmail: 'dimitriosregas@gmail.com',
-    activeLocationId,
-    locations,
-    masterGames: sanitizeMasterGamesList(masterGames),
-    savedCashiers,
-    storesData: allStoresData
-  };
-}
-
-function executeSilentBackgroundBackup(slotLabel = 'MANUAL') {
-  const payload = buildFullTabletBackupPayload();
-  try {
-    localStorage.setItem('project_lotto_latest_silent_snapshot', JSON.stringify(payload));
-    localStorage.setItem('project_lotto_last_backup_timestamp', `${new Date().toLocaleString()} (${slotLabel})`);
-  } catch (e) {}
-  return payload;
-}
-
-function downloadFullTabletBackup(silent = true) {
-  const payload = executeSilentBackgroundBackup(silent ? 'AUTO' : 'MANUAL');
-  if (!silent) {
-    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 16);
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = url;
-    a.download = `ProjectLotto_Backup_${stamp}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
-  }
-  return payload;
-}
-
-function exportCurrentLocationBackup() {
-  downloadFullTabletBackup(false);
-}
-
-function exportSpecificLocationBackup(locId) {
-  const locObj = locations.find(l => l.id === locId) || { name: storeProfile.name, number: storeProfile.number };
-  let locBoxes = [];
-  let locHistory = [];
-  try { locBoxes = JSON.parse(localStorage.getItem(getStoreBoxesStorageKey(locId)) || '[]'); } catch (e) {}
-  try { locHistory = JSON.parse(localStorage.getItem(getStoreHistoryStorageKey(locId)) || '[]'); } catch (e) {}
-
-  const payload = {
-    backupVersion: '3.0-SINGLE-STORE',
-    exportedAt: new Date().toISOString(),
-    locationId: locId,
-    storeProfile: { name: locObj.name, number: locObj.number, address: locObj.address || '' },
-    boxes: locBoxes.length > 0 ? locBoxes : boxes,
-    masterGames: sanitizeMasterGamesList(masterGames),
-    savedCashiers,
-    historicalReports: locHistory
-  };
-
-  const safeName = (locObj.name || 'store').replace(/[^a-zA-Z0-9_-]/g, '_');
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.style.display = 'none';
-  a.href = url;
-  a.download = `LottoBackup_${safeName}_${new Date().toISOString().slice(0, 10)}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
-}
-
-function importLocationBackupFile(event) {
-  const file = event?.target?.files?.[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const data = JSON.parse(e.target.result);
-
-      if (Array.isArray(data.masterGames) && data.masterGames.length > 0) {
-        masterGames = sanitizeMasterGamesList([...masterGames, ...data.masterGames]);
-        saveGamesState();
-      }
-      if (Array.isArray(data.savedCashiers) && data.savedCashiers.length > 0) {
-        savedCashiers = Array.from(new Set([...savedCashiers, ...data.savedCashiers]));
-        saveCashiersState();
-      }
-
-      if (data.storesData && typeof data.storesData === 'object') {
-        if (Array.isArray(data.locations) && data.locations.length > 0) {
-          locations = data.locations;
-          saveLocationsRegistry();
-        }
-        Object.keys(data.storesData).forEach(locId => {
-          const st = data.storesData[locId];
-          if (st.profile) localStorage.setItem(getStoreProfileStorageKey(locId), JSON.stringify(st.profile));
-          if (Array.isArray(st.boxes)) localStorage.setItem(getStoreBoxesStorageKey(locId), JSON.stringify(st.boxes));
-          if (Array.isArray(st.historicalReports)) localStorage.setItem(getStoreHistoryStorageKey(locId), JSON.stringify(st.historicalReports));
-          if (st.reconciliationDraft) localStorage.setItem(`project_lotto_recdraft_${locId}`, JSON.stringify(st.reconciliationDraft));
-        });
-        if (data.activeLocationId && locations.some(l => l.id === data.activeLocationId)) {
-          activeLocationId = data.activeLocationId;
-          localStorage.setItem(STORAGE_KEY_ACTIVE_LOC, activeLocationId);
-        }
-      } else {
-        if (Array.isArray(data.boxes)) {
-          boxes = data.boxes;
-          saveBoxesState();
-        }
-        if (data.storeProfile) {
-          storeProfile = data.storeProfile;
-          localStorage.setItem(getStoreProfileStorageKey(activeLocationId), JSON.stringify(storeProfile));
-        }
-        if (Array.isArray(data.historicalReports)) {
-          saveLocationHistoricalReports(data.historicalReports, activeLocationId);
-        }
-      }
-
-      populateLocationSwitcherDropdown();
-      loadActiveStoreData();
-      loadReconciliationDraft();
-      renderDispenserGrid();
-      renderAdminGamesTable();
-      renderAdminCashiersTable();
-      recalculateReconciliationTotals();
-      alert('Full tablet backup restored successfully! All stores, boxes, games, cashiers, and reports are now loaded.');
-    } catch (err) {
-      alert('Failed to parse backup JSON file. Please verify it is a valid Project Lotto backup.');
-    }
-  };
-  reader.readAsText(file);
-}
-
-function sendNightlyEmailBackupToOwner(isScheduled11PM = false) {
-  const payload = executeSilentBackgroundBackup(isScheduled11PM ? '11PM' : 'EMAIL');
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const targetEmail = 'dimitriosregas@gmail.com';
-
-  let summaryLines = [
-    `Project Lotto — Daily Full Tablet Backup (${todayStr})`,
-    `Generated: ${new Date().toLocaleString()}`,
-    `Active Store: ${storeProfile.name} (#${storeProfile.number})`,
-    `Total Stores Included: ${locations.length}`,
-    `Master Games Count: ${masterGames.length}`,
-    `Saved Cashiers: ${savedCashiers.join(', ')}`,
-    ``,
-    `--- STORE SUMMARY ---`
-  ];
-
-  locations.forEach(loc => {
-    const st = payload.storesData[loc.id];
-    const repCount = st?.historicalReports?.length || 0;
-    const activeBoxes = (st?.boxes || []).filter(b => b.gameNum).length;
-    summaryLines.push(`• ${loc.name} (#${loc.number}): ${activeBoxes} active games | ${repCount} archived reports`);
-  });
-
-  const subject = encodeURIComponent(`Project Lotto Daily Backup - ${todayStr} (${storeProfile.name})`);
-  const body = encodeURIComponent(summaryLines.join('\n'));
-
-  localStorage.setItem('project_lotto_last_nightly_email_date', todayStr);
-  window.open(`mailto:${targetEmail}?subject=${subject}&body=${body}`, '_blank');
-}
-
-function startTwiceDailyBackupScheduler() {
-  setInterval(() => {
-    const now = new Date();
-    const hour = now.getHours();
-    const todayStr = now.toISOString().slice(0, 10);
-
-    const last2PM = localStorage.getItem('project_lotto_last_2pm_backup_date');
-    if (hour === 14 && last2PM !== todayStr) {
-      localStorage.setItem('project_lotto_last_2pm_backup_date', todayStr);
-      executeSilentBackgroundBackup('2PM');
-    }
-
-    const last11PM = localStorage.getItem('project_lotto_last_11pm_backup_date');
-    if (hour === 23 && last11PM !== todayStr) {
-      localStorage.setItem('project_lotto_last_11pm_backup_date', todayStr);
-      sendNightlyEmailBackupToOwner(true);
-    }
-  }, 30000);
-}
-
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 8 OF 10)
-   Shift Rollover, Reconciliation Totals, Signature Pad & Historical Reports
-   ========================================================================== */
-
-function advanceEndToStartForNewShift() {
-  // 1. Force-scrape active input values from ANY rendered view (List, Grid, or Generic)
-  boxes.forEach((b, idx) => {
-    const listInp = document.getElementById(`list-input-endTicket-${idx}`);
-    const gridInp = document.getElementById(`input-endTicket-${idx}`);
-    const genericInp = document.querySelector(`input[id$="endTicket-${idx}"]`) || document.querySelector(`input[name*="endTicket-${idx}"]`);
-
-    let rawVal = '';
-    if (listInp && String(listInp.value).trim() !== '') {
-      rawVal = String(listInp.value).trim();
-    } else if (gridInp && String(gridInp.value).trim() !== '') {
-      rawVal = String(gridInp.value).trim();
-    } else if (genericInp && String(genericInp.value).trim() !== '') {
-      rawVal = String(genericInp.value).trim();
-    }
-
-    if (rawVal !== '' && !isNaN(Number(rawVal))) {
-      b.endTicket = Number(rawVal);
-    }
-  });
-
-  let rolledCount = 0;
-
-  // 2. Roll End # into Start # and clear End # for the new shift
-  boxes.forEach((b, idx) => {
-    const rawEnd = b.endTicket;
-    if (rawEnd !== '' && rawEnd !== undefined && rawEnd !== null && !isNaN(Number(rawEnd))) {
-      const endNum = Number(rawEnd);
-      const rollCount = Number(b.rollCount) || getDefaultRollCountForPrice(b.price);
-      const maxTicket = Math.max(1, rollCount);
-
-      if (b.gameNum && endNum >= maxTicket) {
-        b.startTicket = 0;
-      } else {
-        b.startTicket = endNum;
-      }
-      rolledCount++;
-    }
-
-    b.endTicket = '';
-    b.rollovers = [];
-
-    const listInp = document.getElementById(`list-input-endTicket-${idx}`);
-    const gridInp = document.getElementById(`input-endTicket-${idx}`);
-    if (listInp) listInp.value = '';
-    if (gridInp) gridInp.value = '';
-  });
-
-  // 3. Check for any boxes with an empty Game # and prompt user (Still Out vs. Enter Game #)
-  const emptyBoxes = boxes.filter(b => !b.gameNum || String(b.gameNum).trim() === '');
-  if (emptyBoxes.length > 0) {
-    const emptyNumbersList = emptyBoxes.map(b => b.boxNumber).join(', ');
-    const reviewEmpty = confirm(
-      `⚠️ Empty / Out Boxes Detected: Box ${emptyNumbersList}\n\n` +
-      `Click OK to review each empty box (enter a new Game # or leave it OUT), or click Cancel to keep all of them marked OUT for this shift.`
-    );
-
-    if (reviewEmpty) {
-      emptyBoxes.forEach(b => {
-        const enteredGame = prompt(
-          `Box #${b.boxNumber} is currently EMPTY / OUT.\n\n` +
-          `• If a new roll was loaded, enter the Game # below:\n` +
-          `• If Box #${b.boxNumber} is STILL OUT, leave blank and click OK (or Cancel):`,
-          ''
-        );
-
-        const cleanGame = enteredGame ? String(enteredGame).trim() : '';
-        if (cleanGame !== '' && cleanGame.toUpperCase() !== 'OUT') {
-          b.gameNum = cleanGame;
-          b.isBoxOut = false;
-          b.startTicket = 0;
-          b.endTicket = '';
-          const matched = masterGames.find(g => String(g.gameNum).trim() === cleanGame || Number(g.gameNum) === Number(cleanGame));
-          if (matched) {
-            b.gameName = matched.name;
-            b.price = Number(matched.price) || 0;
-            b.rollCount = Number(matched.count) || getDefaultRollCountForPrice(b.price);
-            b.needsNewGameEntry = false;
-          } else {
-            b.gameName = '';
-            b.price = 0;
-            b.rollCount = 60;
-            b.needsNewGameEntry = true;
-          }
-        } else {
-          b.gameNum = '';
-          b.gameName = '';
-          b.price = 0;
-          b.startTicket = 0;
-          b.endTicket = '';
-          b.isBoxOut = true;
-          b.needsNewGameEntry = false;
-        }
-      });
-    } else {
-      emptyBoxes.forEach(b => {
-        b.isBoxOut = true;
-      });
+  shiftSessionConfirmed = true;
+
+  if (activeStoreState && activeStoreState.reconciliation) {
+    activeStoreState.reconciliation.cashierOut = cashierName;
+    activeStoreState.reconciliation.shiftType = shiftVal;
+    if (!activeStoreState.reconciliation.auditDate) {
+      activeStoreState.reconciliation.auditDate = getLocalDateStr();
     }
   }
 
-  // 4. Save state and refresh all views & totals
-  saveBoxesState();
-  renderDispenserGrid();
-  updateHeaderTotalsUI();
-  recalculateReconciliationTotals();
-
-  alert(`Shift ended successfully! Rolled over ${rolledCount} active boxes. Start tickets have been updated for the new shift.`);
-  switchMainView('grid');
-}
-
-function handleShiftTypeChange(val) {
-  const badge = document.getElementById('header-shift-badge');
-  if (badge) badge.textContent = val;
-  saveReconciliationDraft();
-}
-
-function checkMidnightDateRollover() {
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const dateInput = document.getElementById('rec-report-date');
-  if (dateInput && dateInput.value && dateInput.value !== todayIso) {
-    dateInput.value = todayIso;
-    saveReconciliationDraft();
+  // Save new cashier name to quick-select list automatically if not already present
+  if (!savedCashiersList.some(c => c.toLowerCase() === cashierName.toLowerCase())) {
+    savedCashiersList.push(cashierName);
+    localStorage.setItem(STORAGE_KEYS.SAVED_CASHIERS, JSON.stringify(savedCashiersList));
+    populatePromptCashiersDatalist();
   }
-}
 
-function updateHeaderTotalsUI() {
-  let totalTickets = 0;
-  let totalSales = 0;
-  if (Array.isArray(boxes)) {
-    boxes.forEach(box => {
-      const metrics = calculateBoxMetrics(box);
-      totalTickets += metrics.ticketsSold;
-      totalSales += metrics.dollarSales;
-    });
-  }
-  
-  // Top Navbar Counters
-  const headerTicketsEl = document.getElementById('header-total-tickets');
-  const headerSalesEl = document.getElementById('header-total-sales');
-  if (headerTicketsEl) headerTicketsEl.textContent = `${totalTickets} Tix`;
-  if (headerSalesEl) headerSalesEl.textContent = `$${totalSales.toFixed(2)}`;
+  const recCashierOut = document.getElementById('rec-cashier-out');
+  if (recCashierOut) recCashierOut.value = cashierName;
 
-  // Bottom Live Summary Footer Bar (Interactive Cashier, Shift, & End Shift & Print Button)
-  let footerBar = document.getElementById('main-grid-summary-footer');
-  if (!footerBar) {
-    const gridView = document.getElementById('view-grid');
-    if (gridView) {
-      footerBar = document.createElement('div');
-      footerBar.id = 'main-grid-summary-footer';
-      gridView.appendChild(footerBar);
+  const recShiftType = document.getElementById('rec-shift-type');
+  if (recShiftType) recShiftType.value = shiftVal;
+
+  saveActiveStoreState();
+  updateHeaderAndBottomSummary();
+
+  const targetBoxIdx = document.getElementById('prompt-target-box-idx')?.value;
+  closeCashierShiftPromptModal();
+
+  if (targetBoxIdx !== '' && targetBoxIdx !== null && targetBoxIdx !== undefined) {
+    const prefix = dispenserViewMode === 'list' ? 'list' : 'card';
+    const endInput = document.getElementById(`${prefix}-endTicket-${targetBoxIdx}`);
+    if (endInput) {
+      setTimeout(() => {
+        endInput.focus();
+        endInput.select?.();
+      }, 40);
     }
   }
+}
 
-  if (footerBar) {
-    const currentCashier = document.getElementById('grid-cashier-input')?.value || document.getElementById('rec-cashier-out')?.value || '';
-    const currentShift = document.getElementById('grid-shift-select')?.value || document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
-    const currentDate = document.getElementById('rec-report-date')?.value || new Date().toLocaleDateString();
-    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const isUnlocked = (typeof window.isBoxEditUnlocked !== 'undefined' && window.isBoxEditUnlocked);
+// Intercept focus on any End # field when Cashier/Shift has not yet been confirmed
+document.addEventListener('focusin', (e) => {
+  const el = e.target;
+  if (!el || el.tagName !== 'INPUT') return;
+  if (el.dataset.field !== 'end') return;
 
-    footerBar.className = 'bg-slate-900 text-white rounded-xl shadow-md p-4 mt-6 space-y-3 border border-slate-800 text-xs';
-    footerBar.innerHTML = `
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div class="space-y-1.5 flex-1 min-w-[320px]">
-          <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Shift Summary & Cashier Controls</div>
-          <div class="flex flex-wrap items-center gap-3 font-bold text-slate-200">
-            <div class="flex items-center gap-1.5">
-              <span>👤 Cashier:</span>
-              <input type="text" id="footer-cashier-input" value="${currentCashier}" placeholder="Enter name..." oninput="syncFooterCashier(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded px-2 py-1 text-xs font-bold w-32 focus:border-emerald-500" />
-            </div>
-            <div class="flex items-center gap-1.5">
-              <span>🕒 Shift:</span>
-              <select id="footer-shift-select" onchange="syncFooterShift(this.value)" class="bg-slate-800 text-white border border-slate-700 rounded px-2 py-1 text-xs font-bold focus:border-emerald-500">
-                <option value="Shift 1 (Morning)" ${currentShift.includes('Morning') || currentShift.includes('1') ? 'selected' : ''}>Shift 1 (Morning)</option>
-                <option value="Shift 2 (Evening)" ${currentShift.includes('Evening') || currentShift.includes('2') ? 'selected' : ''}>Shift 2 (Evening)</option>
-                <option value="Shift 3 (Night)" ${currentShift.includes('Night') || currentShift.includes('3') ? 'selected' : ''}>Shift 3 (Night)</option>
-              </select>
-            </div>
-            <div class="text-slate-400">📅 ${currentDate} (${currentTime})</div>
-          </div>
+  const currentCashier = (activeStoreState?.reconciliation?.cashierOut || '').trim();
+  if (!shiftSessionConfirmed || !currentCashier) {
+    const boxIdx = el.dataset.boxIdx ?? '';
+    el.blur();
+    openCashierShiftPromptModal(boxIdx);
+  }
+});
+
+function ensureBottomShiftSummaryBar() {
+  const viewGrid = document.getElementById('view-grid');
+  if (!viewGrid) return null;
+
+  let bar = document.getElementById('bottom-shift-summary-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'bottom-shift-summary-bar';
+    bar.className = 'bg-slate-900 text-white rounded-xl shadow-md border border-slate-700 p-4 mt-4 flex flex-wrap items-center justify-between gap-4';
+    bar.innerHTML = `
+      <div class="space-y-1">
+        <div class="text-[11px] font-extrabold uppercase tracking-wider text-amber-400">
+          SHIFT SUMMARY &amp; METADATA
         </div>
-        
-        <div class="flex items-center gap-4">
-          <div class="flex items-center gap-4 bg-slate-800/80 px-4 py-2 rounded-lg border border-slate-700">
-            <div>
-              <div class="text-[10px] text-slate-400 uppercase font-bold">Total Sold</div>
-              <div class="font-mono font-black text-sm text-emerald-400">${totalTickets} Tix</div>
-            </div>
-            <div class="h-6 w-px bg-slate-700"></div>
-            <div>
-              <div class="text-[10px] text-slate-400 uppercase font-bold">Total Sales</div>
-              <div class="font-mono font-black text-base text-emerald-400">$${totalSales.toFixed(2)}</div>
-            </div>
-          </div>
-
-          <button type="button" onclick="openWorksheetPrintChoiceModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-black px-4 py-2.5 rounded-xl shadow-md transition flex items-center gap-1.5 text-xs whitespace-nowrap">
-            🖨 End Shift & Print
-          </button>
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs sm:text-sm">
+          <span>👤 <strong>Cashier:</strong> <span id="bottom-summary-cashier" class="text-amber-300 font-bold">Unspecified</span></span>
+          <span class="text-slate-600">|</span>
+          <span>🕒 <strong>Shift:</strong> <span id="bottom-summary-shift" class="font-bold text-white">Shift 1 (Morning)</span></span>
+          <span class="text-slate-600">|</span>
+          <span>📅 <strong>Date:</strong> <span id="bottom-summary-datetime" class="font-mono text-slate-200"></span></span>
         </div>
       </div>
 
-      ${isUnlocked ? 
-        `<div class="pt-2 border-t border-slate-800 flex items-center justify-between bg-amber-950/40 border border-amber-800 rounded-lg px-3 py-2 text-amber-200">
-           <span>🔓 <strong>Game # & Start # Unlocked</strong> by ${window.boxEditCurrentCashier || 'Cashier'} (5-Min Timer Active)</span>
-           <button type="button" onclick="window.lockBoxEditsImmediately()" class="bg-amber-600 hover:bg-amber-700 text-white font-extrabold px-3 py-1 rounded-lg shadow-sm transition">🔒 Lock Now</button>
-         </div>` : 
-        `<div class="pt-2 border-t border-slate-800 flex items-center justify-between text-slate-400 text-[11px]">
-           <span>💡 Tap any Game # or Start # box above to unlock editing.</span>
-           <span class="text-slate-500 font-bold">🔒 Locked</span>
-         </div>`
-      }
+      <div class="flex flex-wrap items-center gap-3 sm:gap-4">
+        <div class="flex items-center gap-4 bg-slate-800 border border-slate-700 rounded-lg px-3.5 py-2 text-xs">
+          <div>
+            <div class="text-[10px] uppercase text-slate-400 font-bold">TOTAL SOLD</div>
+            <div id="bottom-summary-tickets" class="font-mono font-extrabold text-sm text-white">0 Tix</div>
+          </div>
+          <div class="h-6 w-[1px] bg-slate-700"></div>
+          <div>
+            <div class="text-[10px] uppercase text-slate-400 font-bold">TOTAL SALES</div>
+            <div id="bottom-summary-sales" class="font-mono font-extrabold text-sm text-emerald-400">$0.00</div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onclick="handleCompleteAuditButtonClick()"
+          class="bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm px-5 py-3 rounded-xl shadow-lg transition flex items-center gap-2"
+        >
+          <span>✔ Complete Audit</span>
+        </button>
+      </div>
     `;
-    
-    if (typeof handleCashierInputAutocomplete === 'function') {
-      handleCashierInputAutocomplete('footer-cashier-input', 'cashier-datalist-footer');
-    }
+    viewGrid.appendChild(bar);
+  }
+  return bar;
+}
+
+function updateHeaderAndBottomSummary() {
+  const { totalTickets, totalSales } = getShiftTotals();
+  const rec = activeStoreState?.reconciliation || {};
+  const cashierName = (rec.cashierOut || '').trim() || 'Unspecified';
+  const shiftVal = rec.shiftType || 'Shift 1 (Morning)';
+  const formattedSales = `$${totalSales.toFixed(2)}`;
+
+  const headerShift = document.getElementById('header-shift-badge');
+  const headerTix = document.getElementById('header-total-tickets');
+  const headerSales = document.getElementById('header-total-sales');
+
+  if (headerShift) headerShift.textContent = shiftVal;
+  if (headerTix) headerTix.textContent = `${totalTickets} Tix`;
+  if (headerSales) headerSales.textContent = formattedSales;
+
+  ensureBottomShiftSummaryBar();
+  const elCashier = document.getElementById('bottom-summary-cashier');
+  const elShift = document.getElementById('bottom-summary-shift');
+  const elDt = document.getElementById('bottom-summary-datetime');
+  const elTix = document.getElementById('bottom-summary-tickets');
+  const elSales = document.getElementById('bottom-summary-sales');
+
+  if (elCashier) elCashier.textContent = cashierName;
+  if (elShift) elShift.textContent = shiftVal;
+  if (elDt) elDt.textContent = formatDisplayDateTime(new Date());
+  if (elTix) elTix.textContent = `${totalTickets} Tix`;
+  if (elSales) elSales.textContent = formattedSales;
+
+  // Keep Reconciliation summary numbers synced too
+  const recScratchEl = document.getElementById('rec-calc-scratch-sales');
+  const recTixEl = document.getElementById('rec-calc-total-tickets');
+  if (recScratchEl) recScratchEl.textContent = formattedSales;
+  if (recTixEl) recTixEl.textContent = String(totalTickets);
+  if (typeof recalculateReconciliationMath === 'function') {
+    recalculateReconciliationMath();
   }
 }
 
-function syncFooterCashier(val) {
-  const gridInp = document.getElementById('grid-cashier-input');
-  const recInp = document.getElementById('rec-cashier-out');
-  if (gridInp) gridInp.value = val;
-  if (recInp) recInp.value = val;
-  if (typeof saveReconciliationDraft === 'function') saveReconciliationDraft();
-}
-
-function syncFooterShift(val) {
-  const gridSel = document.getElementById('grid-shift-select');
-  const recSel = document.getElementById('rec-shift-type');
-  if (gridSel) gridSel.value = val;
-  if (recSel) {
-    recSel.value = val;
-    if (typeof handleShiftTypeChange === 'function') handleShiftTypeChange(val);
+function handleCompleteAuditButtonClick() {
+  const cashierName = (activeStoreState?.reconciliation?.cashierOut || '').trim();
+  if (!cashierName) {
+    openCashierShiftPromptModal('');
+    return;
   }
+  switchMainView('reconcile');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function recalculateReconciliationTotals() {
-  checkMidnightDateRollover();
+/* ========================= END OF PART 5 OF 10 ========================= */
+/* ============================================================================
+   PART 6 OF 10: RECONCILIATION MATH, SIGNATURE CANVAS & SHIFT ARCHIVING
+   ============================================================================ */
 
-  let scratchSales = 0;
-  let totalTickets = 0;
-  boxes.forEach(b => {
-    const m = calculateBoxMetrics(b);
-    scratchSales += m.dollarSales;
-    totalTickets += m.ticketsSold;
-  });
-
-  const dailyTotalInput = Number(document.getElementById('rec-daily-scratch-total')?.value) || 0;
-  const prevShiftsInput = Number(document.getElementById('rec-previous-shifts-sales')?.value) || 0;
-  const netScratchSales = dailyTotalInput > 0 ? Math.max(0, dailyTotalInput - prevShiftsInput) : scratchSales;
-
-  const onlineSales = Number(document.getElementById('rec-online-sales')?.value) || 0;
-  const scratchCashed = Number(document.getElementById('rec-scratch-cashed')?.value) || 0;
-  const onlineCashed = Number(document.getElementById('rec-online-cashed')?.value) || 0;
-  const posActual = Number(document.getElementById('rec-pos-actual')?.value) || 0;
-
-  const expectedNet = (netScratchSales + onlineSales) - (scratchCashed + onlineCashed);
-  const variance = posActual - expectedNet;
-
-  const scEl = document.getElementById('rec-scratch-sales');
-  const netShiftEl = document.getElementById('rec-net-shift-scratch');
-  const expEl = document.getElementById('rec-expected-total');
-  const varEl = document.getElementById('rec-variance-display');
-  const accEl = document.getElementById('rec-accounted-total');
-
-  if (scEl) scEl.textContent = `$${scratchSales.toFixed(2)}`;
-  if (netShiftEl) netShiftEl.textContent = `$${netScratchSales.toFixed(2)}`;
-  if (expEl) expEl.textContent = `$${expectedNet.toFixed(2)}`;
-  if (accEl) accEl.textContent = `$${posActual.toFixed(2)}`;
-  if (varEl) {
-    const sign = variance > 0 ? '+' : '';
-    varEl.textContent = `${sign}$${variance.toFixed(2)}`;
-    varEl.className = Math.abs(variance) < 0.01 ? 'font-mono font-black text-lg text-emerald-600' : (variance < 0 ? 'font-mono font-black text-lg text-red-600' : 'font-mono font-black text-lg text-amber-600');
-  }
-
-  saveReconciliationDraft();
-  return { scratchSales: netScratchSales, totalTickets, onlineSales, scratchCashed, onlineCashed, expectedNet, posActual, variance };
-}
-
-function saveReconciliationDraft() {
-  const draft = {
-    date: document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10),
-    shiftType: document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)',
-    cashierOut: document.getElementById('rec-cashier-out')?.value || '',
-    cashierIn: document.getElementById('rec-cashier-in')?.value || '',
-    onlineSales: document.getElementById('rec-online-sales')?.value || '',
-    scratchCashed: document.getElementById('rec-scratch-cashed')?.value || '',
-    onlineCashed: document.getElementById('rec-online-cashed')?.value || '',
-    posActual: document.getElementById('rec-pos-actual')?.value || '',
-    notes: document.getElementById('rec-shift-notes')?.value || ''
-  };
-  try { localStorage.setItem(`project_lotto_recdraft_${activeLocationId}`, JSON.stringify(draft)); } catch (e) {}
-}
-
-function loadReconciliationDraft() {
-  const today = new Date().toISOString().slice(0, 10);
-  try {
-    const raw = localStorage.getItem(`project_lotto_recdraft_${activeLocationId}`);
-    if (raw) {
-      const d = JSON.parse(raw);
-      document.getElementById('rec-report-date').value = d.date || today;
-      document.getElementById('rec-shift-type').value = d.shiftType || 'Shift 1 (Morning)';
-      document.getElementById('rec-cashier-out').value = d.cashierOut || '';
-      document.getElementById('rec-cashier-in').value = d.cashierIn || '';
-      document.getElementById('rec-online-sales').value = d.onlineSales || '';
-      document.getElementById('rec-scratch-cashed').value = d.scratchCashed || '';
-      document.getElementById('rec-online-cashed').value = d.onlineCashed || '';
-      document.getElementById('rec-pos-actual').value = d.posActual || '';
-      document.getElementById('rec-shift-notes').value = d.notes || '';
-      const badge = document.getElementById('header-shift-badge');
-      if (badge) badge.textContent = d.shiftType || 'Shift 1 (Morning)';
-      return;
-    }
-  } catch (e) {}
-  const dtInp = document.getElementById('rec-report-date');
-  if (dtInp) dtInp.value = today;
-}
+let sigCanvas = null;
+let sigCtx = null;
+let isDrawingSignature = false;
 
 function initSignaturePad() {
-  sigCanvas = document.getElementById('signature-pad');
+  sigCanvas = document.getElementById('cashier-signature-canvas');
   if (!sigCanvas) return;
+
   sigCtx = sigCanvas.getContext('2d');
-  sigCtx.strokeStyle = '#0f172a';
-  sigCtx.lineWidth = 2.2;
-  sigCtx.lineCap = 'round';
+
+  const resizeCanvas = () => {
+    const rect = sigCanvas.parentElement.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) {
+      const existingData = activeStoreState?.reconciliation?.signatureDataUrl || '';
+      sigCanvas.width = rect.width;
+      sigCanvas.height = rect.height;
+      sigCtx.lineWidth = 2.5;
+      sigCtx.lineCap = 'round';
+      sigCtx.lineJoin = 'round';
+      sigCtx.strokeStyle = '#0f172a';
+
+      if (existingData) {
+        const img = new Image();
+        img.onload = () => sigCtx.drawImage(img, 0, 0, sigCanvas.width, sigCanvas.height);
+        img.src = existingData;
+      }
+    }
+  };
+
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
 
   const getPos = (e) => {
     const rect = sigCanvas.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
     return {
-      x: (clientX - rect.left) * (sigCanvas.width / rect.width),
-      y: (clientY - rect.top) * (sigCanvas.height / rect.height)
+      x: clientX - rect.left,
+      y: clientY - rect.top
     };
   };
 
-  const startDraw = (e) => { e.preventDefault(); isDrawingSignature = true; const pos = getPos(e); sigCtx.beginPath(); sigCtx.moveTo(pos.x, pos.y); };
-  const moveDraw = (e) => { if (!isDrawingSignature) return; e.preventDefault(); const pos = getPos(e); sigCtx.lineTo(pos.x, pos.y); sigCtx.stroke(); };
-  const endDraw = () => { if (!isDrawingSignature) return; isDrawingSignature = false; currentSignatureDataUrl = sigCanvas.toDataURL('image/png'); };
+  const startDraw = (e) => {
+    isDrawingSignature = true;
+    const pos = getPos(e);
+    sigCtx.beginPath();
+    sigCtx.moveTo(pos.x, pos.y);
+  };
+
+  const moveDraw = (e) => {
+    if (!isDrawingSignature) return;
+    if (e.cancelable) e.preventDefault();
+    const pos = getPos(e);
+    sigCtx.lineTo(pos.x, pos.y);
+    sigCtx.stroke();
+  };
+
+  const endDraw = () => {
+    if (!isDrawingSignature) return;
+    isDrawingSignature = false;
+    if (activeStoreState && activeStoreState.reconciliation) {
+      activeStoreState.reconciliation.signatureDataUrl = sigCanvas.toDataURL('image/png');
+      saveActiveStoreState();
+    }
+  };
 
   sigCanvas.addEventListener('mousedown', startDraw);
   sigCanvas.addEventListener('mousemove', moveDraw);
   window.addEventListener('mouseup', endDraw);
+
   sigCanvas.addEventListener('touchstart', startDraw, { passive: false });
   sigCanvas.addEventListener('touchmove', moveDraw, { passive: false });
-  window.addEventListener('touchend', endDraw);
+  sigCanvas.addEventListener('touchend', endDraw);
 }
 
 function clearSignaturePad() {
-  if (!sigCanvas || !sigCtx) return;
-  sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
-  currentSignatureDataUrl = null;
+  if (sigCanvas && sigCtx) {
+    sigCtx.clearRect(0, 0, sigCanvas.width, sigCanvas.height);
+  }
+  if (activeStoreState && activeStoreState.reconciliation) {
+    activeStoreState.reconciliation.signatureDataUrl = '';
+    saveActiveStoreState();
+  }
 }
 
-function getLocationHistoricalReports(locId = activeLocationId) {
-  try {
-    const raw = localStorage.getItem(getStoreHistoryStorageKey(locId));
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch (e) {}
-  return [];
+function syncReconciliationFormFromState() {
+  if (!activeStoreState || !activeStoreState.reconciliation) return;
+  const rec = activeStoreState.reconciliation;
+
+  const dateEl = document.getElementById('rec-audit-date');
+  const shiftEl = document.getElementById('rec-shift-type');
+  const cOutEl = document.getElementById('rec-cashier-out');
+  const cInEl = document.getElementById('rec-cashier-in');
+  const onlineEl = document.getElementById('rec-online-sales');
+  const payoutsEl = document.getElementById('rec-total-payouts');
+  const actualEl = document.getElementById('rec-actual-cash');
+  const notesEl = document.getElementById('rec-shift-notes');
+
+  if (dateEl) dateEl.value = rec.auditDate || getLocalDateStr();
+  if (shiftEl) shiftEl.value = rec.shiftType || 'Shift 1 (Morning)';
+  if (cOutEl) cOutEl.value = rec.cashierOut || '';
+  if (cInEl) cInEl.value = rec.cashierIn || '';
+  if (onlineEl) onlineEl.value = rec.onlineSales ?? 0;
+  if (payoutsEl) payoutsEl.value = rec.totalPayouts ?? 0;
+  if (actualEl) actualEl.value = rec.actualCash ?? 0;
+  if (notesEl) notesEl.value = rec.notes || '';
+
+  recalculateReconciliationMath();
 }
 
-function saveLocationHistoricalReports(reportsArr, locId = activeLocationId) {
-  try { localStorage.setItem(getStoreHistoryStorageKey(locId), JSON.stringify(reportsArr)); } catch (e) {}
-}
+function saveReconciliationDraft() {
+  if (!activeStoreState || !activeStoreState.reconciliation) return;
+  const rec = activeStoreState.reconciliation;
 
-function finalizeAndSaveShiftReport() {
-  boxes.forEach((b, idx) => {
-    const activeInput = document.getElementById(`list-input-endTicket-${idx}`) ||
-                        document.getElementById(`input-endTicket-${idx}`) ||
-                        document.querySelector(`[id*="endTicket-${idx}"]`);
-    
-    if (activeInput && activeInput.value !== undefined && activeInput.value !== null && String(activeInput.value).trim() !== '') {
-      b.endTicket = Number(activeInput.value);
-    }
-  });
-  saveBoxesState();
+  rec.auditDate = document.getElementById('rec-audit-date')?.value || getLocalDateStr();
+  rec.shiftType = document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
+  rec.cashierOut = (document.getElementById('rec-cashier-out')?.value || '').trim();
+  rec.cashierIn = (document.getElementById('rec-cashier-in')?.value || '').trim();
+  rec.onlineSales = parseFloat(document.getElementById('rec-online-sales')?.value) || 0;
+  rec.totalPayouts = parseFloat(document.getElementById('rec-total-payouts')?.value) || 0;
+  rec.actualCash = parseFloat(document.getElementById('rec-actual-cash')?.value) || 0;
+  rec.notes = document.getElementById('rec-shift-notes')?.value || '';
 
-  const totals = recalculateReconciliationTotals();
-  const normalizedDate = document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10);
-  const shiftVal = document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)';
-  const cashierOut = document.getElementById('rec-cashier-out')?.value?.trim() || 'Unspecified Cashier';
-  const cashierIn = document.getElementById('rec-cashier-in')?.value?.trim() || '-';
-  const notes = document.getElementById('rec-shift-notes')?.value?.trim() || '';
-
-  if (cashierOut && cashierOut !== 'Unspecified Cashier' && !savedCashiers.includes(cashierOut)) {
-    savedCashiers.push(cashierOut);
-    saveCashiersState();
-    renderAdminCashiersTable();
+  if (rec.cashierOut) {
+    shiftSessionConfirmed = true;
   }
 
-  let shiftOrder = 1;
-  if (shiftVal.includes('2') || shiftVal.toLowerCase().includes('evening')) shiftOrder = 2;
-  else if (shiftVal.includes('3') || shiftVal.toLowerCase().includes('night') || shiftVal.toLowerCase().includes('close')) shiftOrder = 3;
+  saveActiveStoreState();
+  updateHeaderAndBottomSummary();
+}
 
-  const reportRecord = {
-    reportId: `rep_${activeLocationId}_${normalizedDate}_${shiftOrder}_${Date.now()}`,
-    timestamp: new Date().toISOString(),
-    locationId: activeLocationId,
-    storeName: storeProfile.name,
-    storeNumber: storeProfile.number,
-    date: normalizedDate,
-    monthKey: normalizedDate.slice(0, 7),
-    shiftType: shiftVal,
-    shiftSequence: shiftOrder,
+function handleShiftTypeChange(newShift) {
+  if (!activeStoreState || !activeStoreState.reconciliation) return;
+  activeStoreState.reconciliation.shiftType = newShift;
+  saveActiveStoreState();
+  updateHeaderAndBottomSummary();
+}
+
+function recalculateReconciliationMath() {
+  if (!activeStoreState) return;
+  const { totalTickets, totalSales } = getShiftTotals();
+
+  const onlineSales = parseFloat(document.getElementById('rec-online-sales')?.value) || 0;
+  const totalPayouts = parseFloat(document.getElementById('rec-total-payouts')?.value) || 0;
+  const actualCash = parseFloat(document.getElementById('rec-actual-cash')?.value) || 0;
+
+  if (activeStoreState.reconciliation) {
+    activeStoreState.reconciliation.onlineSales = onlineSales;
+    activeStoreState.reconciliation.totalPayouts = totalPayouts;
+    activeStoreState.reconciliation.actualCash = actualCash;
+  }
+
+  const netExpected = Number((totalSales + onlineSales - totalPayouts).toFixed(2));
+  const variance = Number((actualCash - netExpected).toFixed(2));
+
+  const scratchEl = document.getElementById('rec-calc-scratch-sales');
+  const tixEl = document.getElementById('rec-calc-total-tickets');
+  const expectedEl = document.getElementById('rec-net-expected');
+  const varianceBadge = document.getElementById('rec-variance-badge');
+
+  if (scratchEl) scratchEl.textContent = `$${totalSales.toFixed(2)}`;
+  if (tixEl) tixEl.textContent = String(totalTickets);
+  if (expectedEl) expectedEl.textContent = `$${netExpected.toFixed(2)}`;
+
+  if (varianceBadge) {
+    const sign = variance > 0 ? '+' : '';
+    varianceBadge.textContent = `${sign}$${variance.toFixed(2)}`;
+    if (Math.abs(variance) < 0.01) {
+      varianceBadge.className = 'px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300';
+    } else if (variance > 0) {
+      varianceBadge.className = 'px-2 py-0.5 rounded bg-blue-100 text-blue-800 border border-blue-300';
+    } else {
+      varianceBadge.className = 'px-2 py-0.5 rounded bg-red-100 text-red-800 border border-red-300';
+    }
+  }
+
+  saveActiveStoreState();
+}
+
+function finalizeAndSaveShiftAudit() {
+  if (!activeStoreState) return;
+  saveReconciliationDraft();
+
+  const rec = activeStoreState.reconciliation;
+  const cashierOut = (rec.cashierOut || '').trim();
+  if (!cashierOut) {
+    alert('Please enter the Cashier On Duty name before finalizing this shift report.');
+    document.getElementById('rec-cashier-out')?.focus();
+    return;
+  }
+
+  const { totalTickets, totalSales } = getShiftTotals();
+  const netExpected = Number((totalSales + rec.onlineSales - rec.totalPayouts).toFixed(2));
+  const variance = Number((rec.actualCash - netExpected).toFixed(2));
+
+  // Normalize auditDate to YYYY-MM-DD local format
+  const auditDate = (rec.auditDate || getLocalDateStr()).slice(0, 10);
+
+  const archiveRecord = {
+    id: `shift_${Date.now()}`,
+    savedAt: new Date().toISOString(),
+    savedLocalTime: formatDisplayDateTime(new Date()),
+    locationId: activeStoreState.locationId,
+    locationName: activeStoreState.locationName,
+    locationCode: activeStoreState.locationCode,
+    auditDate,
+    shiftType: rec.shiftType || 'Shift 1 (Morning)',
     cashierOut,
-    cashierIn,
-    notes,
-    totals,
-    signatureDataUrl: currentSignatureDataUrl || null,
-    boxesSnapshot: JSON.parse(JSON.stringify(boxes))
+    cashierIn: rec.cashierIn || '',
+    totalTickets,
+    scratchSales: totalSales,
+    onlineSales: Number(rec.onlineSales) || 0,
+    totalPayouts: Number(rec.totalPayouts) || 0,
+    netExpected,
+    actualCash: Number(rec.actualCash) || 0,
+    variance,
+    notes: rec.notes || '',
+    signatureDataUrl: rec.signatureDataUrl || '',
+    boxesSnapshot: JSON.parse(JSON.stringify(activeStoreState.boxes))
   };
 
-  const history = getLocationHistoricalReports(activeLocationId);
-  history.unshift(reportRecord);
-  saveLocationHistoricalReports(history, activeLocationId);
-
-  const CLOUDWORKER_SYNC_URL = "https://lottoinventory.dimitriosregas.workers.dev/sync";
-  const payload = buildFullTabletBackupPayload();
-  fetch(`${CLOUDWORKER_SYNC_URL}?storeId=${activeLocationId}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  }).catch(() => {});
-
-  const ind = document.getElementById('last-archived-indicator');
-  if (ind) ind.textContent = `✔ Archived ${normalizedDate} (${shiftVal}) at ${new Date().toLocaleTimeString()}`;
-
-  executeSilentBackgroundBackup('REPORT');
-  alert(`Shift Report for ${storeProfile.name} archived and system backed up silently in the background!`);
-}
-
-function handleReportFilterModeChange(mode) {
-  const dateCont = document.getElementById('filter-date-container');
-  const monthCont = document.getElementById('filter-month-container');
-  const shiftCont = document.getElementById('filter-shift-container');
-
-  if (mode === 'monthly') {
-    dateCont?.classList.add('hidden');
-    monthCont?.classList.remove('hidden');
-    shiftCont?.classList.add('hidden');
-  } else if (mode === 'shift') {
-    dateCont?.classList.remove('hidden');
-    monthCont?.classList.add('hidden');
-    shiftCont?.classList.remove('hidden');
+  // Replace existing archive entry if same date + same shift is re-finalized, otherwise append
+  const existingIdx = activeStoreState.history.findIndex(
+    h => (h.auditDate || '').slice(0, 10) === auditDate && h.shiftType === archiveRecord.shiftType
+  );
+  if (existingIdx >= 0) {
+    activeStoreState.history[existingIdx] = archiveRecord;
   } else {
-    dateCont?.classList.remove('hidden');
-    monthCont?.classList.add('hidden');
-    shiftCont?.classList.add('hidden');
-  }
-  executeReportLookup();
-}
-
-function executeReportLookup() {
-  const mode = document.getElementById('report-filter-mode')?.value || 'daily';
-  const filterDate = document.getElementById('report-filter-date')?.value || new Date().toISOString().slice(0, 10);
-  const filterMonth = document.getElementById('report-filter-month')?.value || new Date().toISOString().slice(0, 7);
-  const filterShift = document.getElementById('report-filter-shift-type')?.value || 'ALL';
-
-  const allHistory = getLocationHistoricalReports(activeLocationId);
-  let filtered = [];
-
-  if (mode === 'monthly') {
-    filtered = allHistory.filter(r => (r.monthKey || r.date?.slice(0, 7)) === filterMonth);
-  } else if (mode === 'shift') {
-    filtered = allHistory.filter(r => r.date === filterDate && (filterShift === 'ALL' || r.shiftType === filterShift));
-  } else {
-    filtered = allHistory.filter(r => r.date === filterDate);
+    activeStoreState.history.unshift(archiveRecord);
   }
 
-  filtered.sort((a, b) => (a.shiftSequence || 1) - (b.shiftSequence || 1));
+  saveActiveStoreState();
+  alert(`✔ Shift Report Saved & Archived!\n\nStore: ${activeStoreState.locationName}\nDate: ${auditDate}\nShift: ${archiveRecord.shiftType}\nCashier: ${cashierOut}\nScratch Sales: $${totalSales.toFixed(2)}`);
 
-  let sumScratch = 0, sumExpected = 0, sumVariance = 0;
-  filtered.forEach(r => {
-    sumScratch += Number(r.totals?.scratchSales) || 0;
-    sumExpected += Number(r.totals?.expectedNet) || 0;
-    sumVariance += Number(r.totals?.variance) || 0;
+  if (confirm('Would you like to print the signed shift report now?')) {
+    openWorksheetPrintChoiceModal();
+  }
+}
+
+/* ========================= END OF PART 6 OF 10 ========================= */
+/* ============================================================================
+   PART 7 OF 10: HISTORICAL REPORTS (COMBINED DAILY & MONTHLY SUMMARIES)
+   ============================================================================ */
+
+function setReportViewMode(mode) {
+  activeReportMode = mode === 'monthly' ? 'monthly' : 'daily';
+
+  const dailyBtn = document.getElementById('report-mode-daily-btn');
+  const monthlyBtn = document.getElementById('report-mode-monthly-btn');
+  const dailyWrap = document.getElementById('report-daily-picker-wrap');
+  const monthlyWrap = document.getElementById('report-monthly-picker-wrap');
+
+  if (dailyBtn && monthlyBtn) {
+    if (activeReportMode === 'daily') {
+      dailyBtn.className = 'px-3 py-1 rounded-md text-xs font-extrabold bg-blue-600 text-white transition';
+      monthlyBtn.className = 'px-3 py-1 rounded-md text-xs font-extrabold text-slate-700 hover:text-slate-900 transition';
+    } else {
+      monthlyBtn.className = 'px-3 py-1 rounded-md text-xs font-extrabold bg-blue-600 text-white transition';
+      dailyBtn.className = 'px-3 py-1 rounded-md text-xs font-extrabold text-slate-700 hover:text-slate-900 transition';
+    }
+  }
+
+  if (dailyWrap) dailyWrap.classList.toggle('hidden', activeReportMode !== 'daily');
+  if (monthlyWrap) monthlyWrap.classList.toggle('hidden', activeReportMode !== 'monthly');
+
+  renderHistoricalReports();
+}
+
+function getNormalizedRecordDate(record) {
+  if (record.auditDate) {
+    return String(record.auditDate).trim().slice(0, 10);
+  }
+  if (record.savedAt) {
+    const parsed = new Date(record.savedAt);
+    if (!isNaN(parsed.getTime())) {
+      return getLocalDateStr(parsed);
+    }
+  }
+  return getLocalDateStr();
+}
+
+function getFilteredReportRecords() {
+  if (!activeStoreState || !Array.isArray(activeStoreState.history)) return [];
+
+  const dateInput = document.getElementById('report-filter-date');
+  const monthInput = document.getElementById('report-filter-month');
+
+  if (activeReportMode === 'monthly') {
+    const targetMonth = (monthInput?.value || getLocalMonthStr()).slice(0, 7);
+    return activeStoreState.history.filter(rec => getNormalizedRecordDate(rec).startsWith(targetMonth));
+  } else {
+    const targetDate = (dateInput?.value || getLocalDateStr()).slice(0, 10);
+    return activeStoreState.history.filter(rec => getNormalizedRecordDate(rec) === targetDate);
+  }
+}
+
+function aggregateReportRecords(records) {
+  let totalTickets = 0;
+  let scratchSales = 0;
+  let onlineSales = 0;
+  let totalPayouts = 0;
+  let netExpected = 0;
+  let actualCash = 0;
+  let variance = 0;
+
+  records.forEach(r => {
+    totalTickets += Number(r.totalTickets) || 0;
+    scratchSales += Number(r.scratchSales) || 0;
+    onlineSales += Number(r.onlineSales) || 0;
+    totalPayouts += Number(r.totalPayouts) || 0;
+    netExpected += Number(r.netExpected) || 0;
+    actualCash += Number(r.actualCash) || 0;
+    variance += Number(r.variance) || 0;
   });
 
-  const cntEl = document.getElementById('rep-summary-shift-count');
-  const scrEl = document.getElementById('rep-summary-scratch-sales');
-  const expEl = document.getElementById('rep-summary-expected-revenue');
-  const varEl = document.getElementById('rep-summary-variance');
+  return {
+    shiftCount: records.length,
+    totalTickets,
+    scratchSales: Number(scratchSales.toFixed(2)),
+    onlineSales: Number(onlineSales.toFixed(2)),
+    totalPayouts: Number(totalPayouts.toFixed(2)),
+    netExpected: Number(netExpected.toFixed(2)),
+    actualCash: Number(actualCash.toFixed(2)),
+    variance: Number(variance.toFixed(2))
+  };
+}
 
-  if (cntEl) cntEl.textContent = String(filtered.length);
-  if (scrEl) scrEl.textContent = `$${sumScratch.toFixed(2)}`;
-  if (expEl) expEl.textContent = `$${sumExpected.toFixed(2)}`;
-  if (varEl) {
-    const sign = sumVariance > 0 ? '+' : '';
-    varEl.textContent = `${sign}$${sumVariance.toFixed(2)}`;
-  }
+function renderHistoricalReports() {
+  const kpiContainer = document.getElementById('report-combined-summary-cards');
+  const listContainer = document.getElementById('historical-reports-container');
+  if (!kpiContainer || !listContainer || !activeStoreState) return;
 
-  const tbody = document.getElementById('historical-reports-tbody');
-  if (!tbody) return;
+  const dateInput = document.getElementById('report-filter-date');
+  const monthInput = document.getElementById('report-filter-month');
+  if (dateInput && !dateInput.value) dateInput.value = getLocalDateStr();
+  if (monthInput && !monthInput.value) monthInput.value = getLocalMonthStr();
 
-  if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="12" class="p-6 text-center text-slate-400">No archived shift reports found.</td></tr>`;
+  const records = getFilteredReportRecords();
+  const totals = aggregateReportRecords(records);
+
+  const periodLabel = activeReportMode === 'monthly'
+    ? `Month: ${monthInput?.value || getLocalMonthStr()}`
+    : `Date: ${dateInput?.value || getLocalDateStr()}`;
+
+  const varSign = totals.variance > 0 ? '+' : '';
+  const varColor = Math.abs(totals.variance) < 0.01
+    ? 'text-emerald-700'
+    : (totals.variance > 0 ? 'text-blue-700' : 'text-red-700');
+
+  kpiContainer.innerHTML = `
+    <div class="bg-slate-900 text-white rounded-xl p-3 border border-slate-700">
+      <div class="text-[10px] font-extrabold uppercase text-amber-400">COMBINED ${activeReportMode === 'monthly' ? 'MONTHLY' : 'DAILY'}</div>
+      <div class="font-extrabold text-sm mt-0.5">${periodLabel}</div>
+      <div class="text-[11px] text-slate-300 mt-0.5">${totals.shiftCount} Shift(s) Combined</div>
+    </div>
+    <div class="bg-slate-50 rounded-xl p-3 border border-slate-200">
+      <div class="text-[10px] font-extrabold uppercase text-slate-500">SCRATCH SALES</div>
+      <div class="font-mono font-extrabold text-base text-emerald-700 mt-0.5">$${totals.scratchSales.toFixed(2)}</div>
+      <div class="text-[11px] text-slate-500">${totals.totalTickets} Tickets Sold</div>
+    </div>
+    <div class="bg-slate-50 rounded-xl p-3 border border-slate-200">
+      <div class="text-[10px] font-extrabold uppercase text-slate-500">ONLINE / PAYOUTS</div>
+      <div class="font-mono font-extrabold text-sm text-slate-900 mt-0.5">+$${totals.onlineSales.toFixed(2)}</div>
+      <div class="text-[11px] text-red-600 font-semibold">-$${totals.totalPayouts.toFixed(2)} Paid</div>
+    </div>
+    <div class="bg-slate-50 rounded-xl p-3 border border-slate-200">
+      <div class="text-[10px] font-extrabold uppercase text-slate-500">NET EXPECTED</div>
+      <div class="font-mono font-extrabold text-base text-slate-900 mt-0.5">$${totals.netExpected.toFixed(2)}</div>
+      <div class="text-[11px] text-slate-500">Actual: $${totals.actualCash.toFixed(2)}</div>
+    </div>
+    <div class="bg-slate-50 rounded-xl p-3 border border-slate-200">
+      <div class="text-[10px] font-extrabold uppercase text-slate-500">OVER / SHORT</div>
+      <div class="font-mono font-extrabold text-base ${varColor} mt-0.5">${varSign}$${totals.variance.toFixed(2)}</div>
+      <div class="text-[11px] text-slate-500">Combined Variance</div>
+    </div>
+  `;
+
+  // Also show quick-jump list of all logged dates for this store so past days are 1-click accessible
+  const uniqueDates = Array.from(
+    new Set(activeStoreState.history.map(r => getNormalizedRecordDate(r)))
+  ).sort((a, b) => b.localeCompare(a));
+
+  const quickDatesHtml = uniqueDates.length > 0
+    ? `
+      <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5 flex flex-wrap items-center gap-1.5 text-xs">
+        <span class="font-extrabold text-slate-600 uppercase text-[10px] mr-1">Logged Days:</span>
+        ${uniqueDates.slice(0, 14).map(d => `
+          <button
+            type="button"
+            onclick="jumpToLoggedReportDate('${d}')"
+            class="px-2.5 py-1 rounded font-mono font-bold text-[11px] border transition ${
+              activeReportMode === 'daily' && dateInput?.value === d
+                ? 'bg-blue-600 text-white border-blue-600'
+                : 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300'
+            }"
+          >
+            ${d}
+          </button>
+        `).join('')}
+      </div>
+    `
+    : '';
+
+  if (records.length === 0) {
+    listContainer.innerHTML = `
+      ${quickDatesHtml}
+      <div class="bg-slate-50 border border-dashed border-slate-300 rounded-xl p-8 text-center text-slate-500 text-xs">
+        No finalized shift audits found for <strong>${periodLabel}</strong> at <strong>${activeStoreState.locationName}</strong>.
+        <div class="mt-1">Finalize a shift under <strong>Reconciliation → Finalize &amp; Archive Shift</strong> to log it here.</div>
+      </div>
+    `;
     return;
   }
 
-  tbody.innerHTML = filtered.map(r => {
-    const t = r.totals || {};
-    const v = Number(t.variance) || 0;
-    const vColor = Math.abs(v) < 0.01 ? 'text-emerald-700' : (v < 0 ? 'text-red-600' : 'text-amber-600');
+  // Sort chronologically (Shift 1 -> Shift 2 -> Shift 3)
+  const sorted = [...records].sort((a, b) => {
+    const dCmp = getNormalizedRecordDate(a).localeCompare(getNormalizedRecordDate(b));
+    if (dCmp !== 0) return dCmp;
+    return String(a.shiftType || '').localeCompare(String(b.shiftType || ''));
+  });
+
+  const rowsHtml = sorted.map(rec => {
+    const rDate = getNormalizedRecordDate(rec);
+    const rVar = Number(rec.variance) || 0;
+    const rSign = rVar > 0 ? '+' : '';
+    const rVarCls = Math.abs(rVar) < 0.01 ? 'text-emerald-700' : (rVar > 0 ? 'text-blue-700' : 'text-red-700');
+
     return `
-      <tr class="hover:bg-slate-50">
-        <td class="p-2.5 text-center font-mono">${r.date}</td>
-        <td class="p-2.5 font-bold text-slate-800">${r.shiftType}</td>
-        <td class="p-2.5">${r.cashierOut || '-'}</td>
-        <td class="p-2.5 text-center font-mono">${t.totalTickets || 0}</td>
-        <td class="p-2.5 text-right font-mono font-bold">$${(Number(t.scratchSales) || 0).toFixed(2)}</td>
-        <td class="p-2.5 text-right font-mono">$${(Number(t.onlineSales) || 0).toFixed(2)}</td>
-        <td class="p-2.5 text-right font-mono font-bold text-blue-800">$${(Number(t.expectedNet) || 0).toFixed(2)}</td>
-        <td class="p-2.5 text-right font-mono font-bold">$${(Number(t.posActual) || 0).toFixed(2)}</td>
-        <td class="p-2.5 text-right font-mono font-extrabold ${vColor}">${v > 0 ? '+' : ''}$${v.toFixed(2)}</td>
-        <td class="p-2.5 text-center">${r.signatureDataUrl ? '<span class="text-emerald-600 font-bold">✔ Signed</span>' : '<span class="text-slate-400">None</span>'}</td>
-        <td class="p-2.5 text-center">
-          <button type="button" onclick="rollbackAndEditArchivedShiftReport('${r.reportId}')" class="bg-amber-600 hover:bg-amber-700 text-white text-[10px] px-2 py-1 rounded font-bold">🔓 Edit</button>
-        </td>
-        <td class="p-2.5 text-center">
-          <button type="button" onclick="printArchivedSingleReport('${r.reportId}')" class="bg-slate-800 text-white text-[10px] px-2 py-1 rounded">🖨 Print</button>
+      <tr class="border-b border-slate-200 hover:bg-slate-50">
+        <td class="p-2.5 font-mono font-bold text-slate-800">${rDate}</td>
+        <td class="p-2.5 font-extrabold text-slate-900">${rec.shiftType || 'Shift'}</td>
+        <td class="p-2.5 font-bold text-slate-700">${rec.cashierOut || 'Unspecified'}</td>
+        <td class="p-2.5 text-center font-mono font-bold">${rec.totalTickets || 0}</td>
+        <td class="p-2.5 text-right font-mono font-extrabold text-emerald-700">$${(Number(rec.scratchSales) || 0).toFixed(2)}</td>
+        <td class="p-2.5 text-right font-mono">$${(Number(rec.onlineSales) || 0).toFixed(2)}</td>
+        <td class="p-2.5 text-right font-mono text-red-600">-$${(Number(rec.totalPayouts) || 0).toFixed(2)}</td>
+        <td class="p-2.5 text-right font-mono font-bold">$${(Number(rec.actualCash) || 0).toFixed(2)}</td>
+        <td class="p-2.5 text-right font-mono font-extrabold ${rVarCls}">${rSign}$${rVar.toFixed(2)}</td>
+        <td class="p-2.5 text-right">
+          <button
+            type="button"
+            onclick="reprintArchivedShiftReport('${rec.id}')"
+            class="bg-slate-800 hover:bg-slate-700 text-white font-bold text-[11px] px-2.5 py-1 rounded"
+          >
+            🖨 Print
+          </button>
         </td>
       </tr>
     `;
   }).join('');
-}
 
-function exportHistoricalReportsJSON() {
-  const history = getLocationHistoricalReports(activeLocationId);
-  const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(history, null, 2));
-  const a = document.createElement('a');
-  a.setAttribute('href', dataStr);
-  a.setAttribute('download', `HistoricalReports_${storeProfile.name.replace(/\s+/g, '_')}.json`);
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-}
-
-function triggerMonthlyEmailDispatchManually() {
-  sendNightlyEmailBackupToOwner(false);
-}
-
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 9 OF 10)
-   Admin Catalog Management, Box Slot Configuration, View Switching & Printing
-   ========================================================================== */
-
-function saveNewMasterGameManual() {
-  const numInp = document.getElementById('new-game-num');
-  const nameInp = document.getElementById('new-game-name');
-  const priceInp = document.getElementById('new-game-price');
-  const countInp = document.getElementById('new-game-count');
-
-  const gNum = numInp?.value?.trim();
-  const gName = nameInp?.value?.trim().toUpperCase();
-  const price = Number(priceInp?.value) || 1;
-  const count = Number(countInp?.value) || getDefaultRollCountForPrice(price);
-
-  if (!gNum || !gName) { alert('Please enter both a Game Number and a Game Name.'); return; }
-  const newEntry = { gameNum: gNum, name: gName, price, count };
-
-  const idx = masterGames.findIndex(g => String(g.gameNum).trim() === gNum);
-  if (idx >= 0) masterGames[idx] = newEntry;
-  else masterGames.push(newEntry);
-   
-  masterGames = sanitizeMasterGamesList(masterGames);
-  saveGamesState();
-
-  if (numInp) numInp.value = '';
-  if (nameInp) nameInp.value = '';
-  if (priceInp) priceInp.value = '';
-  if (countInp) countInp.value = '';
-
-  loadActiveStoreData();
-  renderAdminGamesTable();
-  renderDispenserGrid();
-  recalculateReconciliationTotals();
-  alert(`Master Game #${gNum} saved successfully!`);
-}
-
-function deleteMasterGame(gNum) {
-  if (!confirm(`Delete Game #${gNum} from Master Catalog?`)) return;
-  masterGames = masterGames.filter(g => String(g.gameNum).trim() !== String(gNum).trim());
-  saveGamesState();
-  renderAdminGamesTable();
-}
-
-function renderAdminGamesTable(filterQuery = '') {
-  const tbody = document.getElementById('admin-games-tbody');
-  const countEl = document.getElementById('admin-games-count');
-  if (countEl) countEl.textContent = String(masterGames.length);
-  if (!tbody) return;
-
-  const q = filterQuery.trim().toLowerCase();
-  const list = q ? masterGames.filter(g => String(g.gameNum).toLowerCase().includes(q) || String(g.name).toLowerCase().includes(q)) : masterGames;
-
-  if (list.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-400">No matching games found.</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = list.map(g => `
-    <tr class="hover:bg-slate-50">
-      <td class="p-2 text-center font-mono font-bold text-blue-800">${g.gameNum}</td>
-      <td class="p-2 font-bold text-slate-800">${g.name}</td>
-      <td class="p-2 text-center font-mono font-bold text-emerald-700">$${g.price}</td>
-      <td class="p-2 text-center font-mono text-slate-600">${g.count}</td>
-      <td class="p-2 text-center">
-        <button type="button" onclick="deleteMasterGame('${g.gameNum}')" class="text-red-600 hover:text-red-800 font-bold text-[11px] px-2 py-0.5 rounded bg-red-50">Delete</button>
-      </td>
-    </tr>
-  `).join('');
-}
-
-function addBoxSlot() {
-  const nextNum = boxes.length + 1;
-  boxes.push({ boxNumber: String(nextNum), gameNum: '', gameName: '', price: 0, rollCount: 60, startTicket: 0, endTicket: '', rollovers: [], needsNewGameEntry: false });
-  saveBoxesState();
-  const badgeElem = document.getElementById('admin-box-count-badge');
-  if (badgeElem) badgeElem.textContent = String(boxes.length);
-  renderDispenserGrid();
-  renderAdminBoxLabelsGrid();
-  updateHeaderTotalsUI();
-}
-
-function removeBoxSlot() {
-  if (boxes.length <= 1) { alert('You must keep at least 1 box slot active.'); return; }
-  boxes.pop();
-  saveBoxesState();
-  const badgeElem = document.getElementById('admin-box-count-badge');
-  if (badgeElem) badgeElem.textContent = String(boxes.length);
-  renderDispenserGrid();
-  renderAdminBoxLabelsGrid();
-  updateHeaderTotalsUI();
-}
-
-function renderAdminBoxLabelsGrid() {
-  const container = document.getElementById('admin-box-labels-grid');
-  if (!container) return;
-  let html = '';
-  boxes.forEach((box, idx) => {
-    const hasGame = Boolean(box.gameNum);
-    const gameLabel = hasGame ? (box.gameName || 'Game #' + box.gameNum) : 'Empty Slot';
-    html += `
-      <div class="border border-slate-200 rounded-lg p-2 bg-slate-50 flex flex-col justify-between text-xs">
-        <div class="flex items-center justify-between text-[10px] text-slate-500 font-bold mb-1">
-          <span>Index #${idx + 1}</span>
-          <span class="text-emerald-700 font-mono">${hasGame && box.price ? '$' + box.price : ''}</span>
-        </div>
-        <div class="mb-1.5">
-          <input type="text" id="admin-box-label-inp-${idx}" value="${box.boxNumber || (idx + 1)}" oninput="updateBoxLabelDirect(${idx}, this.value)" onkeydown="handleBoxLabelKeydown(event, ${idx})" class="w-full text-center font-mono font-black text-xs border rounded py-1 px-1.5 bg-white lotto-input" />
-        </div>
-        <div class="text-[10px] text-slate-600 truncate font-medium">${gameLabel}</div>
-      </div>
-    `;
-  });
-  container.innerHTML = html;
-}
-
-function handleBoxLabelKeydown(event, currentIdx) {
-  if (event.key === 'Enter') {
-    event.preventDefault();
-    const nextIdx = currentIdx + 1;
-    const nextInp = document.getElementById(`admin-box-label-inp-${nextIdx}`);
-    if (nextInp) {
-      nextInp.focus();
-      nextInp.select();
-    }
-  }
-}
-
-function updateBoxLabelDirect(idx, val) {
-  if (!boxes[idx]) return;
-  boxes[idx].boxNumber = val === '' ? String(idx + 1) : String(val).trim();
-  saveBoxesState();
-}
-
-function setBoxLabelsSequential(mode) {
-  boxes.forEach((box, idx) => {
-    if (mode === 'numbers') box.boxNumber = String(idx + 1);
-    else if (mode === 'letters') box.boxNumber = idx < 26 ? String.fromCharCode(65 + idx) : 'A' + String.fromCharCode(65 + (idx - 26));
-  });
-  saveBoxesState();
-  renderAdminBoxLabelsGrid();
-  renderDispenserGrid();
-}
-
-function switchMainView(viewName) {
-  lastActiveViewName = viewName;
-  const views = ['grid', 'reconcile', 'reports', 'admin'];
-  views.forEach(v => {
-    const sec = document.getElementById(`view-${v}`);
-    const btn = document.getElementById(`nav-btn-${v}`);
-    if (sec) {
-      if (v === viewName) sec.classList.remove('hidden');
-      else sec.classList.add('hidden');
-    }
-    if (btn) {
-      btn.className = v === viewName ? 'bg-blue-600 text-white font-bold text-xs px-3 py-1.5 rounded shadow-sm transition' : 'bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3 py-1.5 rounded shadow-sm transition';
-    }
-  });
-  if (viewName === 'grid') {
-    renderDispenserGrid();
-    renderMainGridCashierShiftBar();
-  } else if (viewName === 'reconcile') {
-    recalculateReconciliationTotals();
-    handleCashierInputAutocomplete('rec-cashier-out', 'cashier-datalist-rec-out');
-    handleCashierInputAutocomplete('rec-cashier-in', 'cashier-datalist-rec-in');
-  } else if (viewName === 'reports') {
-    executeReportLookup();
-  } else if (viewName === 'admin') {
-    renderAdminGamesTable();
-    renderAdminBoxLabelsGrid();
-    renderAdminCashiersTable();
-  }
-}
-
-function jumpToReconciliation() {
-  if (typeof switchMainView === 'function') {
-    switchMainView('reconcile');
-  } else {
-    document.getElementById('view-grid').classList.add('hidden');
-    document.getElementById('view-reconcile').classList.remove('hidden');
-    if (typeof recalculateReconciliationTotals === 'function') {
-      recalculateReconciliationTotals();
-    }
-  }
-}
-
-function buildMatrixPrintHTML(repData, isFinalReport = false) {
-  const bList = Array.isArray(repData.boxesSnapshot) ? repData.boxesSnapshot : boxes;
-  const t = repData.totals || {};
-  const variance = Number(t.variance) || 0;
-  let gtTickets = 0;
-  let gtSales = 0;
-
-  const rowsHtml = bList.map(box => {
-    const m = calculateBoxMetrics(box);
-    gtTickets += m.ticketsSold;
-    gtSales += m.dollarSales;
-    const hasGame = Boolean(box.gameNum);
-    const roCount = Array.isArray(box.rollovers) ? box.rollovers.length : 0;
-    return `
-      <tr style="border-bottom: 1px solid #cbd5e1; font-size: 7.5px;">
-        <td style="padding: 1.5px 3px; text-align: center; font-weight: 900; background: #0f172a; color: #fff;">${box.boxNumber}</td>
-        <td style="padding: 1.5px 3px; text-align: center; font-family: monospace; font-weight: bold;">${box.gameNum || '-'}</td>
-        <td style="padding: 1.5px 3px; font-weight: 600;">${hasGame ? (box.gameName || 'Game #' + box.gameNum) : '<span style="color:#94a3b8;">Empty</span>'}</td>
-        <td style="padding: 1.5px 3px; text-align: center; font-weight: bold; color: #047857;">${hasGame && box.price ? '$' + box.price : '-'}</td>
-        <td style="padding: 1.5px 3px; text-align: center; font-family: monospace;">${box.startTicket !== '' ? box.startTicket : '-'}</td>
-        <td style="padding: 1.5px 3px; text-align: center; font-family: monospace; font-weight: bold;">${box.endTicket !== '' && box.endTicket !== undefined ? box.endTicket : '-'}</td>
-        <td style="padding: 1.5px 3px; text-align: center; font-weight: bold;">${m.ticketsSold}${roCount > 0 ? ' *' : ''}</td>
-        <td style="padding: 1.5px 3px; text-align: right; font-family: monospace; font-weight: 900; color: #047857;">$${m.dollarSales.toFixed(2)}</td>
-      </tr>
-    `;
-  }).join('');
-
-  const sigImgHtml = repData.signatureDataUrl ? `<img src="${repData.signatureDataUrl}" style="max-height: 24px; max-width: 140px; object-fit: contain;" alt="Signature" />` : `<span style="color: #94a3b8; font-size: 7.5px;">______________________________</span>`;
-
-  return `
-    <style>
-      @page { size: letter portrait; margin: 0.15in 0.2in; }
-      @media print {
-        html, body {
-          margin: 0 !important; padding: 0 !important; height: 100% !important;
-          background: #fff !important; color: #000 !important; overflow: hidden !important;
-          -webkit-print-color-adjust: exact; print-color-adjust: exact;
-        }
-        body > header, body > main, body > div.fixed, #app-shell, .no-print { display: none !important; }
-        #print-container { display: block !important; width: 100% !important; margin: 0 !important; padding: 0 !important; }
-        .one-page-print-sheet {
-          width: 100% !important; max-height: 10.4in !important; overflow: hidden !important;
-          page-break-inside: avoid !important; page-break-after: avoid !important; page-break-before: avoid !important;
-          transform: scale(0.97); transform-origin: top left;
-        }
-      }
-    </style>
-    <div class="one-page-print-sheet" style="font-family: Arial, sans-serif; color: #000; font-size: 7.5px; line-height: 1.05;">
-      <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; padding-bottom: 2px; margin-bottom: 2px;">
-        <div>
-          <div style="font-size: 11px; font-weight: 900; text-transform: uppercase;">
-            ${repData.storeName || storeProfile.name} (#${repData.storeNumber || storeProfile.number}) — Shift Lotto Count Worksheet
-          </div>
-          ${storeProfile.address ? `<div style="font-size: 7px; color: #334155;">${storeProfile.address}</div>` : ''}
-          <div style="font-size: 7.5px; color: #334155; margin-top: 1px;">Date: <strong>${repData.date}</strong> &nbsp;|&nbsp; Shift: <strong>${repData.shiftType}</strong></div>
-        </div>
-        <div style="text-align: right; font-size: 7px; font-weight: bold;">WORKSHEET</div>
-      </div>
-      <table style="width: 100%; border-collapse: collapse; margin-bottom: 3px;">
-        <thead>
-          <tr style="background: #e2e8f0; border-bottom: 1.5px solid #000; font-size: 7px; text-transform: uppercase;">
-            <th style="padding: 2.5px; text-align: center; width: 30px;">Box</th>
-            <th style="padding: 2.5px; text-align: center; width: 50px;">Game #</th>
-            <th style="padding: 2.5px; text-align: left;">Game Name</th>
-            <th style="padding: 2.5px; text-align: center; width: 32px;">Price</th>
-            <th style="padding: 2.5px; text-align: center; width: 45px;">Start</th>
-            <th style="padding: 2.5px; text-align: center; width: 45px;">End</th>
-            <th style="padding: 2.5px; text-align: center; width: 32px;">Sold</th>
-            <th style="padding: 2.5px; text-align: right; width: 60px;">Sales $</th>
+  listContainer.innerHTML = `
+    ${quickDatesHtml}
+    <div class="overflow-x-auto border border-slate-300 rounded-xl bg-white">
+      <table class="w-full text-left border-collapse text-xs">
+        <thead class="bg-slate-800 text-white uppercase text-[11px]">
+          <tr>
+            <th class="p-2.5">Date</th>
+            <th class="p-2.5">Shift</th>
+            <th class="p-2.5">Cashier</th>
+            <th class="p-2.5 text-center">Tickets</th>
+            <th class="p-2.5 text-right">Scratch Sales</th>
+            <th class="p-2.5 text-right">Online</th>
+            <th class="p-2.5 text-right">Payouts</th>
+            <th class="p-2.5 text-right">Actual Cash</th>
+            <th class="p-2.5 text-right">Over/Short</th>
+            <th class="p-2.5 text-right">Action</th>
           </tr>
         </thead>
         <tbody>${rowsHtml}</tbody>
+        <tfoot class="bg-slate-100 font-extrabold border-t-2 border-slate-400">
+          <tr>
+            <td colspan="3" class="p-2.5 text-right uppercase">Combined ${activeReportMode === 'monthly' ? 'Monthly' : 'Daily'} Totals (${totals.shiftCount} Shifts):</td>
+            <td class="p-2.5 text-center font-mono">${totals.totalTickets}</td>
+            <td class="p-2.5 text-right font-mono text-emerald-700">$${totals.scratchSales.toFixed(2)}</td>
+            <td class="p-2.5 text-right font-mono">$${totals.onlineSales.toFixed(2)}</td>
+            <td class="p-2.5 text-right font-mono text-red-600">-$${totals.totalPayouts.toFixed(2)}</td>
+            <td class="p-2.5 text-right font-mono">$${totals.actualCash.toFixed(2)}</td>
+            <td class="p-2.5 text-right font-mono ${varColor}">${varSign}$${totals.variance.toFixed(2)}</td>
+            <td class="p-2.5"></td>
+          </tr>
+        </tfoot>
       </table>
-      <div style="border: 1.5px solid #000; padding: 3px 5px; background: #f8fafc;">
-        <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; border-bottom: 1px solid #94a3b8; padding-bottom: 2px; margin-bottom: 2px; text-align: center; font-size: 7px;">
-          <div><span>Total Sold:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">${gtTickets} tix</div></div>
-          <div><span>Scratch Sales:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px; color:#047857;">$${gtSales.toFixed(2)}</div></div>
-          <div><span>Online Sales:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">$${(Number(t.onlineSales) || 0).toFixed(2)}</div></div>
-          <div><span>Expected Net:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">$${(Number(t.expectedNet) || 0).toFixed(2)}</div></div>
-          <div><span>POS Actual:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">$${(Number(t.posActual) || 0).toFixed(2)}</div></div>
-          <div><span>Variance:</span><div style="font-family:monospace; font-weight:900; font-size:8.5px;">${variance > 0 ? '+' : ''}$${variance.toFixed(2)}</div></div>
+    </div>
+  `;
+}
+
+function jumpToLoggedReportDate(dateStr) {
+  const dateInput = document.getElementById('report-filter-date');
+  if (dateInput) dateInput.value = dateStr;
+  setReportViewMode('daily');
+}
+
+/* ========================= END OF PART 7 OF 10 ========================= */
+/* ============================================================================
+   PART 8 OF 10: PRINTING ENGINE (BACKUP WORKSHEET, 80MM/LETTER & COMBINED REPORTS)
+   ============================================================================ */
+
+function openWorksheetPrintChoiceModal() {
+  const modal = document.getElementById('modal-print-choice');
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeWorksheetPrintChoiceModal() {
+  const modal = document.getElementById('modal-print-choice');
+  if (modal) modal.classList.add('hidden');
+}
+
+// 1. PEN-READY MANUAL BACKUP WORKSHEET (BOX#, GAME# & NAME, PRICE, START# + BLANK, BLANK END#, SOLD, SALES$)
+function printManualBackupWorksheet() {
+  const printContainer = document.getElementById('print-container');
+  if (!printContainer || !activeStoreState) return;
+
+  const storeLabel = `${activeStoreState.locationName} (#${activeStoreState.locationCode})`;
+  const cashierName = (activeStoreState.reconciliation?.cashierOut || '').trim() || '______________________';
+  const shiftVal = activeStoreState.reconciliation?.shiftType || '______________________';
+  const dateStr = activeStoreState.reconciliation?.auditDate || getLocalDateStr();
+
+  const rowsHtml = activeStoreState.boxes.map((box, idx) => {
+    const boxLabel = box.label || String(idx + 1);
+    const gameNum = box.gameNum || '____';
+    const gameName = box.gameName || '____________________';
+    const price = box.price ? `$${Number(box.price).toFixed(0)}` : '____';
+    const startVal = (box.startTicket !== undefined && box.startTicket !== null && box.startTicket !== '')
+      ? box.startTicket
+      : '';
+
+    return `
+      <tr>
+        <td style="border:1px solid #000; padding:4px 5px; text-align:center; font-weight:900;">${boxLabel}</td>
+        <td style="border:1px solid #000; padding:4px 6px;">
+          <strong>${gameNum}</strong> — ${gameName}
+        </td>
+        <td style="border:1px solid #000; padding:4px 5px; text-align:center; font-weight:700;">${price}</td>
+        <td style="border:1px solid #000; padding:4px 5px; text-align:center;">
+          <div style="font-weight:800; font-size:11px; line-height:1.1;">${startVal !== '' ? startVal : '&nbsp;'}</div>
+          <div style="border-bottom:1px solid #000; height:12px; margin-top:2px;"></div>
+        </td>
+        <td style="border:1px solid #000; padding:4px 5px;">
+          <div style="border-bottom:1px solid #000; height:22px;"></div>
+        </td>
+        <td style="border:1px solid #000; padding:4px 5px;">
+          <div style="border-bottom:1px solid #000; height:22px;"></div>
+        </td>
+        <td style="border:1px solid #000; padding:4px 5px;">
+          <div style="border-bottom:1px solid #000; height:22px;"></div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  printContainer.innerHTML = `
+    <div style="font-family: Arial, sans-serif; color: #000; padding: 10px; max-width: 8.5in; margin: 0 auto;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #000; padding-bottom:6px; margin-bottom:8px;">
+        <div>
+          <div style="font-size:15px; font-weight:900; letter-spacing:0.4px;">UR STORE CENTRAL LOTTO AUDIT — MANUAL BACKUP WORKSHEET</div>
+          <div style="font-size:12px; font-weight:700; margin-top:2px;">Location: ${storeLabel}</div>
         </div>
-        <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 6px;">
-          <div style="flex: 1.2;">
-            <div style="display: flex; gap: 8px; font-size: 7px; margin-bottom: 2px;">
-              <div><strong>Outgoing Cashier:</strong> ${repData.cashierOut || '&nbsp;'}</div>
-              <div><strong>Incoming Cashier:</strong> ${repData.cashierIn || '&nbsp;'}</div>
-            </div>
-            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 1px;">
-              <div style="height: 22px; min-width: 120px; display: flex; align-items: center; border-bottom: 1px solid #000;">${sigImgHtml}</div>
-              <span style="font-size: 6px; font-weight: bold; text-transform: uppercase;">Cashier Signature</span>
-            </div>
-            <div style="font-size: 6.5px; color: #1e293b; font-style: italic; line-height: 1.05;">
-              "I hereby certify that the ticket counts, game numbers, and shift totals recorded above are true, complete, and accurate to the best of my knowledge."
-            </div>
-          </div>
+        <div style="text-align:right; font-size:11px; line-height:1.45;">
+          <div><strong>Date:</strong> ${dateStr}</div>
+          <div><strong>Shift:</strong> ${shiftVal}</div>
+          <div><strong>Cashier:</strong> ${cashierName}</div>
+        </div>
+      </div>
+
+      <table style="width:100%; border-collapse:collapse; font-size:11px;">
+        <thead>
+          <tr style="background:#e2e8f0;">
+            <th style="border:1px solid #000; padding:5px; width:46px; text-align:center;">BOX #</th>
+            <th style="border:1px solid #000; padding:5px; text-align:left;">GAME # &amp; NAME</th>
+            <th style="border:1px solid #000; padding:5px; width:48px; text-align:center;">PRICE</th>
+            <th style="border:1px solid #000; padding:5px; width:76px; text-align:center;">START #</th>
+            <th style="border:1px solid #000; padding:5px; width:82px; text-align:center;">END #</th>
+            <th style="border:1px solid #000; padding:5px; width:78px; text-align:center;"># SOLD</th>
+            <th style="border:1px solid #000; padding:5px; width:88px; text-align:center;">SALES $</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml}
+        </tbody>
+        <tfoot>
+          <tr style="background:#f1f5f9; font-weight:900;">
+            <td colspan="5" style="border:1px solid #000; padding:7px; text-align:right;">MANUAL SHIFT TOTALS:</td>
+            <td style="border:1px solid #000; padding:7px;">&nbsp;</td>
+            <td style="border:1px solid #000; padding:7px;">$</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <div style="margin-top:14px; display:flex; justify-content:space-between; font-size:11px;">
+        <div>Cashier Signature: ____________________________________</div>
+        <div>Verifier / Manager: __________________________________</div>
+      </div>
+    </div>
+  `;
+
+  window.print();
+}
+
+// 2. COMPLETED SHIFT REPORT PRINT (80MM THERMAL OR FULL LETTER PAGE WITH SIGNATURE)
+function buildShiftReportPrintHtml(reportData, format = 'letter') {
+  const receiptFontPt = Number(localStorage.getItem(STORAGE_KEYS.RECEIPT_FONT_SIZE) || 11);
+  const storeTitle = `${reportData.locationName} (#${reportData.locationCode})`;
+  const sigImgHtml = reportData.signatureDataUrl
+    ? `<img src="${reportData.signatureDataUrl}" alt="Cashier Signature" style="max-height:52px; max-width:220px; border-bottom:1px solid #000; display:block; margin-top:4px;" />`
+    : `<div style="border-bottom:1px solid #000; height:32px; width:220px; margin-top:6px;"></div>`;
+
+  const activeBoxes = (reportData.boxesSnapshot || []).filter(b => b.gameNum || Number(b.ticketsSold) > 0);
+
+  if (format === '80mm') {
+    const itemLines = activeBoxes.map(b => `
+      <tr>
+        <td style="padding:2px 0; font-weight:700;">${b.label}</td>
+        <td style="padding:2px 2px;">${b.gameNum || '-'}</td>
+        <td style="padding:2px 2px; text-align:center;">${b.startTicket}→${b.endTicket !== '' ? b.endTicket : '-'}</td>
+        <td style="padding:2px 2px; text-align:center;">${b.ticketsSold}</td>
+        <td style="padding:2px 0; text-align:right; font-weight:700;">$${(Number(b.salesAmount) || 0).toFixed(2)}</td>
+      </tr>
+    `).join('');
+
+    return `
+      <div style="width:72mm; margin:0 auto; font-family:'Courier New', monospace; font-size:${receiptFontPt}pt; color:#000; line-height:1.25;">
+        <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:5px; margin-bottom:5px;">
+          <div style="font-weight:900; font-size:${receiptFontPt + 2}pt;">UR STORE CENTRAL</div>
+          <div style="font-weight:700;">LOTTO SHIFT AUDIT</div>
+          <div>${storeTitle}</div>
+        </div>
+        <div style="border-bottom:1px dashed #000; padding-bottom:5px; margin-bottom:5px;">
+          <div><strong>Date:</strong> ${reportData.auditDate}</div>
+          <div><strong>Shift:</strong> ${reportData.shiftType}</div>
+          <div><strong>Cashier:</strong> ${reportData.cashierOut || 'Unspecified'}</div>
+          ${reportData.cashierIn ? `<div><strong>Verified:</strong> ${reportData.cashierIn}</div>` : ''}
+        </div>
+        <table style="width:100%; border-collapse:collapse; font-size:${Math.max(8, receiptFontPt - 1)}pt; border-bottom:1px dashed #000; margin-bottom:6px;">
+          <thead>
+            <tr style="border-bottom:1px solid #000;">
+              <th style="text-align:left;">Box</th>
+              <th style="text-align:left;">Game</th>
+              <th style="text-align:center;">S→E</th>
+              <th style="text-align:center;">Tix</th>
+              <th style="text-align:right;">Sales</th>
+            </tr>
+          </thead>
+          <tbody>${itemLines}</tbody>
+        </table>
+        <div style="border-bottom:1px dashed #000; padding-bottom:5px; margin-bottom:6px;">
+          <div style="display:flex; justify-content:space-between;"><span>Total Tickets:</span><strong>${reportData.totalTickets}</strong></div>
+          <div style="display:flex; justify-content:space-between;"><span>Scratch Sales:</span><strong>$${Number(reportData.scratchSales).toFixed(2)}</strong></div>
+          <div style="display:flex; justify-content:space-between;"><span>Online Sales:</span><span>$${Number(reportData.onlineSales).toFixed(2)}</span></div>
+          <div style="display:flex; justify-content:space-between;"><span>Payouts:</span><span>-$${Number(reportData.totalPayouts).toFixed(2)}</span></div>
+          <div style="display:flex; justify-content:space-between; border-top:1px solid #000; margin-top:3px; padding-top:3px;"><span>Net Expected:</span><strong>$${Number(reportData.netExpected).toFixed(2)}</strong></div>
+          <div style="display:flex; justify-content:space-between;"><span>Actual Cash:</span><strong>$${Number(reportData.actualCash).toFixed(2)}</strong></div>
+          <div style="display:flex; justify-content:space-between;"><span>Over / Short:</span><strong>$${Number(reportData.variance).toFixed(2)}</strong></div>
+        </div>
+        ${reportData.notes ? `<div style="margin-bottom:6px;"><strong>Notes:</strong> ${reportData.notes}</div>` : ''}
+        <div>
+          <div style="font-weight:700;">Cashier Signature:</div>
+          ${sigImgHtml}
+        </div>
+        <div style="text-align:center; margin-top:8px; font-size:8pt;">Printed ${formatDisplayDateTime(new Date())}</div>
+      </div>
+    `;
+  }
+
+  // Full-Page US Letter Format
+  const tableRows = activeBoxes.map(b => `
+    <tr>
+      <td style="border:1px solid #000; padding:4px; text-align:center; font-weight:800;">${b.label}</td>
+      <td style="border:1px solid #000; padding:4px;"><strong>${b.gameNum || '-'}</strong> ${b.gameName ? '— ' + b.gameName : ''}</td>
+      <td style="border:1px solid #000; padding:4px; text-align:center;">$${Number(b.price || 0).toFixed(0)}</td>
+      <td style="border:1px solid #000; padding:4px; text-align:center;">${b.startTicket}</td>
+      <td style="border:1px solid #000; padding:4px; text-align:center;">${b.endTicket !== '' ? b.endTicket : '-'}</td>
+      <td style="border:1px solid #000; padding:4px; text-align:center; font-weight:700;">${b.ticketsSold}</td>
+      <td style="border:1px solid #000; padding:4px; text-align:right; font-weight:800;">$${(Number(b.salesAmount) || 0).toFixed(2)}</td>
+    </tr>
+  `).join('');
+
+  return `
+    <div style="font-family:Arial, sans-serif; color:#000; padding:14px; max-width:8.5in; margin:0 auto;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #000; padding-bottom:6px; margin-bottom:10px;">
+        <div>
+          <div style="font-size:17px; font-weight:900;">UR STORE CENTRAL LOTTO AUDIT — SHIFT REPORT</div>
+          <div style="font-size:13px; font-weight:700;">Location: ${storeTitle}</div>
+        </div>
+        <div style="text-align:right; font-size:11px; line-height:1.45;">
+          <div><strong>Audit Date:</strong> ${reportData.auditDate}</div>
+          <div><strong>Shift:</strong> ${reportData.shiftType}</div>
+          <div><strong>Cashier:</strong> ${reportData.cashierOut || 'Unspecified'}</div>
+          ${reportData.cashierIn ? `<div><strong>Verified By:</strong> ${reportData.cashierIn}</div>` : ''}
+        </div>
+      </div>
+
+      <table style="width:100%; border-collapse:collapse; font-size:11px; margin-bottom:12px;">
+        <thead>
+          <tr style="background:#e2e8f0;">
+            <th style="border:1px solid #000; padding:5px;">BOX #</th>
+            <th style="border:1px solid #000; padding:5px; text-align:left;">GAME # &amp; NAME</th>
+            <th style="border:1px solid #000; padding:5px;">PRICE</th>
+            <th style="border:1px solid #000; padding:5px;">START</th>
+            <th style="border:1px solid #000; padding:5px;">END</th>
+            <th style="border:1px solid #000; padding:5px;">SOLD</th>
+            <th style="border:1px solid #000; padding:5px; text-align:right;">SALES $</th>
+          </tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+        <tfoot>
+          <tr style="background:#f1f5f9; font-weight:900;">
+            <td colspan="5" style="border:1px solid #000; padding:6px; text-align:right;">TOTAL SCRATCH-OFF SALES:</td>
+            <td style="border:1px solid #000; padding:6px; text-align:center;">${reportData.totalTickets}</td>
+            <td style="border:1px solid #000; padding:6px; text-align:right;">$${Number(reportData.scratchSales).toFixed(2)}</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <div style="display:flex; justify-content:space-between; gap:20px; border:1px solid #000; padding:10px; background:#f8fafc; font-size:12px;">
+        <div style="space-y:4px;">
+          <div><strong>Scratch-Off Sales:</strong> $${Number(reportData.scratchSales).toFixed(2)}</div>
+          <div><strong>Online / Draw Sales:</strong> $${Number(reportData.onlineSales).toFixed(2)}</div>
+          <div><strong>Total Payouts / Cashes:</strong> -$${Number(reportData.totalPayouts).toFixed(2)}</div>
+          <div style="border-top:1px solid #000; padding-top:4px; margin-top:4px;"><strong>Net Cash Expected:</strong> $${Number(reportData.netExpected).toFixed(2)}</div>
+          <div><strong>Actual Cash Drop:</strong> $${Number(reportData.actualCash).toFixed(2)}</div>
+          <div><strong>Over / Short Variance:</strong> $${Number(reportData.variance).toFixed(2)}</div>
+          ${reportData.notes ? `<div style="margin-top:6px;"><strong>Notes:</strong> ${reportData.notes}</div>` : ''}
+        </div>
+        <div>
+          <div style="font-weight:800;">Cashier Signature:</div>
+          ${sigImgHtml}
+          <div style="font-size:10px; color:#333; margin-top:4px;">Printed: ${formatDisplayDateTime(new Date())}</div>
         </div>
       </div>
     </div>
   `;
 }
 
-function printWorksheet() {
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const dateInput = document.getElementById('rec-report-date');
-  if (dateInput && dateInput.value !== todayIso) {
-    dateInput.value = todayIso;
-    saveReconciliationDraft();
-  }
-  openWorksheetPrintChoiceModal();
-}
+function executeShiftReportPrint(format = 'letter') {
+  closeWorksheetPrintChoiceModal();
+  if (!activeStoreState) return;
+  saveReconciliationDraft();
 
-function printWorksheetDirect() {
-  let printContainer = document.getElementById('print-container');
-  if (!printContainer) {
-    printContainer = document.createElement('div');
-    printContainer.id = 'print-container';
-    document.body.appendChild(printContainer);
-  }
-  printContainer.innerHTML = buildMatrixPrintHTML({
-    storeName: storeProfile.name,
-    storeNumber: storeProfile.number,
-    date: document.getElementById('rec-report-date')?.value || new Date().toISOString().slice(0, 10),
-    shiftType: document.getElementById('rec-shift-type')?.value || 'Shift 1 (Morning)',
-    cashierOut: document.getElementById('rec-cashier-out')?.value?.trim() || document.getElementById('grid-cashier-input')?.value?.trim() || 'Unspecified',
-    cashierIn: document.getElementById('rec-cashier-in')?.value?.trim() || '-',
-    totals: recalculateReconciliationTotals(),
-    signatureDataUrl: currentSignatureDataUrl,
-    boxesSnapshot: boxes
-  }, false);
+  const rec = activeStoreState.reconciliation;
+  const { totalTickets, totalSales } = getShiftTotals();
+  const netExpected = Number((totalSales + (Number(rec.onlineSales) || 0) - (Number(rec.totalPayouts) || 0)).toFixed(2));
+  const variance = Number(((Number(rec.actualCash) || 0) - netExpected).toFixed(2));
+
+  const payload = {
+    locationName: activeStoreState.locationName,
+    locationCode: activeStoreState.locationCode,
+    auditDate: rec.auditDate || getLocalDateStr(),
+    shiftType: rec.shiftType || 'Shift 1 (Morning)',
+    cashierOut: rec.cashierOut || 'Unspecified',
+    cashierIn: rec.cashierIn || '',
+    totalTickets,
+    scratchSales: totalSales,
+    onlineSales: Number(rec.onlineSales) || 0,
+    totalPayouts: Number(rec.totalPayouts) || 0,
+    netExpected,
+    actualCash: Number(rec.actualCash) || 0,
+    variance,
+    notes: rec.notes || '',
+    signatureDataUrl: rec.signatureDataUrl || '',
+    boxesSnapshot: activeStoreState.boxes
+  };
+
+  const printContainer = document.getElementById('print-container');
+  if (!printContainer) return;
+  printContainer.innerHTML = buildShiftReportPrintHtml(payload, format);
   window.print();
 }
 
-function printFinalReport() { printWorksheet(); }
-
-function printArchivedSingleReport(reportId) {
-  const history = getLocationHistoricalReports(activeLocationId);
-  const found = history.find(r => r.reportId === reportId);
+function reprintArchivedShiftReport(archiveId) {
+  if (!activeStoreState || !Array.isArray(activeStoreState.history)) return;
+  const found = activeStoreState.history.find(h => h.id === archiveId);
   if (!found) return;
-  let printContainer = document.getElementById('print-container');
-  if (!printContainer) {
-    printContainer = document.createElement('div');
-    printContainer.id = 'print-container';
-    document.body.appendChild(printContainer);
-  }
-  printContainer.innerHTML = buildMatrixPrintHTML(found, true);
+
+  const printContainer = document.getElementById('print-container');
+  if (!printContainer) return;
+  printContainer.innerHTML = buildShiftReportPrintHtml(found, 'letter');
   window.print();
 }
 
-function printFilteredReportSummary() { window.print(); }
+function printCombinedPeriodReport() {
+  if (!activeStoreState) return;
+  const records = getFilteredReportRecords();
+  const totals = aggregateReportRecords(records);
+  const dateInput = document.getElementById('report-filter-date');
+  const monthInput = document.getElementById('report-filter-month');
+  const periodTitle = activeReportMode === 'monthly'
+    ? `MONTHLY COMBINED REPORT — ${monthInput?.value || getLocalMonthStr()}`
+    : `DAILY COMBINED REPORT — ${dateInput?.value || getLocalDateStr()}`;
 
-/* ==========================================================================
-   PROJECT LOTTO — CORE JAVASCRIPT LOGIC ENGINE (PART 10 OF 10)
-   Screen Wake-Lock, Secure Edit Locking & Initialization Boot Listener
-   ========================================================================== */
+  const rowsHtml = records.map(r => `
+    <tr>
+      <td style="border:1px solid #000; padding:5px;">${getNormalizedRecordDate(r)}</td>
+      <td style="border:1px solid #000; padding:5px; font-weight:700;">${r.shiftType}</td>
+      <td style="border:1px solid #000; padding:5px;">${r.cashierOut || 'Unspecified'}</td>
+      <td style="border:1px solid #000; padding:5px; text-align:center;">${r.totalTickets}</td>
+      <td style="border:1px solid #000; padding:5px; text-align:right;">$${Number(r.scratchSales).toFixed(2)}</td>
+      <td style="border:1px solid #000; padding:5px; text-align:right;">$${Number(r.onlineSales).toFixed(2)}</td>
+      <td style="border:1px solid #000; padding:5px; text-align:right;">-$${Number(r.totalPayouts).toFixed(2)}</td>
+      <td style="border:1px solid #000; padding:5px; text-align:right;">$${Number(r.actualCash).toFixed(2)}</td>
+      <td style="border:1px solid #000; padding:5px; text-align:right; font-weight:700;">$${Number(r.variance).toFixed(2)}</td>
+    </tr>
+  `).join('');
 
-let screenWakeLockSentinel = null;
-let screenWakeLockTimeoutId = null;
-let screenWakeLockMinutes = 10;
+  const printContainer = document.getElementById('print-container');
+  if (!printContainer) return;
 
-function initScreenKeepAwakeSystem() {
-  try {
-    const savedMins = localStorage.getItem(STORAGE_KEY_WAKELOCK_MINS);
-    if (savedMins !== null) screenWakeLockMinutes = Number(savedMins);
-  } catch (e) {}
+  printContainer.innerHTML = `
+    <div style="font-family:Arial, sans-serif; color:#000; padding:14px; max-width:8.5in; margin:0 auto;">
+      <div style="border-bottom:2px solid #000; padding-bottom:6px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:flex-end;">
+        <div>
+          <div style="font-size:16px; font-weight:900;">UR STORE CENTRAL LOTTO AUDIT</div>
+          <div style="font-size:13px; font-weight:800;">${periodTitle}</div>
+          <div style="font-size:12px;">Location: ${activeStoreState.locationName} (#${activeStoreState.locationCode})</div>
+        </div>
+        <div style="font-size:11px; text-align:right;">Printed: ${formatDisplayDateTime(new Date())}</div>
+      </div>
 
-  injectHeaderWakeLockControl();
-  syncWakeLockSelectUI();
+      <table style="width:100%; border-collapse:collapse; font-size:11px;">
+        <thead>
+          <tr style="background:#e2e8f0;">
+            <th style="border:1px solid #000; padding:5px; text-align:left;">DATE</th>
+            <th style="border:1px solid #000; padding:5px; text-align:left;">SHIFT</th>
+            <th style="border:1px solid #000; padding:5px; text-align:left;">CASHIER</th>
+            <th style="border:1px solid #000; padding:5px; text-align:center;">TIX</th>
+            <th style="border:1px solid #000; padding:5px; text-align:right;">SCRATCH</th>
+            <th style="border:1px solid #000; padding:5px; text-align:right;">ONLINE</th>
+            <th style="border:1px solid #000; padding:5px; text-align:right;">PAYOUTS</th>
+            <th style="border:1px solid #000; padding:5px; text-align:right;">ACTUAL CASH</th>
+            <th style="border:1px solid #000; padding:5px; text-align:right;">OVER/SHORT</th>
+          </tr>
+        </thead>
+        <tbody>${rowsHtml}</tbody>
+        <tfoot>
+          <tr style="background:#f1f5f9; font-weight:900;">
+            <td colspan="3" style="border:1px solid #000; padding:6px; text-align:right;">COMBINED TOTALS (${totals.shiftCount} SHIFTS):</td>
+            <td style="border:1px solid #000; padding:6px; text-align:center;">${totals.totalTickets}</td>
+            <td style="border:1px solid #000; padding:6px; text-align:right;">$${totals.scratchSales.toFixed(2)}</td>
+            <td style="border:1px solid #000; padding:6px; text-align:right;">$${totals.onlineSales.toFixed(2)}</td>
+            <td style="border:1px solid #000; padding:6px; text-align:right;">-$${totals.totalPayouts.toFixed(2)}</td>
+            <td style="border:1px solid #000; padding:6px; text-align:right;">$${totals.actualCash.toFixed(2)}</td>
+            <td style="border:1px solid #000; padding:6px; text-align:right;">$${totals.variance.toFixed(2)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  `;
 
-  const activityEvents = ['pointerdown', 'keydown', 'touchstart'];
-  let lastActivityReset = 0;
+  window.print();
+}
 
-  activityEvents.forEach(evt => {
-    window.addEventListener(evt, () => {
-      const now = Date.now();
-      if (now - lastActivityReset > 5000 && screenWakeLockMinutes > 0) {
-        lastActivityReset = now;
-        requestScreenWakeLock();
+/* ========================= END OF PART 8 OF 10 ========================= */
+/* ============================================================================
+   PART 9 OF 10: SETUP / GAMES ADMIN VIEW, BOX LABEL AUTO-CASCADE & CATALOG CRUD
+   ============================================================================ */
+
+function applyUiFontSize(sizeStr, persist = true) {
+  const validSizes = ['12px', '14px', '16px', '18px', '20px', '22px'];
+  const chosen = validSizes.includes(sizeStr) ? sizeStr : '14px';
+  document.documentElement.style.fontSize = chosen;
+  if (persist) {
+    localStorage.setItem(STORAGE_KEYS.UI_FONT_SIZE, chosen);
+  }
+  const selectEl = document.getElementById('admin-ui-font-size');
+  if (selectEl) selectEl.value = chosen;
+}
+
+function renderAdminView() {
+  if (!activeStoreState) return;
+
+  const boxCountInput = document.getElementById('admin-total-boxes-input');
+  if (boxCountInput) boxCountInput.value = activeStoreState.boxCount || 40;
+
+  const uiFontSelect = document.getElementById('admin-ui-font-size');
+  if (uiFontSelect) {
+    uiFontSelect.value = localStorage.getItem(STORAGE_KEYS.UI_FONT_SIZE) || '14px';
+  }
+
+  const receiptFontSelect = document.getElementById('admin-receipt-font-size');
+  if (receiptFontSelect) {
+    receiptFontSelect.value = localStorage.getItem(STORAGE_KEYS.RECEIPT_FONT_SIZE) || '11';
+  }
+
+  renderAdminBoxLabelsGrid();
+  renderAdminSavedCashiersTags();
+  renderAdminMasterGamesTable();
+}
+
+function renderAdminBoxLabelsGrid() {
+  const grid = document.getElementById('admin-box-labels-grid');
+  if (!grid || !activeStoreState) return;
+
+  const count = Number(activeStoreState.boxCount) || 40;
+  if (!Array.isArray(activeStoreState.boxLabels) || activeStoreState.boxLabels.length !== count) {
+    activeStoreState.boxLabels = generateDefaultCustomBoxLabels(count);
+  }
+
+  grid.innerHTML = activeStoreState.boxLabels.map((lbl, idx) => `
+    <div class="bg-white border border-slate-300 rounded-lg p-1.5 text-center shadow-sm">
+      <div class="text-[9px] font-bold text-slate-400 uppercase mb-0.5">Slot ${idx + 1}</div>
+      <input
+        type="text"
+        id="admin-box-label-${idx}"
+        value="${String(lbl).replace(/"/g, '&quot;')}"
+        oninput="handleAdminBoxLabelInput(${idx}, this.value)"
+        class="w-full border border-slate-300 rounded px-1 py-1 text-center text-xs font-black text-slate-900 uppercase focus:border-blue-500 focus:outline-none"
+      />
+    </div>
+  `).join('');
+}
+
+// Auto-cascade left-to-right when a single letter (e.g. C -> D, E, F) or number (e.g. 1 -> 2, 3, 4) is typed
+function handleAdminBoxLabelInput(startIdx, rawVal) {
+  if (!activeStoreState) return;
+  const val = String(rawVal || '').trim();
+  activeStoreState.boxLabels[startIdx] = val;
+
+  if (/^\d+$/.test(val)) {
+    // Pure integer: increment all following boxes sequentially (+1, +2, ...)
+    const baseNum = parseInt(val, 10);
+    for (let i = startIdx + 1; i < activeStoreState.boxLabels.length; i++) {
+      const nextVal = String(baseNum + (i - startIdx));
+      activeStoreState.boxLabels[i] = nextVal;
+      const inp = document.getElementById(`admin-box-label-${i}`);
+      if (inp) inp.value = nextVal;
+    }
+  } else if (/^[A-Za-z]$/.test(val)) {
+    // Single letter: increment alphabetically (C -> D -> E -> F ... up to Z)
+    const isUpper = val === val.toUpperCase();
+    const baseCode = val.toUpperCase().charCodeAt(0);
+    for (let i = startIdx + 1; i < activeStoreState.boxLabels.length; i++) {
+      const nextCode = baseCode + (i - startIdx);
+      if (nextCode <= 90) {
+        const ch = String.fromCharCode(nextCode);
+        const formatted = isUpper ? ch : ch.toLowerCase();
+        activeStoreState.boxLabels[i] = formatted;
+        const inp = document.getElementById(`admin-box-label-${i}`);
+        if (inp) inp.value = formatted;
       }
-    }, { passive: true });
+    }
+  }
+}
+
+function applyDefaultCustomBoxPattern() {
+  if (!activeStoreState) return;
+  const count = Number(activeStoreState.boxCount) || 40;
+  activeStoreState.boxLabels = generateDefaultCustomBoxLabels(count);
+  renderAdminBoxLabelsGrid();
+  saveAdminSettingsAndRefresh();
+}
+
+function handleAdminBoxCountChange(newCountRaw) {
+  if (!activeStoreState) return;
+  const newCount = Math.min(100, Math.max(1, parseInt(newCountRaw, 10) || 40));
+  const currentLabels = Array.isArray(activeStoreState.boxLabels) ? [...activeStoreState.boxLabels] : [];
+  const defaultPattern = generateDefaultCustomBoxLabels(newCount);
+
+  const updatedLabels = [];
+  for (let i = 0; i < newCount; i++) {
+    updatedLabels.push(currentLabels[i] !== undefined ? currentLabels[i] : defaultPattern[i]);
+  }
+
+  const updatedBoxes = [];
+  for (let i = 0; i < newCount; i++) {
+    const existing = activeStoreState.boxes[i];
+    if (existing) {
+      existing.id = i + 1;
+      existing.label = updatedLabels[i];
+      updatedBoxes.push(existing);
+    } else {
+      updatedBoxes.push({
+        id: i + 1,
+        label: updatedLabels[i],
+        gameNum: '',
+        gameName: '',
+        price: 0,
+        packCount: 0,
+        startTicket: 0,
+        endTicket: '',
+        rollovers: [],
+        ticketsSold: 0,
+        salesAmount: 0
+      });
+    }
+  }
+
+  activeStoreState.boxCount = newCount;
+  activeStoreState.boxLabels = updatedLabels;
+  activeStoreState.boxes = updatedBoxes;
+
+  saveActiveStoreState();
+  renderAdminBoxLabelsGrid();
+  renderDispenserGrid();
+}
+
+function saveAdminSettingsAndRefresh() {
+  if (!activeStoreState) return;
+
+  const receiptFontSelect = document.getElementById('admin-receipt-font-size');
+  if (receiptFontSelect) {
+    localStorage.setItem(STORAGE_KEYS.RECEIPT_FONT_SIZE, receiptFontSelect.value);
+  }
+
+  const uiFontSelect = document.getElementById('admin-ui-font-size');
+  if (uiFontSelect) {
+    applyUiFontSize(uiFontSelect.value, true);
+  }
+
+  activeStoreState.boxes.forEach((box, idx) => {
+    const lbl = activeStoreState.boxLabels[idx];
+    box.label = lbl && String(lbl).trim() !== '' ? String(lbl).trim() : String(idx + 1);
   });
 
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') {
-      releaseScreenWakeLock(false);
-    } else if (document.visibilityState === 'visible' && screenWakeLockMinutes > 0) {
-      requestScreenWakeLock();
-    }
+  saveActiveStoreState();
+  renderDispenserGrid();
+  updateHeaderAndBottomSummary();
+  alert(`✔ Configuration saved for ${activeStoreState.locationName}!`);
+}
+
+function renderAdminSavedCashiersTags() {
+  const wrap = document.getElementById('admin-saved-cashiers-tags');
+  if (!wrap) return;
+
+  wrap.innerHTML = savedCashiersList.map((name, idx) => `
+    <span class="inline-flex items-center gap-1 bg-white border border-slate-300 rounded-full px-2.5 py-0.5 text-xs font-bold text-slate-800">
+      <span>${name}</span>
+      <button type="button" onclick="removeSavedCashierFromAdmin(${idx})" class="text-red-500 hover:text-red-700 font-black">×</button>
+    </span>
+  `).join('');
+}
+
+function addSavedCashierFromAdmin() {
+  const input = document.getElementById('admin-new-cashier-input');
+  const name = (input?.value || '').trim();
+  if (!name) return;
+
+  if (!savedCashiersList.some(c => c.toLowerCase() === name.toLowerCase())) {
+    savedCashiersList.push(name);
+    localStorage.setItem(STORAGE_KEYS.SAVED_CASHIERS, JSON.stringify(savedCashiersList));
+    populatePromptCashiersDatalist();
+  }
+  input.value = '';
+  renderAdminSavedCashiersTags();
+}
+
+function removeSavedCashierFromAdmin(idx) {
+  savedCashiersList.splice(idx, 1);
+  localStorage.setItem(STORAGE_KEYS.SAVED_CASHIERS, JSON.stringify(savedCashiersList));
+  populatePromptCashiersDatalist();
+  renderAdminSavedCashiersTags();
+}
+
+function renderAdminMasterGamesTable() {
+  const tbody = document.getElementById('admin-master-games-tbody');
+  if (!tbody) return;
+
+  const query = (document.getElementById('admin-game-search')?.value || '').trim().toLowerCase();
+  const filtered = masterGamesCatalog.filter(g => {
+    if (!query) return true;
+    return String(g.gameNum).toLowerCase().includes(query) || String(g.name).toLowerCase().includes(query);
   });
 
-  window.addEventListener('pagehide', () => releaseScreenWakeLock(false));
-  window.addEventListener('beforeunload', () => releaseScreenWakeLock(false));
-
-  if (screenWakeLockMinutes > 0) requestScreenWakeLock();
-}
-
-function injectHeaderWakeLockControl() {
-  const headerBar = document.querySelector('header .max-w-7xl');
-  if (!headerBar || document.getElementById('header-wakelock-select')) return;
-  const firstGroup = headerBar.children[0];
-  if (!firstGroup) return;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'flex items-center bg-slate-800 border border-slate-600 rounded-lg px-2 py-1 gap-1.5';
-  wrap.innerHTML = `
-    <span id="header-wakelock-dot" class="w-2 h-2 rounded-full bg-amber-400" title="Screen Wake Lock Status"></span>
-    <span class="text-[11px] font-bold text-slate-300 uppercase">Screen:</span>
-    <select id="header-wakelock-select" onchange="setScreenKeepAwakeMinutes(this.value)" class="bg-slate-900 text-emerald-300 font-bold text-xs rounded px-1.5 py-1 border border-slate-700">
-      <option value="0">Normal</option>
-      <option value="5">5 Min</option>
-      <option value="10">10 Min</option>
-      <option value="15">15 Min</option>
-      <option value="30">30 Min</option>
-    </select>
-  `;
-  firstGroup.appendChild(wrap);
-}
-
-function injectHeaderUiFontSizeControl() {
-  const headerBar = document.querySelector('header .max-w-7xl');
-  if (!headerBar || document.getElementById('header-uifont-select')) return;
-  const firstGroup = headerBar.children[0];
-  if (!firstGroup) return;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'flex items-center bg-slate-800 border border-slate-600 rounded-lg px-2 py-1 gap-1.5';
-  wrap.innerHTML = `
-    <span class="text-[11px] font-bold text-slate-300 uppercase">UI Font:</span>
-    <select id="header-uifont-select" onchange="setAppUiFontSize(this.value)" class="bg-slate-900 text-emerald-300 font-bold text-xs rounded px-1.5 py-1 border border-slate-700">
-      <option value="12">Normal (12px)</option>
-      <option value="14">Medium (14px)</option>
-      <option value="16">Large (16px)</option>
-      <option value="18">Extra Large (18px)</option>
-    </select>
-  `;
-  firstGroup.appendChild(wrap);
-
-  // Restore saved preference if any
-  try {
-    const saved = localStorage.getItem('lotto_ui_font_size');
-    if (saved) {
-      document.getElementById('header-uifont-select').value = saved;
-      setAppUiFontSize(saved, false);
-    }
-  } catch (e) {}
-}
-
-function setAppUiFontSize(sizePx, save = true) {
-  document.documentElement.style.fontSize = `${sizePx}px`;
-  if (save) {
-    try {
-      localStorage.setItem('lotto_ui_font_size', sizePx);
-    } catch (e) {}
-  }
-}
-
-function injectHeaderPrintFontSizeControl() {
-  const headerBar = document.querySelector('header .max-w-7xl');
-  if (!headerBar || document.getElementById('header-printsize-select')) return;
-  const firstGroup = headerBar.children[0];
-  if (!firstGroup) return;
-
-  const wrap = document.createElement('div');
-  wrap.className = 'flex items-center bg-slate-800 border border-slate-600 rounded-lg px-2 py-1 gap-1.5';
-  wrap.innerHTML = `
-    <span class="text-[11px] font-bold text-slate-300 uppercase">Font Size:</span>
-    <select id="header-printsize-select" onchange="savePrintFontSizeSetting(this.value)" class="bg-slate-900 text-emerald-300 font-bold text-xs rounded px-1.5 py-1 border border-slate-700">
-      <option value="9">9 pt</option>
-      <option value="10">10 pt</option>
-      <option value="11">11 pt</option>
-      <option value="12">12 pt</option>
-      <option value="13">13 pt</option>
-      <option value="14">14 pt</option>
-    </select>
-  `;
-  firstGroup.appendChild(wrap);
-  
-  const sel = document.getElementById('header-printsize-select');
-  if (sel) sel.value = String(globalPrintFontSizePt);
-}
-
-function updateHeaderTotalsUI() {
-  let totalTickets = 0;
-  let totalSales = 0;
-  if (Array.isArray(boxes)) {
-    boxes.forEach(box => {
-      const metrics = calculateBoxMetrics(box);
-      totalTickets += metrics.ticketsSold;
-      totalSales += metrics.dollarSales;
-    });
-  }
-  
-  // Top Navbar Counters
-  const headerTicketsEl = document.getElementById('header-total-tickets');
-  const headerSalesEl = document.getElementById('header-total-sales');
-  if (headerTicketsEl) headerTicketsEl.textContent = `${totalTickets} Tix`;
-  if (headerSalesEl) headerSalesEl.textContent = `$${totalSales.toFixed(2)}`;
-
-  // Bottom Live Summary Footer Bar (Below the boxes)
-  let footerBar = document.getElementById('main-grid-summary-footer');
-  if (!footerBar) {
-    const gridView = document.getElementById('view-grid');
-    if (gridView) {
-      footerBar = document.createElement('div');
-      footerBar.id = 'main-grid-summary-footer';
-      gridView.appendChild(footerBar);
-    }
-  }
-
-  if (footerBar) {
-    const currentCashier = document.getElementById('grid-cashier-input')?.value || document.getElementById('rec-cashier-out')?.value || 'Unspecified';
-    const currentShift = document.getElementById('grid-shift-select')?.value || document.getElementById('rec-shift-type')?.value || 'Shift 1';
-    const currentDate = document.getElementById('rec-report-date')?.value || new Date().toLocaleDateString();
-    const currentTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    footerBar.className = 'bg-slate-900 text-white rounded-xl shadow-md p-4 mt-6 flex flex-wrap items-center justify-between gap-4 border border-slate-800 text-xs';
-    footerBar.innerHTML = `
-      <div class="space-y-0.5">
-        <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Shift Summary & Metadata</div>
-        <div class="font-bold text-slate-200">
-          👤 Cashier: <span class="text-white">${currentCashier}</span> &nbsp;|&nbsp; 
-          🕒 Shift: <span class="text-white">${currentShift}</span> &nbsp;|&nbsp; 
-          📅 Date: <span class="text-white">${currentDate} (${currentTime})</span>
-        </div>
-      </div>
-      <div class="flex items-center gap-4 bg-slate-800/80 px-4 py-2 rounded-lg border border-slate-700">
-        <div>
-          <div class="text-[10px] text-slate-400 uppercase font-bold">Total Sold</div>
-          <div class="font-mono font-black text-sm text-emerald-400">${totalTickets} Tix</div>
-        </div>
-        <div class="h-6 w-px bg-slate-700"></div>
-        <div>
-          <div class="text-[10px] text-slate-400 uppercase font-bold">Total Sales</div>
-          <div class="font-mono font-black text-base text-emerald-400">$${totalSales.toFixed(2)}</div>
-        </div>
-      </div>
+  tbody.innerHTML = filtered.map(g => {
+    const packValue = (Number(g.price) || 0) * (Number(g.count) || 0);
+    return `
+      <tr class="hover:bg-slate-50">
+        <td class="p-2 font-mono font-extrabold text-slate-900">${g.gameNum}</td>
+        <td class="p-2 font-bold text-slate-800">${g.name}</td>
+        <td class="p-2 text-center font-bold">$${Number(g.price).toFixed(0)}</td>
+        <td class="p-2 text-center font-mono">${g.count}</td>
+        <td class="p-2 text-center font-mono font-bold text-emerald-700">$${packValue.toFixed(0)}</td>
+        <td class="p-2 text-right space-x-2">
+          <button
+            type="button"
+            onclick="editMasterGameInAdmin('${g.gameNum}')"
+            class="text-blue-600 hover:text-blue-800 font-bold"
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            onclick="deleteMasterGameFromAdmin('${g.gameNum}')"
+            class="text-red-600 hover:text-red-800 font-bold"
+          >
+            Delete
+          </button>
+        </td>
+      </tr>
     `;
+  }).join('');
+}
+
+function upsertMasterGameFromAdmin() {
+  const num = (document.getElementById('admin-game-num')?.value || '').trim();
+  const name = (document.getElementById('admin-game-name')?.value || '').trim().toUpperCase();
+  const price = parseFloat(document.getElementById('admin-game-price')?.value);
+  const count = parseInt(document.getElementById('admin-game-count')?.value, 10);
+
+  if (!num || !name || isNaN(price) || isNaN(count)) {
+    alert('Please fill in Game #, Game Name, Price ($), and Pack Size (Tix).');
+    return;
   }
-}
 
-function savePrintFontSizeSetting(val) {
-  globalPrintFontSizePt = Math.min(36, Math.max(8, Number(val) || 11));
-  try { localStorage.setItem(STORAGE_KEY_PRINT_FONT_SIZE, String(globalPrintFontSizePt)); } catch (e) {}
-}
-
-function loadPrintFontSizeSetting() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY_PRINT_FONT_SIZE);
-    if (saved) globalPrintFontSizePt = Math.min(36, Math.max(8, Number(saved) || 11));
-  } catch (e) {}
-  const sel = document.getElementById('header-printsize-select');
-  if (sel) sel.value = String(globalPrintFontSizePt);
-}
-function setScreenKeepAwakeMinutes(minsVal) {
-  screenWakeLockMinutes = Math.max(0, Number(minsVal) || 0);
-  try { localStorage.setItem(STORAGE_KEY_WAKELOCK_MINS, String(screenWakeLockMinutes)); } catch (e) {}
-  syncWakeLockSelectUI();
-  if (screenWakeLockMinutes > 0) requestScreenWakeLock();
-  else releaseScreenWakeLock(true);
-}
-
-function syncWakeLockSelectUI() {
-  const headerSel = document.getElementById('header-wakelock-select');
-  if (headerSel) headerSel.value = String(screenWakeLockMinutes);
-}
-
-async function requestScreenWakeLock() {
-  if (screenWakeLockTimeoutId) { clearTimeout(screenWakeLockTimeoutId); screenWakeLockTimeoutId = null; }
-  if (screenWakeLockMinutes <= 0) { releaseScreenWakeLock(true); return; }
-
-  screenWakeLockTimeoutId = setTimeout(() => { releaseScreenWakeLock(false); }, screenWakeLockMinutes * 60 * 1000);
-  if (!('wakeLock' in navigator)) return;
-
-  try {
-    if (!screenWakeLockSentinel || screenWakeLockSentinel.released) {
-      screenWakeLockSentinel = await navigator.wakeLock.request('screen');
-      screenWakeLockSentinel.addEventListener('release', () => { updateWakeLockIndicatorUI(false); });
-    }
-    updateWakeLockIndicatorUI(true);
-  } catch (err) {}
-}
-
-async function releaseScreenWakeLock(clearTimer = true) {
-  if (clearTimer && screenWakeLockTimeoutId) { clearTimeout(screenWakeLockTimeoutId); screenWakeLockTimeoutId = null; }
-  if (screenWakeLockSentinel) {
-    try { await screenWakeLockSentinel.release(); } catch (e) {}
-    screenWakeLockSentinel = null;
+  const idx = masterGamesCatalog.findIndex(g => String(g.gameNum) === num);
+  const entry = { gameNum: num, name, price, count };
+  if (idx >= 0) {
+    masterGamesCatalog[idx] = entry;
+  } else {
+    masterGamesCatalog.push(entry);
   }
-  updateWakeLockIndicatorUI(false);
+
+  saveMasterGamesCatalog();
+  recalculateAllBoxes();
+  saveActiveStoreState();
+
+  document.getElementById('admin-game-num').value = '';
+  document.getElementById('admin-game-name').value = '';
+  document.getElementById('admin-game-price').value = '';
+  document.getElementById('admin-game-count').value = '';
+
+  renderAdminMasterGamesTable();
+  renderDispenserGrid();
+  updateHeaderAndBottomSummary();
 }
 
-function updateWakeLockIndicatorUI(isActive) {
-  const dot = document.getElementById('header-wakelock-dot');
-  if (dot) {
-    dot.className = isActive ? 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse' : 'w-2 h-2 rounded-full bg-slate-500';
-  }
+function editMasterGameInAdmin(gameNum) {
+  const game = findGameByNumber(gameNum);
+  if (!game) return;
+  document.getElementById('admin-game-num').value = game.gameNum;
+  document.getElementById('admin-game-name').value = game.name;
+  document.getElementById('admin-game-price').value = game.price;
+  document.getElementById('admin-game-count').value = game.count;
+  document.getElementById('admin-game-num').focus();
 }
 
-function savePrintFontSizeSetting(val) {
-  globalPrintFontSizePt = Math.min(36, Math.max(8, Number(val) || 13));
-  try { localStorage.setItem(STORAGE_KEY_PRINT_FONT_SIZE, String(globalPrintFontSizePt)); } catch (e) {}
+function deleteMasterGameFromAdmin(gameNum) {
+  if (!confirm(`Remove Game #${gameNum} from Master Catalog?`)) return;
+  masterGamesCatalog = masterGamesCatalog.filter(g => String(g.gameNum) !== String(gameNum));
+  saveMasterGamesCatalog();
+  renderAdminMasterGamesTable();
 }
 
-function loadPrintFontSizeSetting() {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY_PRINT_FONT_SIZE);
-    if (saved) globalPrintFontSizePt = Math.min(36, Math.max(8, Number(saved) || 13));
-  } catch (e) {}
-  const inp = document.getElementById('admin-print-fontsize-input');
-  if (inp) inp.value = String(globalPrintFontSizePt);
-}
-
-function autoFillNewGameRollCount() {
-  const priceInp = document.getElementById('new-game-price');
-  const countInp = document.getElementById('new-game-count');
-  if (priceInp && countInp && priceInp.value) {
-    countInp.value = getDefaultRollCountForPrice(Number(priceInp.value));
-  }
-}
-
-function autoFillQuickGameRollCount() {
-  const priceInp = document.getElementById('quick-game-price');
-  const countInp = document.getElementById('quick-game-count');
-  if (priceInp && countInp && priceInp.value) {
-    countInp.value = getDefaultRollCountForPrice(Number(priceInp.value));
-  }
-}
+/* ========================= END OF PART 9 OF 10 ========================= */
+/* ============================================================================
+   PART 10 OF 10: EXPORT/IMPORT, BACKUP/RESTORE, MULTI-STORE & BOOTLOADER
+   ============================================================================ */
 
 function exportMasterGamesUniversal() {
-  const payload = { exportedAt: new Date().toISOString(), gamesCount: masterGames.length, masterGames: sanitizeMasterGamesList(masterGames) };
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    app: 'UR Store Central Lotto Audit',
+    gamesCount: masterGamesCatalog.length,
+    games: masterGamesCatalog
+  };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `ProjectLotto_MasterGames_${new Date().toISOString().slice(0, 10)}.json`;
-  document.body.appendChild(a);
+  a.download = `UR_Lotto_Master_Games_${getLocalDateStr()}.json`;
   a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  URL.revokeObjectURL(url);
 }
 
 function importMasterGamesUniversal(event) {
-  const file = event?.target?.files?.[0];
+  const file = event.target?.files?.[0];
   if (!file) return;
+
   const reader = new FileReader();
-  reader.onload = function(e) {
+  reader.onload = (e) => {
     try {
       const parsed = JSON.parse(e.target.result);
-      const incoming = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.masterGames) ? parsed.masterGames : []);
-      if (incoming.length === 0) { alert('No valid games found.'); return; }
-      masterGames = sanitizeMasterGamesList([...masterGames, ...incoming]);
-      saveGamesState();
-      loadActiveStoreData();
-      renderAdminGamesTable();
+      const list = Array.isArray(parsed) ? parsed : parsed.games;
+      if (!Array.isArray(list) || list.length === 0) {
+        alert('Invalid Master Games JSON file.');
+        return;
+      }
+      masterGamesCatalog = sanitizeMasterGamesList(list);
+      saveMasterGamesCatalog();
+      recalculateAllBoxes();
+      saveActiveStoreState();
+      renderAdminMasterGamesTable();
       renderDispenserGrid();
-      recalculateReconciliationTotals();
-      alert(`Merged ${incoming.length} games into Master Catalog!`);
-    } catch (err) { alert('Invalid JSON file.'); }
+      updateHeaderAndBottomSummary();
+      alert(`✔ Imported ${masterGamesCatalog.length} lottery games into Master Catalog!`);
+    } catch (err) {
+      alert('Error reading JSON file: ' + err.message);
+    } finally {
+      event.target.value = '';
+    }
   };
   reader.readAsText(file);
 }
 
-// --------------------------------------------------------------------------
-// SECURE EDIT LOCK: GAME # & START #
-// --------------------------------------------------------------------------
-window.isBoxEditUnlocked = false;
-window.boxEditUnlockTimer = null;
-window.boxEditCurrentCashier = '';
+function exportCurrentLocationBackup() {
+  if (!activeStoreState) return;
+  saveActiveStoreState();
+  const payload = {
+    backupAt: new Date().toISOString(),
+    app: 'UR Store Central Lotto Audit',
+    locationState: activeStoreState
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const safeName = activeStoreState.locationName.replace(/[^a-zA-Z0-9_-]/g, '_');
+  a.download = `UR_Lotto_Backup_${safeName}_${getLocalDateStr()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
-window.requestBoxEditUnlock = function(targetInputElem) {
-  if (window.isBoxEditUnlocked) {
-    if (targetInputElem) { targetInputElem.removeAttribute('readonly'); targetInputElem.focus(); targetInputElem.select(); }
-    if (typeof resetBoxEditTimeout === 'function') resetBoxEditTimeout();
+function importLocationBackupFile(event) {
+  const file = event.target?.files?.[0];
+  if (!file || !activeStoreState) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      const incoming = parsed.locationState || parsed;
+      if (!incoming || !Array.isArray(incoming.boxes)) {
+        alert('Invalid location backup file.');
+        return;
+      }
+
+      if (!confirm(`Restore backup into ${activeStoreState.locationName}? This will overwrite current boxes and history for this store.`)) {
+        return;
+      }
+
+      incoming.locationId = activeStoreState.locationId;
+      incoming.locationName = activeStoreState.locationName;
+      incoming.locationCode = activeStoreState.locationCode;
+
+      activeStoreState = incoming;
+      saveActiveStoreState();
+      syncReconciliationFormFromState();
+      recalculateAllBoxes();
+      renderDispenserGrid();
+      updateHeaderAndBottomSummary();
+      alert(`✔ Backup restored for ${activeStoreState.locationName}!`);
+    } catch (err) {
+      alert('Failed to restore backup: ' + err.message);
+    } finally {
+      event.target.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
+
+// Multi-Store Location Manager Modal
+function openMultiStoreManagerModal() {
+  const modal = document.getElementById('modal-locations');
+  if (!modal) return;
+  renderLocationsManagerList();
+  modal.classList.remove('hidden');
+}
+
+function closeMultiStoreManagerModal() {
+  const modal = document.getElementById('modal-locations');
+  if (modal) modal.classList.add('hidden');
+}
+
+function renderLocationsManagerList() {
+  const list = document.getElementById('locations-manager-list');
+  if (!list) return;
+
+  list.innerHTML = appLocations.map(loc => `
+    <div class="p-2.5 flex items-center justify-between text-xs bg-white">
+      <div>
+        <strong class="text-slate-900">${loc.name}</strong>
+        <span class="ml-1.5 font-mono text-slate-500">(#${loc.code})</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          onclick="handleLocationSwitch('${loc.id}'); closeMultiStoreManagerModal();"
+          class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-2.5 py-1 rounded"
+        >
+          Open
+        </button>
+        ${appLocations.length > 1 ? `
+          <button
+            type="button"
+            onclick="deleteStoreLocation('${loc.id}')"
+            class="text-red-600 hover:text-red-800 font-bold px-1.5"
+          >
+            Delete
+          </button>
+        ` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+function addNewStoreLocation() {
+  const name = (document.getElementById('new-store-name')?.value || '').trim();
+  const code = (document.getElementById('new-store-code')?.value || '').trim() || String(100 + appLocations.length + 1);
+  if (!name) {
+    alert('Please enter a Store Name.');
     return;
   }
 
-  const targetId = targetInputElem ? targetInputElem.id : null;
-  const cashierName = prompt('🔒 Game # and Start # are Locked\n\nPlease enter your Name to unlock Game # and Start # for 5 minutes:');
-  if (!cashierName || !cashierName.trim()) { if (targetInputElem) targetInputElem.blur(); return; }
+  const newId = `store_${Date.now()}`;
+  appLocations.push({ id: newId, name, code });
+  saveLocationsCatalog();
 
-  window.boxEditCurrentCashier = cashierName.trim();
-  window.isBoxEditUnlocked = true;
+  document.getElementById('new-store-name').value = '';
+  document.getElementById('new-store-code').value = '';
 
-  const gridCashier = document.getElementById('grid-cashier-input');
-  if (gridCashier && !gridCashier.value.trim()) {
-    gridCashier.value = window.boxEditCurrentCashier;
-    if (typeof syncMainGridCashier === 'function') syncMainGridCashier(window.boxEditCurrentCashier);
+  renderLocationSwitcher();
+  renderLocationsManagerList();
+}
+
+function deleteStoreLocation(locId) {
+  if (appLocations.length <= 1) return;
+  if (!confirm('Delete this store location?')) return;
+
+  appLocations = appLocations.filter(l => l.id !== locId);
+  saveLocationsCatalog();
+  localStorage.removeItem(STORAGE_KEYS.LOCATION_PREFIX + locId);
+
+  if (activeLocationId === locId) {
+    handleLocationSwitch(appLocations[0].id);
   }
+  renderLocationSwitcher();
+  renderLocationsManagerList();
+}
 
-  if (typeof renderDispenserGrid === 'function') renderDispenserGrid();
-  if (typeof renderMainGridCashierShiftBar === 'function') renderMainGridCashierShiftBar();
-  if (typeof startBoxEditTimeout === 'function') startBoxEditTimeout();
+// Main View Navigation Switcher
+function switchMainView(viewName) {
+  activeMainView = viewName;
 
-  alert('✔ Unlocked for ' + window.boxEditCurrentCashier + '. You have 5 minutes or click "Lock Now".');
+  const views = {
+    grid: document.getElementById('view-grid'),
+    reconcile: document.getElementById('view-reconcile'),
+    reports: document.getElementById('view-reports'),
+    admin: document.getElementById('view-admin')
+  };
 
-  if (targetId) {
-    setTimeout(() => {
-      const el = document.getElementById(targetId);
-      if (el) { el.removeAttribute('readonly'); el.focus(); el.select(); }
-    }, 100);
+  const navBtns = {
+    grid: document.getElementById('nav-btn-grid'),
+    reconcile: document.getElementById('nav-btn-reconcile'),
+    reports: document.getElementById('nav-btn-reports'),
+    admin: document.getElementById('nav-btn-admin')
+  };
+
+  Object.keys(views).forEach(key => {
+    if (views[key]) views[key].classList.toggle('hidden', key !== viewName);
+    if (navBtns[key]) {
+      navBtns[key].className = key === viewName
+        ? 'bg-blue-600 text-white font-bold text-xs px-3.5 py-1.5 rounded shadow-sm transition'
+        : 'bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold text-xs px-3 py-1.5 rounded shadow-sm transition';
+    }
+  });
+
+  if (viewName === 'grid') {
+    renderDispenserGrid();
+    updateHeaderAndBottomSummary();
+  } else if (viewName === 'reconcile') {
+    syncReconciliationFormFromState();
+    setTimeout(initSignaturePad, 30);
+  } else if (viewName === 'reports') {
+    renderHistoricalReports();
+  } else if (viewName === 'admin') {
+    renderAdminView();
   }
-};
+}
 
-window.lockBoxEditsImmediately = function() {
-  if (window.boxEditUnlockTimer) { clearTimeout(window.boxEditUnlockTimer); window.boxEditUnlockTimer = null; }
-  window.isBoxEditUnlocked = false;
-  window.boxEditCurrentCashier = '';
-  if (typeof renderDispenserGrid === 'function') renderDispenserGrid();
-  if (typeof renderMainGridCashierShiftBar === 'function') renderMainGridCashierShiftBar();
-  alert('🔒 Game # and Start # are now locked.');
-};
+// Application Bootloader
+document.addEventListener('DOMContentLoaded', () => {
+  loadGlobalAppCatalogs();
+  activeStoreState = loadStoreStateForLocation(activeLocationId);
+  shiftSessionConfirmed = Boolean((activeStoreState.reconciliation?.cashierOut || '').trim());
 
-window.startBoxEditTimeout = function() {
-  if (window.boxEditUnlockTimer) clearTimeout(window.boxEditUnlockTimer);
-  window.boxEditUnlockTimer = setTimeout(() => {
-    const isDone = confirm('⏱ 5 minutes have passed. Lock boxes now?');
-    if (isDone) window.lockBoxEditsImmediately();
-    else { window.isBoxEditUnlocked = true; window.startBoxEditTimeout(); }
-  }, 300000);
-};
-
-window.resetBoxEditTimeout = function() {
-  if (window.isBoxEditUnlocked) window.startBoxEditTimeout();
-};
-
-// --------------------------------------------------------------------------
-// INITIALIZATION BOOT LISTENER
-// --------------------------------------------------------------------------
-window.addEventListener('DOMContentLoaded', () => {
-  loadMasterGames();
-  initActiveLocation();
-  loadPrintFontSizeSetting();
-  injectHeaderPrintFontSizeControl();
-  injectHeaderUiFontSizeControl(); // <-- Injects the UI font size dropdown into the header
-  initScreenKeepAwakeSystem();
-
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const monthIso = todayIso.slice(0, 7);
-
-  if (document.getElementById('report-filter-date')) document.getElementById('report-filter-date').value = todayIso;
-  if (document.getElementById('report-filter-month')) document.getElementById('report-filter-month').value = monthIso;
-
-  loadActiveStoreData();
+  renderLocationSwitcher();
+  populatePromptCashiersDatalist();
+  syncReconciliationFormFromState();
+  recalculateAllBoxes();
   renderDispenserGrid();
-  renderMainGridCashierShiftBar();
-  renderAdminGamesTable();
-  renderAdminBoxLabelsGrid();
-  renderAdminCashiersTable();
-  loadReconciliationDraft();
-  recalculateReconciliationTotals();
+  updateHeaderAndBottomSummary();
   initSignaturePad();
-  executeReportLookup();
-  startTwiceDailyBackupScheduler();
+  startMidnightRolloverWatcher();
 });
+
+/* ========================= END OF PART 10 OF 10 ========================= */
