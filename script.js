@@ -2164,109 +2164,7 @@ function startNextShiftRollover() {
   alert(`✔ Ready for ${nextShift}! Ending numbers have been carried over to Starting numbers.`);
 }
 /* ========================= END OF PART 10 OF 11 ========================= */
-/* ============================================================================
-   PART 11 OF 11: TAB NAVIGATION, UI ORCHESTRATION & INITIALIZATION
-   ============================================================================ */
-function escapeHtml(str) {
-  return String(str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
 
-function applyUiFontSize(sizeStr, persist = true) {
-  document.documentElement.style.fontSize = sizeStr || '14px';
-  if (persist) {
-    localStorage.setItem(STORAGE_KEYS.UI_FONT_SIZE, sizeStr || '14px');
-  }
-}
-
-function switchMainView(viewName) {
-  activeMainView = viewName;
-  const views = ['grid', 'reconcile', 'reports', 'admin'];
-  views.forEach((v) => {
-    const el = document.getElementById(`view-${v}`) || document.getElementById(`tab-panel-${v}`);
-    const btn = document.getElementById(`nav-${v}`) || document.getElementById(`tab-btn-${v}`);
-    if (el) {
-      el.classList.toggle('hidden', v !== viewName);
-    }
-    if (btn) {
-      if (v === viewName) {
-        btn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
-        btn.classList.remove('bg-slate-800', 'text-slate-300');
-      } else {
-        btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
-        btn.classList.add('bg-slate-800', 'text-slate-300');
-      }
-    }
-  });
-
-  if (viewName === 'reconcile') {
-    syncReconciliationFormFromState();
-    setTimeout(() => initSignaturePad(), 30);
-  } else if (viewName === 'reports' || viewName === 'history') {
-    if (typeof renderHistoricalReports === 'function') renderHistoricalReports();
-    renderHistoryList();
-  } else if (viewName === 'admin' || viewName === 'settings') {
-    if (typeof renderAdminView === 'function') renderAdminView();
-    renderSettingsGrid();
-  }
-}
-
-function switchTab(tabName) {
-  switchMainView(tabName);
-}
-
-function wireUpAllPrintButtons() {
-  ensurePrintInfrastructure();
-  // Wire any button whose id/onclick mentions print so nothing stays stagnant
-  document.querySelectorAll('button').forEach((btn) => {
-    const id = (btn.id || '').toLowerCase();
-    const onclickAttr = (btn.getAttribute('onclick') || '').toLowerCase();
-    const label = (btn.textContent || '').toLowerCase();
-    if (
-      id.includes('print') ||
-      onclickAttr.includes('print') ||
-      label.includes('print shift') ||
-      label.includes('print report') ||
-      label.includes('print worksheet')
-    ) {
-      if (!btn.id.startsWith('lotto-')) {
-        btn.onclick = (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          openWorksheetPrintChoiceModal();
-        };
-      }
-    }
-  });
-}
-
-function renderAllUI() {
-  if (!activeStoreState) return;
-  renderLocationSwitcher();
-  recalculateAllBoxes();
-  renderDispenserGrid();
-  syncReconciliationFormFromState();
-  renderHistoryList();
-  renderSettingsGrid();
-  updateHeaderAndBottomSummary();
-  wireUpAllPrintButtons();
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  loadGlobalAppCatalogs();
-  activeStoreState = loadStoreStateForLocation(activeLocationId);
-  shiftSessionConfirmed = Boolean((activeStoreState?.reconciliation?.cashierOut || '').trim());
-
-  ensurePrintInfrastructure();
-  initSignaturePad();
-  startMidnightRolloverWatcher();
-  renderAllUI();
-  switchMainView('grid');
-});
-/* ========================= END OF PART 11 OF 11 ========================= */
 /* ============================================================================
    ADDITIONAL UTILITIES & PRINT MODAL HELPERS FOR index.html
    ============================================================================ */
@@ -2366,3 +2264,185 @@ function setReportViewMode(mode) {
 function printCombinedPeriodReport() {
   openWorksheetPrintChoiceModal();
 }
+/* ============================================================================
+   PART 11 OF 11: TAB NAVIGATION, UI ORCHESTRATION, LEGAL NDA GATE & INIT
+   ============================================================================ */
+function escapeHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function applyUiFontSize(sizeStr, persist = true) {
+  document.documentElement.style.fontSize = sizeStr || '14px';
+  if (persist) {
+    localStorage.setItem(STORAGE_KEYS.UI_FONT_SIZE, sizeStr || '14px');
+  }
+}
+
+function switchMainView(viewName) {
+  activeMainView = viewName;
+  const views = ['grid', 'reconcile', 'reports', 'admin'];
+  views.forEach((v) => {
+    const el = document.getElementById(`view-${v}`) || document.getElementById(`tab-panel-${v}`);
+    const btn = document.getElementById(`nav-${v}`) || document.getElementById(`tab-btn-${v}`) || document.getElementById(`nav-btn-${v}`);
+    if (el) {
+      el.classList.toggle('hidden', v !== viewName);
+    }
+    if (btn) {
+      if (v === viewName) {
+        btn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+        btn.classList.remove('bg-slate-800', 'text-slate-300');
+      } else {
+        btn.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
+        btn.classList.add('bg-slate-800', 'text-slate-300');
+      }
+    }
+  });
+
+  if (viewName === 'reconcile') {
+    syncReconciliationFormFromState();
+    setTimeout(() => initSignaturePad(), 30);
+  } else if (viewName === 'reports' || viewName === 'history') {
+    if (typeof renderHistoricalReports === 'function') renderHistoricalReports();
+    renderHistoryList();
+  } else if (viewName === 'admin' || viewName === 'settings') {
+    if (typeof renderAdminView === 'function') renderAdminView();
+    renderSettingsGrid();
+  }
+}
+
+function switchTab(tabName) {
+  switchMainView(tabName);
+}
+
+// Mandatory Legal NDA Gate Handlers
+let legalScrolledToBottom = false;
+
+function handleLegalScrollCheck(el) {
+  if (!el) return;
+  const tolerance = 12;
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - tolerance) {
+    legalScrolledToBottom = true;
+    const hint = document.getElementById('legal-scroll-hint');
+    if (hint) {
+      hint.textContent = '✔ Agreement read completely. You may now sign and enter.';
+      hint.className = 'text-[11px] font-bold text-emerald-600';
+    }
+  }
+}
+
+function submitLegalNdaGate() {
+  const codeInput = document.getElementById('legal-invite-code');
+  const storeInput = document.getElementById('legal-store-name');
+  const signerInput = document.getElementById('legal-signer-name');
+  const contactInput = document.getElementById('legal-contact-info');
+  const checkbox = document.getElementById('legal-agree-checkbox');
+  const modalGate = document.getElementById('modal-legal-nda-gate');
+
+  const code = (codeInput?.value || '').trim().toUpperCase();
+  const storeName = (storeInput?.value || '').trim();
+  const signerName = (signerInput?.value || '').trim();
+  const contact = (contactInput?.value || '').trim();
+
+  if (!legalScrolledToBottom) {
+    alert('Please scroll to the bottom of the NDA text in the evaluation agreement box before continuing.');
+    document.getElementById('legal-nda-scroll-box')?.focus();
+    return;
+  }
+  if (!code) {
+    alert('Please enter your assigned Pilot Access Code.');
+    codeInput?.focus();
+    return;
+  }
+  if (!storeName || !signerName || !contact) {
+    alert('Please fill in your store name, full legal name, and contact information.');
+    return;
+  }
+  if (!checkbox?.checked) {
+    alert('You must check the agreement box confirming compliance with the NDA and Pilot License terms.');
+    return;
+  }
+
+  const authPayload = {
+    code,
+    storeName,
+    signerName,
+    contact,
+    unlockedAt: new Date().toISOString()
+  };
+  localStorage.setItem('ur_lotto_pilot_nda_auth_v3', JSON.stringify(authPayload));
+
+  if (modalGate) {
+    modalGate.classList.add('hidden');
+  }
+}
+
+function checkLegalNdaAuthOnStartup() {
+  const modalGate = document.getElementById('modal-legal-nda-gate');
+  if (!modalGate) return;
+
+  const rawAuth = localStorage.getItem('ur_lotto_pilot_nda_auth_v3');
+  if (rawAuth) {
+    try {
+      const parsed = JSON.parse(rawAuth);
+      if (parsed && parsed.code) {
+        modalGate.classList.add('hidden');
+        return;
+      }
+    } catch (e) {}
+  }
+  modalGate.classList.remove('hidden');
+}
+
+function wireUpAllPrintButtons() {
+  ensurePrintInfrastructure();
+  document.querySelectorAll('button').forEach((btn) => {
+    const id = (btn.id || '').toLowerCase();
+    const onclickAttr = (btn.getAttribute('onclick') || '').toLowerCase();
+    const label = (btn.textContent || '').toLowerCase();
+    if (
+      id.includes('print') ||
+      onclickAttr.includes('print') ||
+      label.includes('print shift') ||
+      label.includes('print report') ||
+      label.includes('print worksheet')
+    ) {
+      if (!btn.id.startsWith('lotto-')) {
+        btn.onclick = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          openWorksheetPrintChoiceModal();
+        };
+      }
+    }
+  });
+}
+
+function renderAllUI() {
+  if (!activeStoreState) return;
+  renderLocationSwitcher();
+  recalculateAllBoxes();
+  renderDispenserGrid();
+  syncReconciliationFormFromState();
+  renderHistoryList();
+  renderSettingsGrid();
+  updateHeaderAndBottomSummary();
+  wireUpAllPrintButtons();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadGlobalAppCatalogs();
+  activeStoreState = loadStoreStateForLocation(activeLocationId);
+  shiftSessionConfirmed = Boolean((activeStoreState?.reconciliation?.cashierOut || '').trim());
+
+  checkLegalNdaAuthOnStartup();
+  ensurePrintInfrastructure();
+  initSignaturePad();
+  startMidnightRolloverWatcher();
+  renderAllUI();
+  switchMainView('grid');
+});
+/* ========================= END OF PART 11 OF 11 ========================= */
